@@ -6,6 +6,8 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.sqldelight)
+    alias(libs.plugins.kotlinSerialization)
 }
 
 kotlin {
@@ -36,7 +38,7 @@ kotlin {
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
 
-            // --- Business Logic (Moved here so Android can use it too) ---
+            // --- Business Logic ---
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.datetime)
@@ -48,9 +50,17 @@ kotlin {
             implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.ktor.client.logging)
 
-            // --- Markdown (If these are Java-only libs, keep them in JVM.
-            // If they are KMP, move here. Assuming Java-only for now,
-            // but check if a KMP alternative exists) ---
+            // --- Dependency Injection ---
+            implementation(libs.koin.core)
+            implementation(libs.koin.compose)
+            implementation(libs.koin.compose.viewmodel)
+
+            // --- Database ---
+            implementation(libs.sqldelight.coroutines)
+            implementation(libs.sqldelight.primitive.adapters)
+
+            // --- Navigation ---
+            implementation(libs.navigation.compose)
         }
 
         commonTest.dependencies {
@@ -73,6 +83,9 @@ kotlin {
             // Markdown (Assuming these are JVM libraries)
             implementation(libs.commonmark)
             implementation(libs.commonmark.ext.gfm.tables)
+
+            // SQLDelight JVM Driver
+            implementation(libs.sqldelight.driver.sqlite)
         }
     }
 }
@@ -118,6 +131,14 @@ compose.desktop {
             description = "The Developer Operating System"
             copyright = "© 2025 Sentio. All rights reserved."
             vendor = "Sentio"
+        }
+    }
+}
+
+sqldelight {
+    databases {
+        create("SentioDatabase") {
+            packageName.set("com.example.sentio.db")
         }
     }
 }

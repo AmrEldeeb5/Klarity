@@ -1,0 +1,32 @@
+CREATE TABLE Folder (
+    id TEXT PRIMARY KEY NOT NULL,
+    name TEXT NOT NULL,
+    parentId TEXT,
+    createdAt INTEGER NOT NULL,
+    icon TEXT,
+    FOREIGN KEY (parentId) REFERENCES Folder(id) ON DELETE CASCADE
+);
+
+CREATE INDEX folder_parentId ON Folder(parentId);
+
+selectAll:
+SELECT * FROM Folder ORDER BY name ASC;
+
+selectById:
+SELECT * FROM Folder WHERE id = ?;
+
+selectRoots:
+SELECT * FROM Folder WHERE parentId IS NULL ORDER BY name ASC;
+
+selectChildren:
+SELECT * FROM Folder WHERE parentId = ? ORDER BY name ASC;
+
+insert:
+INSERT INTO Folder(id, name, parentId, createdAt, icon)
+VALUES (?, ?, ?, ?, ?);
+
+update:
+UPDATE Folder SET name = ?, parentId = ?, icon = ? WHERE id = ?;
+
+delete:
+DELETE FROM Folder WHERE id = ?;

@@ -1,0 +1,46 @@
+CREATE TABLE Tag (
+    id TEXT PRIMARY KEY NOT NULL,
+    name TEXT NOT NULL UNIQUE,
+    color TEXT
+);
+
+CREATE TABLE NoteTag (
+    noteId TEXT NOT NULL,
+    tagId TEXT NOT NULL,
+    PRIMARY KEY (noteId, tagId),
+    FOREIGN KEY (noteId) REFERENCES Note(id) ON DELETE CASCADE,
+    FOREIGN KEY (tagId) REFERENCES Tag(id) ON DELETE CASCADE
+);
+
+CREATE INDEX noteTag_noteId ON NoteTag(noteId);
+CREATE INDEX noteTag_tagId ON NoteTag(tagId);
+
+selectAll:
+SELECT * FROM Tag ORDER BY name ASC;
+
+selectById:
+SELECT * FROM Tag WHERE id = ?;
+
+selectByNote:
+SELECT Tag.* FROM Tag
+INNER JOIN NoteTag ON Tag.id = NoteTag.tagId
+WHERE NoteTag.noteId = ?
+ORDER BY Tag.name ASC;
+
+insert:
+INSERT INTO Tag(id, name, color) VALUES (?, ?, ?);
+
+update:
+UPDATE Tag SET name = ?, color = ? WHERE id = ?;
+
+delete:
+DELETE FROM Tag WHERE id = ?;
+
+linkNoteTag:
+INSERT OR IGNORE INTO NoteTag(noteId, tagId) VALUES (?, ?);
+
+unlinkNoteTag:
+DELETE FROM NoteTag WHERE noteId = ? AND tagId = ?;
+
+unlinkAllNoteTags:
+DELETE FROM NoteTag WHERE noteId = ?;
