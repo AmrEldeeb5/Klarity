@@ -25,6 +25,8 @@ kotlin {
             implementation(libs.androidx.activity.compose)
             // Android-specific Ktor engine
             implementation(libs.ktor.client.okhttp)
+            // SQLDelight Android Driver
+            implementation(libs.sqldelight.driver.android)
         }
 
         commonMain.dependencies {
