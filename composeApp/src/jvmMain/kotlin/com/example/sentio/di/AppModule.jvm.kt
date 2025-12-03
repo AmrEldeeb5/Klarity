@@ -14,8 +14,16 @@ import java.io.File
 actual fun platformModule(): Module = module {
     single<SqlDriver> {
         val databasePath = getDatabasePath()
+        val databaseFile = File(databasePath)
+        val databaseExists = databaseFile.exists()
+        
         val driver = JdbcSqliteDriver("jdbc:sqlite:$databasePath")
-        SentioDatabase.Schema.create(driver)
+        
+        // Only create schema if database is new
+        if (!databaseExists) {
+            SentioDatabase.Schema.create(driver)
+        }
+        
         driver
     }
 }

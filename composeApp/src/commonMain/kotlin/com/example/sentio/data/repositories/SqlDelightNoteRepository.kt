@@ -1,46 +1,57 @@
 package com.example.sentio.data.repositories
 
-import com.example.sentio.data.local.datasource.NoteLocalDataSource
-import com.example.sentio.data.local.datasource.TagLocalDataSource
+import app.cash.sqldelight.coroutines.asFlow
+import app.cash.sqldelight.coroutines.mapToList
 import com.example.sentio.data.mapper.toDomain
 import com.example.sentio.data.mapper.toEntity
+import com.example.sentio.data.util.DispatcherProvider
+import com.example.sentio.db.SentioDatabase
 import com.example.sentio.domain.models.Note
 import com.example.sentio.domain.repositories.NoteRepository
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 
 /**
  * Repository implementation for Note operations.
- * Uses data sources for database access and mappers for conversion.
+ * Directly uses SQLDelight database - no DataSource layer needed for simple cases.
  */
-class NoteRepositoryImpl(
-    private val noteDataSource: NoteLocalDataSource,
-    private val tagDataSource: TagLocalDataSource
+class SqlDelightNoteRepository(
+    private val database: SentioDatabase,
+    private val dispatchers: DispatcherProvider
 ) : NoteRepository {
 
-    override fun getAllNotes(): Flow<List<Note>> =
-        noteDataSource.observeAll().map { entities ->
-            entities.map { entity ->
-                val tags = tagDataSource.observeByNote(entity.id).first().map { it.name }
-                entity.toDomain(tags)
-            }
-        }
+    private val noteQueries get() = database.noteQueries
+    private val tagQueries get() = database.tagQueries
 
-    override suspend fun getNoteById(id: String): Note? {
-        val entity = noteDataSource.getById(id) ?: return null
-        val tags = tagDataSource.observeByNote(id).first().map { it.name }
-        return entity.toDomain(tags)
+    override fun getAllNotes(): Flow<List<Note>> =
+        noteQueries.selectAll()
+            .asFlow()
+            .mapToList(dispatchers.io)
+            .map { entities ->
+                entities.map { entity ->
+                    val tags = getTagsForNote(entity.id)
+                    entity.toDomain(tags)
+                }
+            }
+
+    override suspend fun getNoteById(id: String): Note? = withContext(dispatchers.io) {
+        val entity = noteQueries.selectById(id).executeAsOneOrNull() ?: return@withContext null
+        val tags = getTagsForNote(id)
+        entity.toDomain(tags)
     }
 
     override fun getNotesByFolder(folderId: String): Flow<List<Note>> =
-        noteDataSource.observeByFolder(folderId).map { entities ->
-            entities.map { entity ->
-                val tags = tagDataSource.observeByNote(entity.id).first().map { it.name }
-                entity.toDomain(tags)
+        noteQueries.selectByFolder(folderId)
+            .asFlow()
+            .mapToList(dispatchers.io)
+            .map { entities ->
+                entities.map { entity ->
+                    val tags = getTagsForNote(entity.id)
+                    entity.toDomain(tags)
+                }
             }
-        }
 
     override fun getNotesByTag(tagId: String): Flow<List<Note>> =
         getAllNotes().map { notes ->
@@ -48,53 +59,92 @@ class NoteRepositoryImpl(
         }
 
     override fun getPinnedNotes(): Flow<List<Note>> =
-        noteDataSource.observePinned().map { entities ->
-            entities.map { entity ->
-                val tags = tagDataSource.observeByNote(entity.id).first().map { it.name }
-                entity.toDomain(tags)
+        noteQueries.selectPinned()
+            .asFlow()
+            .mapToList(dispatchers.io)
+            .map { entities ->
+                entities.map { entity ->
+                    val tags = getTagsForNote(entity.id)
+                    entity.toDomain(tags)
+                }
             }
-        }
 
     override fun getFavoriteNotes(): Flow<List<Note>> =
-        noteDataSource.observeFavorites().map { entities ->
-            entities.map { entity ->
-                val tags = tagDataSource.observeByNote(entity.id).first().map { it.name }
-                entity.toDomain(tags)
+        noteQueries.selectFavorites()
+            .asFlow()
+            .mapToList(dispatchers.io)
+            .map { entities ->
+                entities.map { entity ->
+                    val tags = getTagsForNote(entity.id)
+                    entity.toDomain(tags)
+                }
             }
-        }
 
     override suspend fun createNote(note: Note): Result<Note> = runCatching {
-        noteDataSource.insert(note.toEntity())
-        
-        // Link tags
-        note.tags.forEach { tagName ->
-            tagDataSource.linkToNote(note.id, tagName)
+        withContext(dispatchers.io) {
+            val entity = note.toEntity()
+            noteQueries.insert(
+                id = entity.id,
+                title = entity.title,
+                content = entity.content,
+                folderId = entity.folderId,
+                createdAt = entity.createdAt,
+                updatedAt = entity.updatedAt,
+                isPinned = entity.isPinned,
+                isFavorite = entity.isFavorite
+            )
+            
+            // Link tags
+            note.tags.forEach { tagName ->
+                tagQueries.linkNoteTag(note.id, tagName)
+            }
         }
-        
         note
     }
 
     override suspend fun updateNote(note: Note): Result<Note> = runCatching {
-        noteDataSource.update(note.toEntity())
-        
-        // Update tags: remove old, add new
-        tagDataSource.unlinkAllFromNote(note.id)
-        note.tags.forEach { tagName ->
-            tagDataSource.linkToNote(note.id, tagName)
+        withContext(dispatchers.io) {
+            val entity = note.toEntity()
+            noteQueries.update(
+                title = entity.title,
+                content = entity.content,
+                folderId = entity.folderId,
+                updatedAt = entity.updatedAt,
+                isPinned = entity.isPinned,
+                isFavorite = entity.isFavorite,
+                id = entity.id
+            )
+            
+            // Update tags: remove old, add new
+            tagQueries.unlinkAllNoteTags(note.id)
+            note.tags.forEach { tagName ->
+                tagQueries.linkNoteTag(note.id, tagName)
+            }
         }
-        
         note
     }
 
     override suspend fun deleteNote(id: String): Result<Unit> = runCatching {
-        noteDataSource.delete(id)
+        withContext(dispatchers.io) {
+            noteQueries.delete(id)
+        }
     }
 
     override fun searchNotes(query: String): Flow<List<Note>> =
-        noteDataSource.search(query).map { entities ->
-            entities.map { entity ->
-                val tags = tagDataSource.observeByNote(entity.id).first().map { it.name }
-                entity.toDomain(tags)
+        noteQueries.search(query, query)
+            .asFlow()
+            .mapToList(dispatchers.io)
+            .map { entities ->
+                entities.map { entity ->
+                    val tags = getTagsForNote(entity.id)
+                    entity.toDomain(tags)
+                }
             }
+
+    private suspend fun getTagsForNote(noteId: String): List<String> =
+        withContext(dispatchers.io) {
+            tagQueries.selectByNote(noteId)
+                .executeAsList()
+                .map { it.name }
         }
 }

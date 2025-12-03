@@ -19,12 +19,16 @@ data class Note(
     val createdAt: Instant = Clock.System.now(),
     val updatedAt: Instant = Clock.System.now(),
     val isPinned: Boolean = false,
-    val isFavorite: Boolean = false,
-    val wordCount: Int = 0,
-    val embedding: List<Float>? = null,  // 🔥 For AI search
-    val attachments: List<Attachment> = emptyList(),
-    val links: List<Link> = emptyList()
+    val isFavorite: Boolean = false
 ) {
+    /**
+     * Returns the word count of the content
+     */
+    fun wordCount(): Int {
+        return content.split(Regex("\\s+"))
+            .count { it.isNotBlank() }
+    }
+
     /**
      * Returns a preview of the content (first 200 characters)
      */

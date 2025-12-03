@@ -1,4 +1,4 @@
-package com.example.sentio.ui.screens.editor
+package com.example.sentio.presentation.screen.editor
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.BasicTextField
@@ -13,9 +13,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
-import com.example.sentio.ui.viewmodels.EditorViewModel
+import com.example.sentio.presentation.state.EditorUiEvent
+import com.example.sentio.presentation.state.EditorUiState
+import com.example.sentio.presentation.viewmodel.EditorViewModel
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -28,22 +29,24 @@ fun EditorScreen(
 
     LaunchedEffect(noteId) {
         if (noteId != "new") {
-            viewModel.loadNote(noteId)
+            viewModel.onEvent(EditorUiEvent.LoadNote(noteId))
+        } else {
+            viewModel.onEvent(EditorUiEvent.CreateNewNote)
         }
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // Top bar
         EditorTopBar(
             onBack = onBack,
-            isPinned = uiState.note?.isPinned ?: false,
-            isFavorite = uiState.note?.isFavorite ?: false,
-            onTogglePin = viewModel::togglePin,
-            onToggleFavorite = viewModel::toggleFavorite
+            isPinned = (uiState as? EditorUiState.Success)?.note?.isPinned ?: false,
+            isFavorite = (uiState as? EditorUiState.Success)?.note?.isFavorite ?: false,
+            onTogglePin = { viewModel.onEvent(EditorUiEvent.TogglePin) },
+            onToggleFavorite = { viewModel.onEvent(EditorUiEvent.ToggleFavorite) }
         )
 
-        when {
-            uiState.isLoading -> {
+        when (val state = uiState) {
+            is EditorUiState.Idle -> {}
+            is EditorUiState.Loading -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -51,34 +54,59 @@ fun EditorScreen(
                     CircularProgressIndicator()
                 }
             }
-            uiState.error != null -> {
+            is EditorUiState.Error -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = uiState.error ?: "Unknown error",
-                        color = MaterialTheme.colorScheme.error
-                    )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = state.message,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                        state.retryAction?.let { retry ->
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Button(onClick = retry) {
+                                Text("Retry")
+                            }
+                        }
+                    }
                 }
             }
-            else -> {
+            is EditorUiState.Success -> {
                 Row(modifier = Modifier.fillMaxSize()) {
-                    // Editor
                     EditorPane(
-                        title = uiState.note?.title ?: "",
-                        content = uiState.note?.content ?: "",
-                        onTitleChange = viewModel::updateTitle,
-                        onContentChange = viewModel::updateContent,
-                        onSave = viewModel::saveNote,
+                        title = state.note.title,
+                        content = state.note.content,
+                        onTitleChange = { viewModel.onEvent(EditorUiEvent.UpdateTitle(it)) },
+                        onContentChange = { viewModel.onEvent(EditorUiEvent.UpdateContent(it)) },
+                        onSave = { viewModel.onEvent(EditorUiEvent.Save) },
                         modifier = Modifier.weight(1f)
                     )
 
-                    Divider(modifier = Modifier.width(1.dp).fillMaxHeight())
+                    VerticalDivider(modifier = Modifier.fillMaxHeight())
 
-                    // Preview
                     MarkdownPreview(
-                        content = uiState.note?.content ?: "",
+                        content = state.note.content,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+            is EditorUiState.NewNote -> {
+                Row(modifier = Modifier.fillMaxSize()) {
+                    EditorPane(
+                        title = state.title,
+                        content = state.content,
+                        onTitleChange = { viewModel.onEvent(EditorUiEvent.UpdateTitle(it)) },
+                        onContentChange = { viewModel.onEvent(EditorUiEvent.UpdateContent(it)) },
+                        onSave = { viewModel.onEvent(EditorUiEvent.Save) },
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    VerticalDivider(modifier = Modifier.fillMaxHeight())
+
+                    MarkdownPreview(
+                        content = state.content,
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -132,17 +160,20 @@ private fun EditorPane(
     var titleText by remember(title) { mutableStateOf(title) }
     var contentText by remember(content) { mutableStateOf(content) }
 
-    // Auto-save on text change (debounced in real app)
+    // Auto-save with debouncing
     LaunchedEffect(titleText, contentText) {
         if (titleText != title) onTitleChange(titleText)
         if (contentText != content) onContentChange(contentText)
+        
+        // Delay and then auto-save
+        kotlinx.coroutines.delay(1000)
+        onSave()
     }
 
     Column(
         modifier = modifier.padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Title input
         BasicTextField(
             value = titleText,
             onValueChange = { titleText = it },
@@ -163,9 +194,8 @@ private fun EditorPane(
             modifier = Modifier.fillMaxWidth()
         )
 
-        Divider()
+        HorizontalDivider()
 
-        // Content input
         BasicTextField(
             value = contentText,
             onValueChange = { contentText = it },
@@ -210,8 +240,6 @@ private fun MarkdownPreview(
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            // For now, just show raw text
-            // TODO: Implement proper markdown rendering
             Text(
                 text = content.ifEmpty { "Preview will appear here..." },
                 style = MaterialTheme.typography.bodyLarge

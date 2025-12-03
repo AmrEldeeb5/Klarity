@@ -1,4 +1,4 @@
-package com.example.sentio.ui.theme
+package com.example.sentio.presentation.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
@@ -7,7 +7,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
 val SentioTypography = Typography(
-    // Display - Large headings
     displayLarge = TextStyle(
         fontWeight = FontWeight.Bold,
         fontSize = 57.sp,
@@ -26,8 +25,6 @@ val SentioTypography = Typography(
         lineHeight = 44.sp,
         letterSpacing = 0.sp
     ),
-
-    // Headline - Section headings
     headlineLarge = TextStyle(
         fontWeight = FontWeight.Bold,
         fontSize = 32.sp,
@@ -46,8 +43,6 @@ val SentioTypography = Typography(
         lineHeight = 32.sp,
         letterSpacing = 0.sp
     ),
-
-    // Title - Card and component titles
     titleLarge = TextStyle(
         fontWeight = FontWeight.SemiBold,
         fontSize = 22.sp,
@@ -66,18 +61,16 @@ val SentioTypography = Typography(
         lineHeight = 20.sp,
         letterSpacing = 0.1.sp
     ),
-
-    // Body - Main content
     bodyLarge = TextStyle(
         fontWeight = FontWeight.Normal,
         fontSize = 16.sp,
-        lineHeight = 28.sp, // 1.75 line height for readability
+        lineHeight = 28.sp,
         letterSpacing = 0.5.sp
     ),
     bodyMedium = TextStyle(
         fontWeight = FontWeight.Normal,
         fontSize = 14.sp,
-        lineHeight = 24.sp, // 1.71 line height
+        lineHeight = 24.sp,
         letterSpacing = 0.25.sp
     ),
     bodySmall = TextStyle(
@@ -86,8 +79,6 @@ val SentioTypography = Typography(
         lineHeight = 18.sp,
         letterSpacing = 0.4.sp
     ),
-
-    // Label - Buttons, tabs
     labelLarge = TextStyle(
         fontWeight = FontWeight.Medium,
         fontSize = 14.sp,
@@ -108,7 +99,9 @@ val SentioTypography = Typography(
     )
 )
 
-// Custom text styles for specific use cases
+/**
+ * Custom text styles for specific use cases.
+ */
 object CustomTextStyles {
     val Code = TextStyle(
         fontFamily = FontFamily.Monospace,
@@ -137,7 +130,7 @@ object CustomTextStyles {
     val EditorBody = TextStyle(
         fontWeight = FontWeight.Normal,
         fontSize = 16.sp,
-        lineHeight = 28.8.sp, // 1.8 line height for comfortable editing
+        lineHeight = 28.8.sp,
         letterSpacing = 0.sp
     )
 }

@@ -1,4 +1,4 @@
-package com.example.sentio.ui.navigation
+package com.example.sentio.presentation.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
@@ -6,9 +6,12 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
-import com.example.sentio.ui.screens.editor.EditorScreen
-import com.example.sentio.ui.screens.home.HomeScreen
+import com.example.sentio.presentation.screen.editor.EditorScreen
+import com.example.sentio.presentation.screen.home.HomeScreen
 
+/**
+ * Main navigation host for the app.
+ */
 @Composable
 fun SentioNavigation(
     navController: NavHostController = rememberNavController()
@@ -23,7 +26,6 @@ fun SentioNavigation(
                     navController.navigate(Screen.Editor(noteId))
                 },
                 onCreateNote = {
-                    // Create note and navigate to editor
                     navController.navigate(Screen.Editor("new"))
                 }
             )

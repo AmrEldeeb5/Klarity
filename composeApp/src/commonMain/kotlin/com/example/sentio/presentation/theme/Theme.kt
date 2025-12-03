@@ -1,4 +1,4 @@
-package com.example.sentio.ui.theme
+package com.example.sentio.presentation.theme
 
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -42,9 +42,12 @@ private val Shapes = Shapes(
     extraLarge = RoundedCornerShape(24.dp)
 )
 
+/**
+ * Sentio app theme - Dark theme optimized for developers.
+ */
 @Composable
 fun SentioTheme(
-    darkTheme: Boolean = true, // Always dark for now
+    darkTheme: Boolean = true,
     content: @Composable () -> Unit
 ) {
     MaterialTheme(

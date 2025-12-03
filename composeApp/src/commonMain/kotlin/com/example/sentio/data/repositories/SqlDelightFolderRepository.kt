@@ -1,50 +1,77 @@
 package com.example.sentio.data.repositories
 
-import com.example.sentio.data.local.datasource.FolderLocalDataSource
+import app.cash.sqldelight.coroutines.asFlow
+import app.cash.sqldelight.coroutines.mapToList
+import com.example.sentio.data.util.DispatcherProvider
 import com.example.sentio.data.mapper.toDomain
-import com.example.sentio.data.mapper.toEntity
+import com.example.sentio.db.SentioDatabase
 import com.example.sentio.domain.models.Folder
 import com.example.sentio.domain.repositories.FolderRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 
 /**
  * Repository implementation for Folder operations.
- * Uses data sources for database access and mappers for conversion.
+ * Directly uses SQLDelight queries for database access.
  */
-class FolderRepositoryImpl(
-    private val folderDataSource: FolderLocalDataSource
+class SqlDelightFolderRepository(
+    private val database: SentioDatabase,
+    private val dispatchers: DispatcherProvider
 ) : FolderRepository {
 
+    private val queries get() = database.folderQueries
+
     override fun getAllFolders(): Flow<List<Folder>> =
-        folderDataSource.observeAll().map { entities ->
-            entities.map { it.toDomain() }
-        }
+        queries.selectAll()
+            .asFlow()
+            .mapToList(dispatchers.io)
+            .map { entities -> entities.map { it.toDomain() } }
 
     override fun getRootFolders(): Flow<List<Folder>> =
-        folderDataSource.observeRoots().map { entities ->
-            entities.map { it.toDomain() }
-        }
+        queries.selectRoots()
+            .asFlow()
+            .mapToList(dispatchers.io)
+            .map { entities -> entities.map { it.toDomain() } }
 
     override fun getSubFolders(parentId: String): Flow<List<Folder>> =
-        folderDataSource.observeChildren(parentId).map { entities ->
-            entities.map { it.toDomain() }
-        }
+        queries.selectChildren(parentId)
+            .asFlow()
+            .mapToList(dispatchers.io)
+            .map { entities -> entities.map { it.toDomain() } }
 
-    override suspend fun getFolderById(id: String): Folder? =
-        folderDataSource.getById(id)?.toDomain()
+    override suspend fun getFolderById(id: String): Folder? = withContext(dispatchers.io) {
+        queries.selectById(id).executeAsOneOrNull()?.toDomain()
+    }
 
     override suspend fun createFolder(folder: Folder): Result<Folder> = runCatching {
-        folderDataSource.insert(folder.toEntity())
+        withContext(dispatchers.io) {
+            queries.insert(
+                id = folder.id,
+                name = folder.name,
+                parentId = folder.parentId,
+                createdAt = folder.createdAt.toEpochMilliseconds(),
+                icon = folder.icon
+            )
+        }
         folder
     }
 
     override suspend fun updateFolder(folder: Folder): Result<Folder> = runCatching {
-        folderDataSource.update(folder.toEntity())
+        withContext(dispatchers.io) {
+            queries.update(
+                name = folder.name,
+                parentId = folder.parentId,
+                icon = folder.icon,
+                id = folder.id
+            )
+        }
         folder
     }
 
     override suspend fun deleteFolder(id: String): Result<Unit> = runCatching {
-        folderDataSource.delete(id)
+        withContext(dispatchers.io) {
+            queries.delete(id)
+        }
     }
 }

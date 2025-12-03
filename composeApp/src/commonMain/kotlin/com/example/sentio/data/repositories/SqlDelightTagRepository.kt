@@ -1,40 +1,62 @@
 package com.example.sentio.data.repositories
 
-import com.example.sentio.data.local.datasource.TagLocalDataSource
+import app.cash.sqldelight.coroutines.asFlow
+import app.cash.sqldelight.coroutines.mapToList
+import com.example.sentio.data.util.DispatcherProvider
 import com.example.sentio.data.mapper.toDomain
-import com.example.sentio.data.mapper.toEntity
+import com.example.sentio.db.SentioDatabase
 import com.example.sentio.domain.models.Tag
 import com.example.sentio.domain.repositories.TagRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 
 /**
  * Repository implementation for Tag operations.
- * Uses data sources for database access and mappers for conversion.
+ * Directly uses SQLDelight queries for database access.
  */
-class TagRepositoryImpl(
-    private val tagDataSource: TagLocalDataSource
+class SqlDelightTagRepository(
+    private val database: SentioDatabase,
+    private val dispatchers: DispatcherProvider
 ) : TagRepository {
 
-    override fun getAllTags(): Flow<List<Tag>> =
-        tagDataSource.observeAll().map { entities ->
-            entities.map { it.toDomain() }
-        }
+    private val queries get() = database.tagQueries
 
-    override suspend fun getTagById(id: String): Tag? =
-        tagDataSource.getById(id)?.toDomain()
+    override fun getAllTags(): Flow<List<Tag>> =
+        queries.selectAll()
+            .asFlow()
+            .mapToList(dispatchers.io)
+            .map { entities -> entities.map { it.toDomain() } }
+
+    override suspend fun getTagById(id: String): Tag? = withContext(dispatchers.io) {
+        queries.selectById(id).executeAsOneOrNull()?.toDomain()
+    }
 
     override suspend fun createTag(tag: Tag): Result<Tag> = runCatching {
-        tagDataSource.insert(tag.toEntity())
+        withContext(dispatchers.io) {
+            queries.insert(
+                id = tag.id,
+                name = tag.name,
+                color = tag.color
+            )
+        }
         tag
     }
 
     override suspend fun updateTag(tag: Tag): Result<Tag> = runCatching {
-        tagDataSource.update(tag.toEntity())
+        withContext(dispatchers.io) {
+            queries.update(
+                name = tag.name,
+                color = tag.color,
+                id = tag.id
+            )
+        }
         tag
     }
 
     override suspend fun deleteTag(id: String): Result<Unit> = runCatching {
-        tagDataSource.delete(id)
+        withContext(dispatchers.io) {
+            queries.delete(id)
+        }
     }
 }

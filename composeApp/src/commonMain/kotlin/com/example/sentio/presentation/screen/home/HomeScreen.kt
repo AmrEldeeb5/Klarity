@@ -1,4 +1,4 @@
-package com.example.sentio.ui.screens.home
+package com.example.sentio.presentation.screen.home
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -16,7 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.sentio.domain.models.Note
-import com.example.sentio.ui.viewmodels.HomeViewModel
+import com.example.sentio.presentation.state.HomeUiEvent
+import com.example.sentio.presentation.viewmodel.HomeViewModel
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -36,12 +37,10 @@ fun HomeScreen(
         MainContent(
             notes = notes,
             searchQuery = searchQuery,
-            onSearchQueryChange = viewModel::updateSearchQuery,
+            onSearchQueryChange = { viewModel.onEvent(HomeUiEvent.SearchQueryChanged(it)) },
             onNoteClick = onNoteClick,
             onCreateNote = {
-                viewModel.createNote()
-                // Note: We'll need to get the created note ID to navigate
-                // For now, just trigger creation
+                viewModel.onEvent(HomeUiEvent.CreateNote)
             },
             modifier = Modifier.weight(1f).fillMaxHeight()
         )
@@ -64,7 +63,7 @@ private fun Sidebar(modifier: Modifier = Modifier) {
                 color = MaterialTheme.colorScheme.primary
             )
             
-            Divider(modifier = Modifier.padding(vertical = 8.dp))
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
             
             NavigationItem("All Notes")
             NavigationItem("Favorites")
@@ -110,14 +109,12 @@ private fun MainContent(
 ) {
     Surface(modifier = modifier) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Top bar with search and create button
             TopBar(
                 searchQuery = searchQuery,
                 onSearchQueryChange = onSearchQueryChange,
                 onCreateNote = onCreateNote
             )
             
-            // Notes list
             if (notes.isEmpty()) {
                 EmptyState(onCreateNote = onCreateNote)
             } else {
@@ -211,7 +208,6 @@ private fun NoteListItem(
                 )
             }
             
-            // Tags
             if (note.tags.isNotEmpty()) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(4.dp)

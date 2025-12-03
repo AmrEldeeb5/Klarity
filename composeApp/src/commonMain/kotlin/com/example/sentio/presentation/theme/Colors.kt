@@ -1,7 +1,10 @@
-package com.example.sentio.ui.theme
+package com.example.sentio.presentation.theme
 
 import androidx.compose.ui.graphics.Color
 
+/**
+ * Sentio color palette - Dark theme optimized for developers.
+ */
 object SentioColors {
     // Backgrounds
     val BgPrimary = Color(0xFF0A1612)
@@ -33,19 +36,19 @@ object SentioColors {
     val BorderFocus = AccentPrimary
 
     // Overlays
-    val Overlay = Color(0x800A1612) // 50% opacity
-    val OverlayLight = Color(0x400A1612) // 25% opacity
+    val Overlay = Color(0x800A1612)
+    val OverlayLight = Color(0x400A1612)
 
     // Card backgrounds
-    val CardBg = Color(0x0DFFFFFF) // 5% white
-    val CardBgHover = Color(0x1AFFFFFF) // 10% white
-    val CardBgActive = Color(0x26FFFFFF) // 15% white
+    val CardBg = Color(0x0DFFFFFF)
+    val CardBgHover = Color(0x1AFFFFFF)
+    val CardBgActive = Color(0x26FFFFFF)
 
     // AI specific
     val AIGradientStart = AccentAI
     val AIGradientEnd = AccentAISecondary
 
-    // Syntax highlighting (for code blocks)
+    // Syntax highlighting
     val SyntaxKeyword = Color(0xFFFF79C6)
     val SyntaxString = Color(0xFFF1FA8C)
     val SyntaxComment = Color(0xFF6272A4)
@@ -53,7 +56,9 @@ object SentioColors {
     val SyntaxNumber = Color(0xFFBD93F9)
 }
 
-// Helper to create gradient colors
+/**
+ * Helper for gradient colors.
+ */
 data class GradientColors(
     val start: Color,
     val end: Color
