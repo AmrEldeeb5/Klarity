@@ -25,7 +25,10 @@ sealed class HomeUiState {
         val pinnedNotes: List<Note> = emptyList(),
         val searchQuery: String = "",
         val isSearching: Boolean = false,
-        val selectedNoteId: String? = null
+        /** Currently selected note (single click - highlighted in sidebar) */
+        val selectedNoteId: String? = null,
+        /** Currently opened note (double click - shown in editor) */
+        val openedNoteId: String? = null
     ) : HomeUiState()
 
     /**
@@ -43,7 +46,12 @@ sealed class HomeUiState {
 sealed class HomeUiEvent {
     data class SearchQueryChanged(val query: String) : HomeUiEvent()
     data object ClearSearch : HomeUiEvent()
-    data class NoteClicked(val noteId: String) : HomeUiEvent()
+    /** Single click - select note (highlight in sidebar) */
+    data class SelectNote(val noteId: String) : HomeUiEvent()
+    /** Double click - open note in editor */
+    data class OpenNote(val noteId: String) : HomeUiEvent()
+    /** Close the currently opened note */
+    data object CloseNote : HomeUiEvent()
     data class DeleteNote(val noteId: String) : HomeUiEvent()
     data object CreateNote : HomeUiEvent()
     data object Refresh : HomeUiEvent()

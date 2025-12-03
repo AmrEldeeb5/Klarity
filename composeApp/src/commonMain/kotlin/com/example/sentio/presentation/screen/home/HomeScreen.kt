@@ -25,8 +25,10 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.filled.Edit
 import com.example.sentio.domain.models.Note
-import com.example.sentio.presentation.screen.editor.EditorScreen
 import com.example.sentio.presentation.state.HomeUiEvent
 import com.example.sentio.presentation.theme.searchBarBg
 import com.example.sentio.presentation.viewmodel.HomeViewModel
@@ -34,13 +36,16 @@ import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun HomeScreen(
-    onNoteClick: (String) -> Unit,
+    onNoteDoubleClick: (String) -> Unit,
     onCreateNote: () -> Unit,
     viewModel: HomeViewModel = koinViewModel()
 ) {
     val notes by viewModel.notes.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val selectedNoteId by viewModel.selectedNoteId.collectAsState()
+    
+    // Find the selected note for preview
+    val selectedNote = notes.find { it.id == selectedNoteId }
 
     Row(modifier = Modifier.fillMaxSize()) {
         // Sidebar
@@ -49,19 +54,25 @@ fun HomeScreen(
             searchQuery = searchQuery,
             selectedNoteId = selectedNoteId,
             onSearchQueryChange = { viewModel.onEvent(HomeUiEvent.SearchQueryChanged(it)) },
-            onNoteClick = onNoteClick,
+            onNoteSelect = { viewModel.onEvent(HomeUiEvent.SelectNote(it)) },
+            onNoteDoubleClick = onNoteDoubleClick, // Navigate to full editor
             onCreateNote = { viewModel.onEvent(HomeUiEvent.CreateNote) },
             modifier = Modifier.width(270.dp).fillMaxHeight()
         )
         VerticalDivider(modifier = Modifier.width(1.dp).fillMaxHeight())
 
         // Main content area
-        selectedNoteId?.let { noteId ->
-            EditorScreen(
-                noteId = noteId,
-                onBack = { /* Deselect note */ }
+        // - No selection: Show placeholder
+        // - Single click: Show read-only preview
+        // - Double click: Navigates to EditorScreen (handled by onNoteDoubleClick)
+        if (selectedNote != null) {
+            NotePreview(
+                note = selectedNote,
+                onEditClick = { onNoteDoubleClick(selectedNote.id) }
             )
-        } ?: MainContentPlaceholder()
+        } else {
+            MainContentPlaceholder()
+        }
     }
 }
 
@@ -71,7 +82,8 @@ private fun Sidebar(
     searchQuery: String,
     selectedNoteId: String?,
     onSearchQueryChange: (String) -> Unit,
-    onNoteClick: (String) -> Unit,
+    onNoteSelect: (String) -> Unit,
+    onNoteDoubleClick: (String) -> Unit,
     onCreateNote: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -107,14 +119,15 @@ private fun Sidebar(
             NotesList(
                 notes = notes,
                 selectedNoteId = selectedNoteId,
-                onNoteClick = onNoteClick,
+                onNoteSelect = onNoteSelect,
+                onNoteDoubleClick = onNoteDoubleClick,
                 modifier = Modifier.weight(1f)
             )
 
             // Footer with count
             NotesFooter(
                 noteCount = notes.size,
-                selectedCount = 0
+                selectedCount = if (selectedNoteId != null) 1 else 0
             )
         }
     }
@@ -348,7 +361,8 @@ private fun NotesFooter(
 private fun NotesList(
     notes: List<Note>,
     selectedNoteId: String?,
-    onNoteClick: (String) -> Unit,
+    onNoteSelect: (String) -> Unit,
+    onNoteDoubleClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -363,7 +377,8 @@ private fun NotesList(
         items(notes.filter { /* filter by group */ true }) { note ->
             CompactNoteItem(
                 note = note,
-                onClick = { onNoteClick(note.id) },
+                onSelect = { onNoteSelect(note.id) },
+                onDoubleClick = { onNoteDoubleClick(note.id) },
                 isSelected = note.id == selectedNoteId
             )
         }
@@ -406,6 +421,110 @@ private fun EmptyState(onCreateNote: () -> Unit) {
     }
 }
 
+/**
+ * Read-only preview of a note (shown when single-clicked)
+ */
+@Composable
+private fun NotePreview(
+    note: Note,
+    onEditClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(32.dp)
+        ) {
+            // Header with title and edit button
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = note.title,
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f)
+                )
+                
+                // Edit button (double-click alternative)
+                IconButton(onClick = onEditClick) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Edit note",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            // Metadata (tags, date)
+            if (note.tags.isNotEmpty()) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    note.tags.forEach { tagName ->
+                        Surface(
+                            shape = RoundedCornerShape(4.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                        ) {
+                            Text(
+                                text = tagName,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+            
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // Content (scrollable, read-only)
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+            ) {
+                if (note.content.isNotBlank()) {
+                    Text(
+                        text = note.content,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        lineHeight = MaterialTheme.typography.bodyLarge.lineHeight
+                    )
+                } else {
+                    Text(
+                        text = "No content yet. Double-click to edit.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // Footer hint
+            Text(
+                text = "Double-click to edit • Press Enter to open",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+            )
+        }
+    }
+}
+
 fun Modifier.dashedBorder(
     color: Color,
     strokeWidth: Float = 2f,
@@ -429,8 +548,9 @@ fun Modifier.dashedBorder(
 private fun MainContentPlaceholder(modifier: Modifier = Modifier) {
     Box(
         modifier = Modifier
-            .fillMaxSize().background(MaterialTheme.colorScheme.background)
-            .padding(24.dp) // Outer spacing
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(24.dp)
             .dashedBorder(
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
                 strokeWidth = 2.dp.value,
@@ -439,7 +559,7 @@ private fun MainContentPlaceholder(modifier: Modifier = Modifier) {
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = "Main Content Area",
+            text = "Select a note to preview",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )

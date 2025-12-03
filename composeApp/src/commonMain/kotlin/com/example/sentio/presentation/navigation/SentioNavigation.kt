@@ -22,7 +22,8 @@ fun SentioNavigation(
     ) {
         composable<Screen.Home> {
             HomeScreen(
-                onNoteClick = { noteId ->
+                onNoteDoubleClick = { noteId ->
+                    // Double-click navigates to full editor screen
                     navController.navigate(Screen.Editor(noteId))
                 },
                 onCreateNote = {

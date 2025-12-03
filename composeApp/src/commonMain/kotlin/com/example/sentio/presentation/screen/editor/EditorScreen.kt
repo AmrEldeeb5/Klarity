@@ -74,42 +74,24 @@ fun EditorScreen(
                 }
             }
             is EditorUiState.Success -> {
-                Row(modifier = Modifier.fillMaxSize()) {
-                    EditorPane(
-                        title = state.note.title,
-                        content = state.note.content,
-                        onTitleChange = { viewModel.onEvent(EditorUiEvent.UpdateTitle(it)) },
-                        onContentChange = { viewModel.onEvent(EditorUiEvent.UpdateContent(it)) },
-                        onSave = { viewModel.onEvent(EditorUiEvent.Save) },
-                        modifier = Modifier.weight(1f)
-                    )
-
-                    VerticalDivider(modifier = Modifier.fillMaxHeight())
-
-                    MarkdownPreview(
-                        content = state.note.content,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
+                EditorPane(
+                    title = state.note.title,
+                    content = state.note.content,
+                    onTitleChange = { viewModel.onEvent(EditorUiEvent.UpdateTitle(it)) },
+                    onContentChange = { viewModel.onEvent(EditorUiEvent.UpdateContent(it)) },
+                    onSave = { viewModel.onEvent(EditorUiEvent.Save) },
+                    modifier = Modifier.fillMaxSize()
+                )
             }
             is EditorUiState.NewNote -> {
-                Row(modifier = Modifier.fillMaxSize()) {
-                    EditorPane(
-                        title = state.title,
-                        content = state.content,
-                        onTitleChange = { viewModel.onEvent(EditorUiEvent.UpdateTitle(it)) },
-                        onContentChange = { viewModel.onEvent(EditorUiEvent.UpdateContent(it)) },
-                        onSave = { viewModel.onEvent(EditorUiEvent.Save) },
-                        modifier = Modifier.weight(1f)
-                    )
-
-                    VerticalDivider(modifier = Modifier.fillMaxHeight())
-
-                    MarkdownPreview(
-                        content = state.content,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
+                EditorPane(
+                    title = state.title,
+                    content = state.content,
+                    onTitleChange = { viewModel.onEvent(EditorUiEvent.UpdateTitle(it)) },
+                    onContentChange = { viewModel.onEvent(EditorUiEvent.UpdateContent(it)) },
+                    onSave = { viewModel.onEvent(EditorUiEvent.Save) },
+                    modifier = Modifier.fillMaxSize()
+                )
             }
         }
     }
@@ -220,30 +202,4 @@ private fun EditorPane(
     }
 }
 
-@Composable
-private fun MarkdownPreview(
-    content: String,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        modifier = modifier,
-        color = MaterialTheme.colorScheme.surfaceVariant
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Text(
-                text = "Preview",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            Text(
-                text = content.ifEmpty { "Preview will appear here..." },
-                style = MaterialTheme.typography.bodyLarge
-            )
-        }
-    }
-}
+
