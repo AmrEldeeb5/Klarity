@@ -1,6 +1,8 @@
 package com.example.sentio.presentation.screen.home
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -15,9 +17,16 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.sentio.domain.models.Note
+import com.example.sentio.presentation.screen.editor.EditorScreen
 import com.example.sentio.presentation.state.HomeUiEvent
 import com.example.sentio.presentation.theme.searchBarBg
 import com.example.sentio.presentation.viewmodel.HomeViewModel
@@ -44,9 +53,15 @@ fun HomeScreen(
             onCreateNote = { viewModel.onEvent(HomeUiEvent.CreateNote) },
             modifier = Modifier.width(270.dp).fillMaxHeight()
         )
+        VerticalDivider(modifier = Modifier.width(1.dp).fillMaxHeight())
 
         // Main content area
-
+        selectedNoteId?.let { noteId ->
+            EditorScreen(
+                noteId = noteId,
+                onBack = { /* Deselect note */ }
+            )
+        } ?: MainContentPlaceholder()
     }
 }
 
@@ -72,7 +87,7 @@ private fun Sidebar(
             // Header - no extra padding needed, part of main padding
             WorkspaceHeader()
 
-            HorizontalDivider(modifier = Modifier.height(16.dp))
+            HorizontalDivider(modifier = Modifier.height(16.dp).fillMaxWidth())
 
             // Search bar
             SearchBarWithCreate(
@@ -82,10 +97,6 @@ private fun Sidebar(
             )
 
             Spacer(modifier = Modifier.height(16.dp))
-
-            // View controls - if you add them later
-            // ViewControls()
-            // Spacer(modifier = Modifier.height(16.dp))
 
             // Cluster toggle
             ClusterToggle()
@@ -160,7 +171,7 @@ private fun SearchBarWithCreate(
             modifier = Modifier.weight(1f)
         )
 
-        // Custom Add Button matching the image (Rounded Square)
+
         Surface(
             modifier = Modifier
                 .size(52.dp)
@@ -214,9 +225,9 @@ private fun CustomSearchBar(
             focusedContainerColor = MaterialTheme.colorScheme.searchBarBg,
             unfocusedContainerColor = MaterialTheme.colorScheme.searchBarBg,
             disabledContainerColor = MaterialTheme.colorScheme.searchBarBg,
-            focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-            unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-            disabledIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent,
+            disabledIndicatorColor = Color.Transparent,
             cursorColor = MaterialTheme.colorScheme.primary,
         )
     )
@@ -264,13 +275,19 @@ private fun GroupHeader(title: String) {
 @Composable
 private fun CompactNoteItem(
     note: Note,
-    onClick: () -> Unit,
+    onSelect: () -> Unit,
+    onDoubleClick: () -> Unit,
     isSelected: Boolean = false
 ) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onTap = { onSelect() },
+                    onDoubleTap = { onDoubleClick() }
+                )
+            },
         color = if (isSelected) MaterialTheme.colorScheme.searchBarBg else MaterialTheme.colorScheme.surface,
         shape = MaterialTheme.shapes.small
     ) {
@@ -388,3 +405,44 @@ private fun EmptyState(onCreateNote: () -> Unit) {
         }
     }
 }
+
+fun Modifier.dashedBorder(
+    color: Color,
+    strokeWidth: Float = 2f,
+    dashLength: Float = 10f,
+    gapLength: Float = 10f,
+    cornerRadius: Float = 0f
+) = this.drawBehind {
+    val stroke = Stroke(
+        width = strokeWidth,
+        pathEffect = PathEffect.dashPathEffect(floatArrayOf(dashLength, gapLength), 0f)
+    )
+
+    drawRoundRect(
+        color = color,
+        style = stroke,
+        cornerRadius = CornerRadius(cornerRadius)
+    )
+}
+
+@Composable
+private fun MainContentPlaceholder(modifier: Modifier = Modifier) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize().background(MaterialTheme.colorScheme.background)
+            .padding(24.dp) // Outer spacing
+            .dashedBorder(
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                strokeWidth = 2.dp.value,
+                cornerRadius = 24.dp.value
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "Main Content Area",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
