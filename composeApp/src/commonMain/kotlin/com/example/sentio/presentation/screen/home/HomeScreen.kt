@@ -42,8 +42,10 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.graphics.SolidColor
 import com.example.sentio.domain.models.Note
+import com.example.sentio.presentation.state.HomeUiEffect
 import com.example.sentio.presentation.state.HomeUiEvent
 import com.example.sentio.presentation.theme.bgSelected
 import com.example.sentio.presentation.theme.borderSelected
@@ -54,7 +56,6 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun HomeScreen(
     onNoteDoubleClick: (String) -> Unit,
-    onCreateNote: () -> Unit,
     viewModel: HomeViewModel = koinViewModel()
 ) {
     val notes by viewModel.notes.collectAsState()
@@ -62,6 +63,23 @@ fun HomeScreen(
     val selectedNoteId by viewModel.selectedNoteId.collectAsState()
     
     val selectedNote = notes.find { it.id == selectedNoteId }
+
+    // Collect effects and handle navigation
+    LaunchedEffect(Unit) {
+        viewModel.effects.collect { effect ->
+            when (effect) {
+                is HomeUiEffect.NavigateToEditor -> {
+                    onNoteDoubleClick(effect.noteId)
+                }
+                is HomeUiEffect.ShowSnackbar -> {
+                    // TODO: Show snackbar
+                }
+                is HomeUiEffect.ShowError -> {
+                    // TODO: Show error
+                }
+            }
+        }
+    }
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         // Adaptive sidebar: 25% of screen width, clamped between 280-400dp

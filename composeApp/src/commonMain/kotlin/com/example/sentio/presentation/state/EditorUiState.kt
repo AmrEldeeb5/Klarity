@@ -45,6 +45,16 @@ sealed class EditorUiState {
 }
 
 /**
+ * View modes for the editor layout
+ */
+enum class EditorViewMode {
+    TRI_PANE,    // Sidebar + Notes List + Editor
+    DUAL_PANE,   // Notes List + Editor
+    SINGLE_PANE, // Editor only
+    ZEN          // Minimal distraction-free editor
+}
+
+/**
  * UI events that can be triggered from the Editor screen.
  */
 sealed class EditorUiEvent {
@@ -58,6 +68,13 @@ sealed class EditorUiEvent {
     data object Delete : EditorUiEvent()
     data class AddTag(val tag: String) : EditorUiEvent()
     data class RemoveTag(val tag: String) : EditorUiEvent()
+    
+    // Text formatting events
+    data class FormatBold(val selectionStart: Int, val selectionEnd: Int) : EditorUiEvent()
+    data class FormatItalic(val selectionStart: Int, val selectionEnd: Int) : EditorUiEvent()
+    data class FormatCode(val selectionStart: Int, val selectionEnd: Int) : EditorUiEvent()
+    data class FormatLink(val selectionStart: Int, val selectionEnd: Int, val url: String) : EditorUiEvent()
+    data class InsertCodeBlock(val cursorPosition: Int) : EditorUiEvent()
 }
 
 /**

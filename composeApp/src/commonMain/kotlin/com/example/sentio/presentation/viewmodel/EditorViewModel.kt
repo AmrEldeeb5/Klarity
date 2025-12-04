@@ -26,6 +26,14 @@ class EditorViewModel(
     private val _effects = Channel<EditorUiEffect>(Channel.BUFFERED)
     val effects: Flow<EditorUiEffect> = _effects.receiveAsFlow()
 
+    // All notes for sidebar
+    val allNotes = noteRepository.getAllNotes()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    
+    // Pinned notes for sidebar
+    val pinnedNotes = noteRepository.getPinnedNotes()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     /**
      * Handle UI events from the screen.
      */
@@ -41,6 +49,11 @@ class EditorViewModel(
             is EditorUiEvent.Delete -> deleteNote()
             is EditorUiEvent.AddTag -> addTag(event.tag)
             is EditorUiEvent.RemoveTag -> removeTag(event.tag)
+            is EditorUiEvent.FormatBold -> formatBold(event.selectionStart, event.selectionEnd)
+            is EditorUiEvent.FormatItalic -> formatItalic(event.selectionStart, event.selectionEnd)
+            is EditorUiEvent.FormatCode -> formatCode(event.selectionStart, event.selectionEnd)
+            is EditorUiEvent.FormatLink -> formatLink(event.selectionStart, event.selectionEnd, event.url)
+            is EditorUiEvent.InsertCodeBlock -> insertCodeBlock(event.cursorPosition)
         }
     }
 
@@ -173,5 +186,107 @@ class EditorViewModel(
             note = state.note.copy(tags = updatedTags),
             hasUnsavedChanges = true
         )
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // TEXT FORMATTING
+    // ══════════════════════════════════════════════════════════════
+
+    private fun formatBold(selectionStart: Int, selectionEnd: Int) {
+        wrapSelection(selectionStart, selectionEnd, "**", "**")
+    }
+
+    private fun formatItalic(selectionStart: Int, selectionEnd: Int) {
+        wrapSelection(selectionStart, selectionEnd, "_", "_")
+    }
+
+    private fun formatCode(selectionStart: Int, selectionEnd: Int) {
+        wrapSelection(selectionStart, selectionEnd, "`", "`")
+    }
+
+    private fun formatLink(selectionStart: Int, selectionEnd: Int, url: String) {
+        val state = _uiState.value
+        val content = when (state) {
+            is EditorUiState.Success -> state.note.content
+            is EditorUiState.NewNote -> state.content
+            else -> return
+        }
+
+        val selectedText = if (selectionStart < selectionEnd) {
+            content.substring(selectionStart.coerceIn(0, content.length), selectionEnd.coerceIn(0, content.length))
+        } else {
+            "link"
+        }
+
+        val linkMarkdown = "[$selectedText]($url)"
+        val newContent = content.replaceRange(
+            selectionStart.coerceIn(0, content.length),
+            selectionEnd.coerceIn(0, content.length),
+            linkMarkdown
+        )
+        updateContent(newContent)
+    }
+
+    private fun insertCodeBlock(cursorPosition: Int) {
+        val state = _uiState.value
+        val content = when (state) {
+            is EditorUiState.Success -> state.note.content
+            is EditorUiState.NewNote -> state.content
+            else -> return
+        }
+
+        val codeBlock = "\n```\n\n```\n"
+        val newContent = StringBuilder(content)
+            .insert(cursorPosition.coerceIn(0, content.length), codeBlock)
+            .toString()
+        updateContent(newContent)
+    }
+
+    private fun wrapSelection(selectionStart: Int, selectionEnd: Int, prefix: String, suffix: String) {
+        val state = _uiState.value
+        val content = when (state) {
+            is EditorUiState.Success -> state.note.content
+            is EditorUiState.NewNote -> state.content
+            else -> return
+        }
+
+        val start = selectionStart.coerceIn(0, content.length)
+        val end = selectionEnd.coerceIn(0, content.length)
+
+        val selectedText = if (start < end) {
+            content.substring(start, end)
+        } else {
+            ""
+        }
+
+        // Check if already wrapped - toggle off
+        val isAlreadyWrapped = selectedText.startsWith(prefix) && selectedText.endsWith(suffix)
+        
+        val newContent = if (isAlreadyWrapped && selectedText.length >= prefix.length + suffix.length) {
+            // Remove formatting
+            val unwrapped = selectedText.drop(prefix.length).dropLast(suffix.length)
+            content.replaceRange(start, end, unwrapped)
+        } else {
+            // Add formatting
+            content.replaceRange(start, end, "$prefix$selectedText$suffix")
+        }
+        
+        updateContent(newContent)
+    }
+
+    /**
+     * Toggle pin status for a note by ID (used in sidebar)
+     */
+    fun toggleNotePinById(noteId: String) {
+        viewModelScope.launch {
+            try {
+                val note = noteRepository.getNoteById(noteId)
+                if (note != null) {
+                    noteRepository.updateNote(note.copy(isPinned = !note.isPinned))
+                }
+            } catch (e: Exception) {
+                _effects.send(EditorUiEffect.ShowError("Failed to toggle pin: ${e.message}"))
+            }
+        }
     }
 }
