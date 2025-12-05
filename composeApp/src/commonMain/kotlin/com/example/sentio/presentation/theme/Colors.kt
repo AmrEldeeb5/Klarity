@@ -8,32 +8,42 @@ import androidx.compose.ui.graphics.Color
  */
 object SentioColors {
     // ══════════════════════════════════════════════════════════════
-    // BACKGROUNDS - Dark Teal/Green Palette
+    // BACKGROUNDS - Dark Teal/Green Palette with Elevation
+    // Panel Hierarchy: NavRail (darkest) → NotesList → Editor (lightest)
     // ══════════════════════════════════════════════════════════════
     
-    /** Darkest background - main app background */
-    val BgPrimary = Color(0xFF0D1B1A)
+    /** Darkest background - navigation rail, deepest panels */
+    val BgPrimary = Color(0xFF0A1514)
     
-    /** Secondary background - sidebar, panels */
-    val BgSecondary = Color(0xFF0F1F1A)
+    /** Secondary background - notes list panel */
+    val BgSecondary = Color(0xFF0E1C1A)
     
     /** Tertiary background - cards, elevated surfaces */
-    val BgTertiary = Color(0xFF152922)
+    val BgTertiary = Color(0xFF142420)
+    
+    /** Editor panel background - slightly lighter for focus */
+    val BgEditor = Color(0xFF121F1D)
     
     /** Elevated surfaces - hover states, active cards */
-    val BgElevated = Color(0xFF1A3530)
+    val BgElevated = Color(0xFF1A302B)
     
     /** Card backgrounds with subtle transparency */
     val BgCard = Color(0xFF162B26)
+    
+    /** Note list item background - breathable cards */
+    val BgNoteCard = Color(0xFF111E1B)
 
     /** Selected/Active item background */
-    val BgSelected = Color(0xFF254642)
+    val BgSelected = Color(0xFF1F3D38)
     
     /** Selected item border - bright cyan */
     val BorderSelected = Color(0xFF1FDBC8)
 
     /** Code block background */
     val BgCode = Color(0xFF0A1614)
+    
+    /** Pill button background - for Sort/Group/Filter buttons */
+    val BgPill = Color(0xFF1A2A27)
 
     // ══════════════════════════════════════════════════════════════
     // ACCENT COLORS - Bright Cyan/Teal
@@ -58,17 +68,20 @@ object SentioColors {
     val Highlight = Color(0xFF2DD4BF).copy(alpha = 0.3f)
 
     // ══════════════════════════════════════════════════════════════
-    // TEXT COLORS
+    // TEXT COLORS - Improved Contrast
     // ══════════════════════════════════════════════════════════════
     
     /** Primary text - headings, important content */
     val TextPrimary = Color(0xFFE8F0ED)
     
     /** Secondary text - body text, descriptions */
-    val TextSecondary = Color(0xFFA3B8B0)
+    val TextSecondary = Color(0xFFB0C4BC)
     
-    /** Tertiary text - timestamps, hints, placeholders */
-    val TextTertiary = Color(0xFF6B8A7D)
+    /** Tertiary text - timestamps, hints (improved contrast) */
+    val TextTertiary = Color(0xFF7FA598)
+    
+    /** Muted text - less important hints */
+    val TextMuted = Color(0xFF5C7A6E)
     
     /** Disabled text */
     val TextDisabled = Color(0xFF4A6358)

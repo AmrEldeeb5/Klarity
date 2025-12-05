@@ -131,7 +131,7 @@ fun EditorPanel(
 
                     // Breadcrumbs
                     Breadcrumbs(
-                        projectName = "Sentio",
+                        projectName = "Klarity",
                         folderName = folder?.name ?: "Uncategorized",
                         noteName = selectedNote.title.ifBlank { "Untitled" }
                     )
@@ -152,21 +152,11 @@ fun EditorPanel(
                         )
                     }
                 } else {
-                    // Empty State
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("📝", fontSize = 64.sp, color = SentioColors.TextTertiary.copy(alpha = 0.3f))
-                            Spacer(Modifier.height(16.dp))
-                            Text(
-                                "Select a note to start editing",
-                                color = SentioColors.TextTertiary,
-                                fontSize = 16.sp
-                            )
-                        }
-                    }
+                    // Enhanced Empty State with Quick Actions
+                    EmptyEditorState(
+                        onCreateNote = { /* Trigger create note */ },
+                        onOpenSearch = { onToggleSlashMenu() }
+                    )
                 }
             }
 
@@ -681,3 +671,182 @@ fun EditorFooter(wordCount: Int) {
     }
 }
 
+/**
+ * Enhanced Empty State with Quick Actions and Keyboard Shortcuts
+ */
+@Composable
+private fun EmptyEditorState(
+    onCreateNote: () -> Unit,
+    onOpenSearch: () -> Unit
+) {
+    val luminousTeal = Color(0xFF1FDBC8)
+    
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(24.dp)
+        ) {
+            // Icon
+            Text(
+                text = "📝",
+                fontSize = 72.sp,
+                color = SentioColors.TextTertiary.copy(alpha = 0.2f)
+            )
+            
+            // Main message
+            Text(
+                text = "Ready to capture your thoughts",
+                color = SentioColors.TextSecondary,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Medium
+            )
+            
+            Text(
+                text = "Select a note from the list or create a new one",
+                color = SentioColors.TextTertiary,
+                fontSize = 14.sp
+            )
+            
+            Spacer(Modifier.height(8.dp))
+            
+            // Quick Actions
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                QuickActionButton(
+                    icon = "✨",
+                    label = "Create New Note",
+                    shortcut = "Ctrl+N",
+                    onClick = onCreateNote,
+                    isPrimary = true,
+                    accentColor = luminousTeal
+                )
+                
+                QuickActionButton(
+                    icon = "🔍",
+                    label = "Search Notes",
+                    shortcut = "Ctrl+K",
+                    onClick = onOpenSearch,
+                    accentColor = luminousTeal
+                )
+            }
+            
+            Spacer(Modifier.height(24.dp))
+            
+            // Keyboard Shortcuts Hint
+            Surface(
+                color = SentioColors.BgTertiary.copy(alpha = 0.5f),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "Quick Shortcuts",
+                        color = SentioColors.TextTertiary,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                    
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        ShortcutHint("Ctrl+/", "Commands")
+                        ShortcutHint("Ctrl+B", "Bold")
+                        ShortcutHint("Ctrl+I", "Italic")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun QuickActionButton(
+    icon: String,
+    label: String,
+    shortcut: String,
+    onClick: () -> Unit,
+    isPrimary: Boolean = false,
+    accentColor: Color
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isHovered by interactionSource.collectIsHoveredAsState()
+    
+    Surface(
+        onClick = onClick,
+        color = when {
+            isPrimary && isHovered -> accentColor.copy(alpha = 0.2f)
+            isPrimary -> accentColor.copy(alpha = 0.12f)
+            isHovered -> SentioColors.BgElevated
+            else -> SentioColors.BgTertiary.copy(alpha = 0.7f)
+        },
+        shape = RoundedCornerShape(10.dp),
+        modifier = Modifier
+            .width(220.dp)
+            .hoverable(interactionSource)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(text = icon, fontSize = 18.sp)
+            
+            Text(
+                text = label,
+                color = if (isPrimary) accentColor else SentioColors.TextPrimary,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.weight(1f)
+            )
+            
+            Surface(
+                color = SentioColors.BgElevated,
+                shape = RoundedCornerShape(4.dp)
+            ) {
+                Text(
+                    text = shortcut,
+                    color = SentioColors.TextTertiary,
+                    fontSize = 10.sp,
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ShortcutHint(
+    shortcut: String,
+    action: String
+) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Surface(
+            color = SentioColors.BgElevated,
+            shape = RoundedCornerShape(4.dp)
+        ) {
+            Text(
+                text = shortcut,
+                color = SentioColors.TextSecondary,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+            )
+        }
+        Text(
+            text = action,
+            color = SentioColors.TextTertiary,
+            fontSize = 10.sp
+        )
+    }
+}

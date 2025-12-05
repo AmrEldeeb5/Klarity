@@ -13,7 +13,7 @@ fun main() = application {
 
     Window(
         onCloseRequest = ::exitApplication,
-        title = "Sentio - The Developer Operating System",
+        title = "Klarity - Your Second Brain",
     ) {
         App()
     }

@@ -45,10 +45,7 @@ enum class WorkspaceLayoutMode {
 enum class PaneType {
     NOTES_LIST,
     EDITOR,
-    GRAPH,
-    TASKS,
-    AI_CHAT,
-    AI_CONTEXT
+    TASKS
 }
 
 /**
@@ -68,12 +65,10 @@ data class WorkspaceConfig(
  */
 object WorkspacePresets {
     val notesDefault = WorkspaceConfig(
-        mode = WorkspaceLayoutMode.TRI_PANE,
+        mode = WorkspaceLayoutMode.DUAL_PANE,
         leftPane = PaneType.NOTES_LIST,
         centerPane = PaneType.EDITOR,
-        rightPane = PaneType.AI_CONTEXT,
-        leftPaneWidth = 280.dp,
-        rightPaneWidth = 320.dp
+        leftPaneWidth = 280.dp
     )
     
     val notesDual = WorkspaceConfig(
@@ -87,31 +82,15 @@ object WorkspacePresets {
         centerPane = PaneType.EDITOR
     )
     
-    val graphWithAI = WorkspaceConfig(
-        mode = WorkspaceLayoutMode.DUAL_PANE,
-        leftPane = PaneType.GRAPH,
-        centerPane = PaneType.AI_CHAT
-    )
-    
     val tasksWithNotes = WorkspaceConfig(
         mode = WorkspaceLayoutMode.DUAL_PANE,
         leftPane = PaneType.TASKS,
         centerPane = PaneType.EDITOR
     )
     
-    val graphFull = WorkspaceConfig(
-        mode = WorkspaceLayoutMode.SINGLE_PANE,
-        centerPane = PaneType.GRAPH
-    )
-    
     val tasksFull = WorkspaceConfig(
         mode = WorkspaceLayoutMode.SINGLE_PANE,
         centerPane = PaneType.TASKS
-    )
-    
-    val aiChat = WorkspaceConfig(
-        mode = WorkspaceLayoutMode.SINGLE_PANE,
-        centerPane = PaneType.AI_CHAT
     )
 }
 

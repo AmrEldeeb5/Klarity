@@ -29,13 +29,12 @@ import com.example.sentio.presentation.theme.SentioColors
 
 /**
  * Navigation destinations for the app
+ * Simplified: Notes + Tasks only
  */
 enum class NavDestination(val icon: String, val label: String) {
     HOME("🏠", "Home"),
     NOTES("📝", "Notes"),
     TASKS("🧩", "Tasks"),
-    GRAPH("🔗", "Graph"),
-    AI_ASSISTANT("🤖", "AI Assistant"),
     SETTINGS("⚙️", "Settings")
 }
 
@@ -62,7 +61,7 @@ fun NavigationRail(
         modifier = modifier
             .width(72.dp)
             .fillMaxHeight(),
-        color = SentioColors.BgSecondary
+        color = SentioColors.BgPrimary // Darkest panel
     ) {
         Column(
             modifier = Modifier
@@ -94,7 +93,7 @@ fun NavigationRail(
                 
                 Spacer(Modifier.height(24.dp))
                 
-                // Main nav items (Home, Notes, Tasks, Graph, AI)
+                // Main nav items (Home, Notes, Tasks)
                 NavDestination.entries
                     .filter { it != NavDestination.SETTINGS }
                     .forEach { destination ->
@@ -169,15 +168,15 @@ private fun NavRailItem(
 
     Box(
         modifier = Modifier
-            .size(52.dp)
+            .size(56.dp) // Larger clickable area
             .scale(scale)
             .hoverable(interactionSource)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(14.dp))
             .then(
                 if (isHovered || isSelected) {
                     Modifier.background(
                         color = luminousTeal.copy(alpha = bgAlpha),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(14.dp)
                     )
                 } else Modifier
             )
@@ -188,12 +187,12 @@ private fun NavRailItem(
                         width = 1.5.dp,
                         brush = Brush.radialGradient(
                             colors = listOf(
-                                electricMint.copy(alpha = glowAlpha * 0.6f),
-                                electricMint.copy(alpha = glowAlpha * 0.2f),
+                                electricMint.copy(alpha = glowAlpha * 0.7f),
+                                electricMint.copy(alpha = glowAlpha * 0.3f),
                                 Color.Transparent
                             )
                         ),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(14.dp)
                     )
                 } else Modifier
             )
@@ -210,7 +209,7 @@ private fun NavRailItem(
         ) {
             Text(
                 text = destination.icon,
-                fontSize = 22.sp
+                fontSize = 24.sp // Larger icons
             )
             
             // Show label only when selected or hovered
