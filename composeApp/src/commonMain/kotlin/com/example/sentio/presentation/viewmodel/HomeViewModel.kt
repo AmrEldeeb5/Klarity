@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.klarity.domain.models.Folder
 import com.example.klarity.domain.models.Note
+import NoteStatus
 import com.example.klarity.domain.repositories.FolderRepository
 import com.example.klarity.domain.repositories.NoteRepository
 import com.example.klarity.domain.usecase.NoteUseCases
@@ -242,7 +243,7 @@ class HomeViewModel(
         }
     }
 
-    private fun updateNoteStatus(noteId: String, status: com.example.sentio.domain.models.NoteStatus) {
+    private fun updateNoteStatus(noteId: String, status: NoteStatus) {
         viewModelScope.launch {
             val note = noteRepository.getNoteById(noteId) ?: return@launch
             noteRepository.updateNote(note.copy(status = status, updatedAt = kotlinx.datetime.Clock.System.now()))

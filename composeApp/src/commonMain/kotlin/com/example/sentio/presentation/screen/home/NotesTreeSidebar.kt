@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.klarity.domain.models.Folder
 import com.example.klarity.domain.models.Note
+import NoteStatus
 import com.example.klarity.presentation.theme.KlarityColors
 
 /**
@@ -391,7 +392,7 @@ fun TreeNoteCard(
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 // Status badge
-                if (note.status != com.example.sentio.domain.models.NoteStatus.NONE) {
+                if (note.status != NoteStatus.NONE) {
                     TreeNoteStatusBadge(note.status)
                 }
                 // Tags
@@ -404,24 +405,24 @@ fun TreeNoteCard(
 }
 
 @Composable
-fun TreeNoteStatusBadge(status: com.example.sentio.domain.models.NoteStatus) {
+fun TreeNoteStatusBadge(status: NoteStatus) {
     val (bgColor, textColor, label) = when (status) {
-        com.example.sentio.domain.models.NoteStatus.IN_PROGRESS -> Triple(
+        NoteStatus.IN_PROGRESS -> Triple(
             Color(0xFF0EA5E9).copy(alpha = 0.15f),
             Color(0xFF38BDF8),
             "In Progress"
         )
-        com.example.sentio.domain.models.NoteStatus.COMPLETED -> Triple(
+        NoteStatus.COMPLETED -> Triple(
             Color(0xFF10B981).copy(alpha = 0.15f),
             Color(0xFF34D399),
             "Completed"
         )
-        com.example.sentio.domain.models.NoteStatus.ON_HOLD -> Triple(
+        NoteStatus.ON_HOLD -> Triple(
             Color(0xFFF59E0B).copy(alpha = 0.15f),
             Color(0xFFFBBF24),
             "On Hold"
         )
-        com.example.sentio.domain.models.NoteStatus.ARCHIVED -> Triple(
+        NoteStatus.ARCHIVED -> Triple(
             Color(0xFF6B7280).copy(alpha = 0.15f),
             Color(0xFF9CA3AF),
             "Archived"

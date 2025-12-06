@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.klarity.domain.models.Folder
 import com.example.klarity.domain.models.Note
+import com.example.klarity.domain.models.NoteStatus
 import com.example.klarity.presentation.theme.KlarityColors
 
 /**
@@ -58,7 +59,7 @@ fun EditorPanel(
     onContentChange: (String) -> Unit,
     onTogglePin: () -> Unit,
     onDelete: () -> Unit,
-    onStatusChange: (com.example.sentio.domain.models.NoteStatus) -> Unit = {},
+    onStatusChange: (NoteStatus) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     // Track formatting state for toolbar callbacks
@@ -105,7 +106,7 @@ fun EditorPanel(
             // Toolbar with pin/delete and formatting
             EditorToolbar(
                 isPinned = selectedNote?.isPinned ?: false,
-                noteStatus = selectedNote?.status ?: com.example.sentio.domain.models.NoteStatus.NONE,
+                noteStatus = selectedNote?.status ?: NoteStatus.NONE,
                 isPreviewMode = isPreviewMode,
                 onTogglePreview = { isPreviewMode = !isPreviewMode },
                 onTogglePin = onTogglePin,
@@ -179,12 +180,12 @@ fun EditorPanel(
 @Composable
 fun EditorToolbar(
     isPinned: Boolean = false,
-    noteStatus: com.example.sentio.domain.models.NoteStatus = com.example.sentio.domain.models.NoteStatus.NONE,
+    noteStatus: NoteStatus = NoteStatus.NONE,
     isPreviewMode: Boolean = false,
     onTogglePreview: () -> Unit = {},
     onTogglePin: () -> Unit = {},
     onDelete: () -> Unit = {},
-    onStatusChange: (com.example.sentio.domain.models.NoteStatus) -> Unit = {},
+    onStatusChange: (NoteStatus) -> Unit = {},
     hasNote: Boolean = false,
     onBold: () -> Unit = {},
     onItalic: () -> Unit = {},
@@ -254,7 +255,7 @@ fun EditorToolbar(
                             expanded = showStatusMenu,
                             onDismissRequest = { showStatusMenu = false }
                         ) {
-                            com.example.sentio.domain.models.NoteStatus.entries.forEach { status ->
+                            NoteStatus.entries.forEach { status ->
                                 androidx.compose.material3.DropdownMenuItem(
                                     text = {
                                         Row(
@@ -351,33 +352,33 @@ fun ToolbarButton(
 }
 
 // Status helper functions
-fun getStatusIcon(status: com.example.sentio.domain.models.NoteStatus): String = when (status) {
-    com.example.sentio.domain.models.NoteStatus.NONE -> "○"
-    com.example.sentio.domain.models.NoteStatus.IN_PROGRESS -> "⏳"
-    com.example.sentio.domain.models.NoteStatus.COMPLETED -> "✓"
-    com.example.sentio.domain.models.NoteStatus.ON_HOLD -> "⏸"
-    com.example.sentio.domain.models.NoteStatus.ARCHIVED -> "📦"
+fun getStatusIcon(status: NoteStatus): String = when (status) {
+    NoteStatus.NONE -> "○"
+    NoteStatus.IN_PROGRESS -> "⏳"
+    NoteStatus.COMPLETED -> "✓"
+    NoteStatus.ON_HOLD -> "⏸"
+    NoteStatus.ARCHIVED -> "📦"
 }
 
-fun getStatusLabel(status: com.example.sentio.domain.models.NoteStatus): String = when (status) {
-    com.example.sentio.domain.models.NoteStatus.NONE -> "No Status"
-    com.example.sentio.domain.models.NoteStatus.IN_PROGRESS -> "In Progress"
-    com.example.sentio.domain.models.NoteStatus.COMPLETED -> "Completed"
-    com.example.sentio.domain.models.NoteStatus.ON_HOLD -> "On Hold"
-    com.example.sentio.domain.models.NoteStatus.ARCHIVED -> "Archived"
+fun getStatusLabel(status: NoteStatus): String = when (status) {
+    NoteStatus.NONE -> "No Status"
+    NoteStatus.IN_PROGRESS -> "In Progress"
+    NoteStatus.COMPLETED -> "Completed"
+    NoteStatus.ON_HOLD -> "On Hold"
+    NoteStatus.ARCHIVED -> "Archived"
 }
 
-fun getStatusColor(status: com.example.sentio.domain.models.NoteStatus): Color = when (status) {
-    com.example.sentio.domain.models.NoteStatus.NONE -> KlarityColors.TextTertiary
-    com.example.sentio.domain.models.NoteStatus.IN_PROGRESS -> Color(0xFF38BDF8)
-    com.example.sentio.domain.models.NoteStatus.COMPLETED -> Color(0xFF34D399)
-    com.example.sentio.domain.models.NoteStatus.ON_HOLD -> Color(0xFFFBBF24)
-    com.example.sentio.domain.models.NoteStatus.ARCHIVED -> Color(0xFF9CA3AF)
+fun getStatusColor(status: NoteStatus): Color = when (status) {
+    NoteStatus.NONE -> KlarityColors.TextTertiary
+    NoteStatus.IN_PROGRESS -> Color(0xFF38BDF8)
+    NoteStatus.COMPLETED -> Color(0xFF34D399)
+    NoteStatus.ON_HOLD -> Color(0xFFFBBF24)
+    NoteStatus.ARCHIVED -> Color(0xFF9CA3AF)
 }
 
 @Composable
 fun NoteStatusSelector(
-    currentStatus: com.example.sentio.domain.models.NoteStatus,
+    currentStatus: NoteStatus,
     onClick: () -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -626,7 +627,7 @@ fun MarkdownPreviewContent(note: Note) {
         )
 
         // Rendered markdown content
-        com.example.sentio.presentation.components.MarkdownRenderer(
+        com.example.klarity.presentation.components.MarkdownRenderer(
             content = note.content,
             modifier = Modifier.fillMaxWidth()
         )

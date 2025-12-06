@@ -17,7 +17,7 @@ actual fun platformModule(): Module = module {
         AndroidSqliteDriver(
             schema = KlarityDatabase.Schema,
             context = context,
-            name = "sentio.db"
+            name = "klarity.db"
         )
     }
 }

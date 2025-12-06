@@ -2,6 +2,7 @@ package com.example.klarity.presentation.state
 
 import com.example.klarity.domain.models.Folder
 import com.example.klarity.domain.models.Note
+import NoteStatus
 
 /**
  * Sealed class representing the UI state for the Home screen.
@@ -75,7 +76,7 @@ sealed class HomeUiEvent {
     data class DeleteFolder(val folderId: String) : HomeUiEvent()
     
     // Note status
-    data class UpdateNoteStatus(val noteId: String, val status: com.example.sentio.domain.models.NoteStatus) : HomeUiEvent()
+    data class UpdateNoteStatus(val noteId: String, val status: NoteStatus) : HomeUiEvent()
     
     // Drag & drop - move note to folder
     data class MoveNoteToFolder(val noteId: String, val folderId: String?) : HomeUiEvent()

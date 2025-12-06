@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.klarity.domain.models.Folder
 import com.example.klarity.domain.models.Note
+import NoteStatus
 import com.example.klarity.presentation.theme.KlarityColors
 
 /**
@@ -470,26 +471,26 @@ fun DraggableNoteItem(
 }
 
 @Composable
-fun NoteStatusBadge(status: com.example.sentio.domain.models.NoteStatus) {
-    if (status == com.example.sentio.domain.models.NoteStatus.NONE) return
+fun NoteStatusBadge(status: NoteStatus) {
+    if (status == NoteStatus.NONE) return
     
     val (bgColor, textColor, label) = when (status) {
-        com.example.sentio.domain.models.NoteStatus.IN_PROGRESS -> Triple(
+        NoteStatus.IN_PROGRESS -> Triple(
             Color(0xFF0EA5E9).copy(alpha = 0.2f),
             Color(0xFF38BDF8),
             "⏳"
         )
-        com.example.sentio.domain.models.NoteStatus.COMPLETED -> Triple(
+        NoteStatus.COMPLETED -> Triple(
             Color(0xFF10B981).copy(alpha = 0.2f),
             Color(0xFF34D399),
             "✓"
         )
-        com.example.sentio.domain.models.NoteStatus.ON_HOLD -> Triple(
+        NoteStatus.ON_HOLD -> Triple(
             Color(0xFFF59E0B).copy(alpha = 0.2f),
             Color(0xFFFBBF24),
             "⏸"
         )
-        com.example.sentio.domain.models.NoteStatus.ARCHIVED -> Triple(
+        NoteStatus.ARCHIVED -> Triple(
             Color(0xFF6B7280).copy(alpha = 0.2f),
             Color(0xFF9CA3AF),
             "📦"
