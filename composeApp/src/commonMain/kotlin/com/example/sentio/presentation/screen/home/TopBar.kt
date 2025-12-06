@@ -1,4 +1,4 @@
-package com.example.sentio.presentation.screen.home
+package com.example.klarity.presentation.screen.home
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -27,7 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.sentio.presentation.theme.SentioColors
+import com.example.klarity.presentation.theme.KlarityColors
 
 /**
  * Top Bar - Main navigation bar with view mode toggles and action buttons
@@ -41,8 +41,8 @@ fun TopBar(
 
     Surface(
         modifier = Modifier.fillMaxWidth().height(56.dp),
-        color = SentioColors.BgSecondary,
-        border = BorderStroke(1.dp, SentioColors.BorderPrimary.copy(alpha = 0.5f))
+        color = KlarityColors.BgSecondary,
+        border = BorderStroke(1.dp, KlarityColors.BorderPrimary.copy(alpha = 0.5f))
     ) {
         Row(
             modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp),
@@ -54,15 +54,15 @@ fun TopBar(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Sentio Logo (simplified SVG-like shape)
+                // Klarity Logo (simplified SVG-like shape)
                 Box(
                     modifier = Modifier.size(24.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("M", color = SentioColors.AccentAI, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text("K", color = KlarityColors.AccentAI, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 }
                 Text(
-                    "Sentio",
+                    "Klarity",
                     color = Color.White,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
@@ -73,7 +73,7 @@ fun TopBar(
             // View Mode Toggles
             Row(
                 modifier = Modifier
-                    .background(SentioColors.BgElevated, RoundedCornerShape(8.dp))
+                    .background(KlarityColors.BgElevated, RoundedCornerShape(8.dp))
                     .padding(4.dp),
                 horizontalArrangement = Arrangement.spacedBy(2.dp)
             ) {
@@ -88,11 +88,11 @@ fun TopBar(
                 // Share Button
                 Button(
                     onClick = { },
-                    colors = ButtonDefaults.buttonColors(containerColor = SentioColors.AccentAI),
+                    colors = ButtonDefaults.buttonColors(containerColor = KlarityColors.AccentAI),
                     shape = RoundedCornerShape(8.dp),
                     contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp)
                 ) {
-                    Text("Share", color = SentioColors.BgPrimary, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text("Share", color = KlarityColors.BgPrimary, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 }
 
                 // Icon Buttons

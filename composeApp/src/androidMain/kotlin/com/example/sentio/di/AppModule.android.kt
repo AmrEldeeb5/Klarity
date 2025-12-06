@@ -1,9 +1,9 @@
-package com.example.sentio.di
+package com.example.klarity.di
 
 import android.content.Context
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
-import com.example.sentio.db.SentioDatabase
+import com.example.klarity.db.KlarityDatabase
 import org.koin.core.module.Module
 import org.koin.dsl.module
 
@@ -15,7 +15,7 @@ actual fun platformModule(): Module = module {
     single<SqlDriver> {
         val context: Context = get()
         AndroidSqliteDriver(
-            schema = SentioDatabase.Schema,
+            schema = KlarityDatabase.Schema,
             context = context,
             name = "sentio.db"
         )

@@ -1,6 +1,6 @@
-package com.example.sentio.data.local.datasource
+package com.example.klarity.data.local.datasource
 
-import com.example.sentio.db.Note
+import com.example.klarity.db.Note
 import kotlinx.coroutines.flow.Flow
 
 /**

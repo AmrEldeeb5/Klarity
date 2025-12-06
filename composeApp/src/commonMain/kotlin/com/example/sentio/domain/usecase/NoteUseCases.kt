@@ -1,4 +1,4 @@
-package com.example.sentio.domain.usecase
+package com.example.klarity.domain.usecase
 
 /**
  * Container for all note-related use cases.

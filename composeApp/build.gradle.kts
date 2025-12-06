@@ -93,11 +93,11 @@ kotlin {
 }
 
 android {
-    namespace = "com.example.sentio"
+    namespace = "com.example.klarity"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {
-        applicationId = "com.example.sentio"
+        applicationId = "com.example.klarity"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
@@ -125,22 +125,22 @@ dependencies {
 
 compose.desktop {
     application {
-        mainClass = "com.example.sentio.MainKt"
+        mainClass = "com.example.klarity.MainKt"
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "com.example.sentio"
+            packageName = "com.example.klarity"
             packageVersion = "1.0.0"
             description = "The Developer Operating System"
-            copyright = "© 2025 Sentio. All rights reserved."
-            vendor = "Sentio"
+            copyright = "© 2025 Klarity. All rights reserved."
+            vendor = "Klarity"
         }
     }
 }
 
 sqldelight {
     databases {
-        create("SentioDatabase") {
-            packageName.set("com.example.sentio.db")
+        create("KlarityDatabase") {
+            packageName.set("com.example.klarity.db")
         }
     }
 }

@@ -1,4 +1,4 @@
-package com.example.sentio.presentation.screen.home
+package com.example.klarity.presentation.screen.home
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -25,8 +25,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.sentio.domain.models.Note
-import com.example.sentio.presentation.theme.SentioColors
+import com.example.klarity.domain.models.Note
+import com.example.klarity.presentation.theme.KlarityColors
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
@@ -108,7 +108,7 @@ fun NotesListPane(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(SentioColors.BgSecondary)
+            .background(KlarityColors.BgSecondary)
             .padding(start = 1.dp) // Subtle left border effect
     ) {
         // Header with search and actions
@@ -160,7 +160,7 @@ fun NotesListPane(
         }
         
         HorizontalDivider(
-            color = SentioColors.BorderPrimary.copy(alpha = 0.3f),
+            color = KlarityColors.BorderPrimary.copy(alpha = 0.3f),
             thickness = 1.dp
         )
         
@@ -216,7 +216,7 @@ private fun NotesListHeader(
             // Title
             Text(
                 text = "Notes",
-                color = SentioColors.TextPrimary,
+                color = KlarityColors.TextPrimary,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.SemiBold
             )
@@ -252,7 +252,7 @@ private fun NotesListHeader(
         
         // Search field
         Surface(
-            color = SentioColors.BgTertiary,
+            color = KlarityColors.BgTertiary,
             shape = RoundedCornerShape(8.dp)
         ) {
             Row(
@@ -265,7 +265,7 @@ private fun NotesListHeader(
                 Icon(
                     Icons.Default.Search,
                     contentDescription = null,
-                    tint = SentioColors.TextTertiary,
+                    tint = KlarityColors.TextTertiary,
                     modifier = Modifier.size(16.dp)
                 )
                 
@@ -273,7 +273,7 @@ private fun NotesListHeader(
                     value = searchQuery,
                     onValueChange = onSearchQueryChange,
                     textStyle = androidx.compose.ui.text.TextStyle(
-                        color = SentioColors.TextPrimary,
+                        color = KlarityColors.TextPrimary,
                         fontSize = 13.sp
                     ),
                     singleLine = true,
@@ -283,7 +283,7 @@ private fun NotesListHeader(
                             if (searchQuery.isEmpty()) {
                                 Text(
                                     text = "Search notes...",
-                                    color = SentioColors.TextTertiary,
+                                    color = KlarityColors.TextTertiary,
                                     fontSize = 13.sp
                                 )
                             }
@@ -300,7 +300,7 @@ private fun NotesListHeader(
                         Icon(
                             Icons.Default.Close,
                             contentDescription = "Clear",
-                            tint = SentioColors.TextTertiary,
+                            tint = KlarityColors.TextTertiary,
                             modifier = Modifier.size(14.dp)
                         )
                     }
@@ -335,7 +335,7 @@ private fun NotesListHeader(
                         Text("Delete", color = Color(0xFFFF6B6B), fontSize = 12.sp)
                     }
                     TextButton(onClick = { /* Bulk tag */ }) {
-                        Text("Tag", color = SentioColors.TextSecondary, fontSize = 12.sp)
+                        Text("Tag", color = KlarityColors.TextSecondary, fontSize = 12.sp)
                     }
                 }
             }
@@ -344,7 +344,7 @@ private fun NotesListHeader(
         // Note count
         Text(
             text = "$noteCount notes",
-            color = SentioColors.TextTertiary,
+            color = KlarityColors.TextTertiary,
             fontSize = 11.sp,
             modifier = Modifier.padding(top = 6.dp)
         )
@@ -384,7 +384,7 @@ private fun NotesListToolbar(
             DropdownMenu(
                 expanded = showSortMenu,
                 onDismissRequest = { onSortSelected(sortOption) },
-                containerColor = SentioColors.BgElevated
+                containerColor = KlarityColors.BgElevated
             ) {
                 NoteSortOption.entries.forEach { option ->
                     DropdownMenuItem(
@@ -396,7 +396,7 @@ private fun NotesListToolbar(
                                 Text(text = option.icon, fontSize = 14.sp)
                                 Text(
                                     text = option.label,
-                                    color = if (option == sortOption) luminousTeal else SentioColors.TextPrimary,
+                                    color = if (option == sortOption) luminousTeal else KlarityColors.TextPrimary,
                                     fontSize = 13.sp
                                 )
                             }
@@ -418,7 +418,7 @@ private fun NotesListToolbar(
             DropdownMenu(
                 expanded = showGroupMenu,
                 onDismissRequest = { onGroupSelected(groupOption) },
-                containerColor = SentioColors.BgElevated
+                containerColor = KlarityColors.BgElevated
             ) {
                 NoteGroupOption.entries.forEach { option ->
                     DropdownMenuItem(
@@ -430,7 +430,7 @@ private fun NotesListToolbar(
                                 Text(text = option.icon, fontSize = 14.sp)
                                 Text(
                                     text = option.label,
-                                    color = if (option == groupOption) luminousTeal else SentioColors.TextPrimary,
+                                    color = if (option == groupOption) luminousTeal else KlarityColors.TextPrimary,
                                     fontSize = 13.sp
                                 )
                             }
@@ -462,7 +462,7 @@ private fun ToolbarButton(
     val isHovered by interactionSource.collectIsHoveredAsState()
     
     val bgColor by animateColorAsState(
-        targetValue = if (isHovered) SentioColors.BgElevated else SentioColors.BgTertiary.copy(alpha = 0.6f),
+        targetValue = if (isHovered) KlarityColors.BgElevated else KlarityColors.BgTertiary.copy(alpha = 0.6f),
         animationSpec = tween(100),
         label = "toolbarBtnBg"
     )
@@ -475,7 +475,7 @@ private fun ToolbarButton(
             .hoverable(interactionSource)
             .border(
                 width = 1.dp,
-                color = if (isHovered) SentioColors.BorderPrimary else Color.Transparent,
+                color = if (isHovered) KlarityColors.BorderPrimary else Color.Transparent,
                 shape = RoundedCornerShape(16.dp)
             )
     ) {
@@ -487,14 +487,14 @@ private fun ToolbarButton(
             Text(text = icon, fontSize = 12.sp)
             Text(
                 text = label,
-                color = if (isHovered) SentioColors.TextPrimary else SentioColors.TextSecondary,
+                color = if (isHovered) KlarityColors.TextPrimary else KlarityColors.TextSecondary,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium
             )
             Icon(
                 Icons.Default.ArrowDropDown,
                 contentDescription = null,
-                tint = SentioColors.TextTertiary,
+                tint = KlarityColors.TextTertiary,
                 modifier = Modifier.size(14.dp)
             )
         }
@@ -514,7 +514,7 @@ private fun AIClusterToggle(
         onClick = onToggle,
         color = when {
             enabled -> electricMint.copy(alpha = 0.15f)
-            isHovered -> SentioColors.BgElevated
+            isHovered -> KlarityColors.BgElevated
             else -> Color.Transparent
         },
         shape = RoundedCornerShape(6.dp),
@@ -528,7 +528,7 @@ private fun AIClusterToggle(
             Text(text = "🧠", fontSize = 12.sp)
             Text(
                 text = "AI Topics",
-                color = if (enabled) electricMint else SentioColors.TextSecondary,
+                color = if (enabled) electricMint else KlarityColors.TextSecondary,
                 fontSize = 11.sp,
                 fontWeight = if (enabled) FontWeight.Medium else FontWeight.Normal
             )
@@ -555,12 +555,12 @@ private fun TagFilterRow(
             
             Surface(
                 onClick = { onTagToggle(tag) },
-                color = if (isSelected) luminousTeal.copy(alpha = 0.15f) else SentioColors.BgTertiary,
+                color = if (isSelected) luminousTeal.copy(alpha = 0.15f) else KlarityColors.BgTertiary,
                 shape = RoundedCornerShape(4.dp)
             ) {
                 Text(
                     text = "#$tag",
-                    color = if (isSelected) luminousTeal else SentioColors.TextSecondary,
+                    color = if (isSelected) luminousTeal else KlarityColors.TextSecondary,
                     fontSize = 11.sp,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                 )
@@ -570,7 +570,7 @@ private fun TagFilterRow(
         if (allTags.size > 10) {
             Text(
                 text = "+${allTags.size - 10} more",
-                color = SentioColors.TextTertiary,
+                color = KlarityColors.TextTertiary,
                 fontSize = 11.sp
             )
         }
@@ -598,7 +598,7 @@ private fun NoteListItem(
         targetValue = when {
             isSelected -> luminousTeal.copy(alpha = 0.15f)
             isMultiSelected -> luminousTeal.copy(alpha = 0.08f)
-            isHovered -> SentioColors.BgElevated
+            isHovered -> KlarityColors.BgElevated
             else -> Color.Transparent
         },
         animationSpec = tween(100),
@@ -645,7 +645,7 @@ private fun NoteListItem(
                     onCheckedChange = { onSelect(true, false) },
                     colors = CheckboxDefaults.colors(
                         checkedColor = luminousTeal,
-                        uncheckedColor = SentioColors.TextTertiary
+                        uncheckedColor = KlarityColors.TextTertiary
                     ),
                     modifier = Modifier.size(20.dp)
                 )
@@ -676,7 +676,7 @@ private fun NoteListItem(
                     
                     Text(
                         text = displayTitle,
-                        color = if (isSelected) luminousTeal else SentioColors.TextPrimary,
+                        color = if (isSelected) luminousTeal else KlarityColors.TextPrimary,
                         fontSize = 14.sp,
                         fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
                         maxLines = 1,
@@ -688,7 +688,7 @@ private fun NoteListItem(
                 if (note.content.isNotEmpty()) {
                     Text(
                         text = note.content.take(80).replace("\n", " "),
-                        color = SentioColors.TextSecondary,
+                        color = KlarityColors.TextSecondary,
                         fontSize = 11.sp,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
@@ -709,7 +709,7 @@ private fun NoteListItem(
                         note.tags.take(2).forEach { tag ->
                             Text(
                                 text = "#$tag",
-                                color = SentioColors.TextTertiary,
+                                color = KlarityColors.TextTertiary,
                                 fontSize = 10.sp
                             )
                         }
@@ -718,7 +718,7 @@ private fun NoteListItem(
                     // Time
                     Text(
                         text = formatTime(note.updatedAt),
-                        color = SentioColors.TextTertiary,
+                        color = KlarityColors.TextTertiary,
                         fontSize = 10.sp
                     )
                 }
@@ -736,7 +736,7 @@ private fun NoteListItem(
                     QuickActionIcon(
                         icon = if (note.isPinned) "📍" else "📌",
                         onClick = onTogglePin,
-                        tint = if (note.isPinned) luminousTeal else SentioColors.TextTertiary
+                        tint = if (note.isPinned) luminousTeal else KlarityColors.TextTertiary
                     )
                     QuickActionIcon(
                         icon = "🤖",

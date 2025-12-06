@@ -1,6 +1,6 @@
-package com.example.sentio.domain.repositories
+package com.example.klarity.domain.repositories
 
-import com.example.sentio.domain.models.Folder
+import com.example.klarity.domain.models.Folder
 import kotlinx.coroutines.flow.Flow
 
 interface FolderRepository {

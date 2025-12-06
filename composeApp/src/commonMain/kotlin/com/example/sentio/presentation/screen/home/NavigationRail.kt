@@ -1,4 +1,4 @@
-package com.example.sentio.presentation.screen.home
+package com.example.klarity.presentation.screen.home
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -25,7 +25,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.sentio.presentation.theme.SentioColors
+import com.example.klarity.presentation.theme.KlarityColors
 
 /**
  * Navigation destinations for the app
@@ -61,7 +61,7 @@ fun NavigationRail(
         modifier = modifier
             .width(72.dp)
             .fillMaxHeight(),
-        color = SentioColors.BgPrimary // Darkest panel
+        color = KlarityColors.BgPrimary // Darkest panel
     ) {
         Column(
             modifier = Modifier
@@ -79,7 +79,7 @@ fun NavigationRail(
                 Surface(
                     modifier = Modifier.size(40.dp),
                     shape = RoundedCornerShape(10.dp),
-                    color = SentioColors.BgElevated
+                    color = KlarityColors.BgElevated
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Text(
@@ -144,7 +144,7 @@ private fun NavRailItem(
         targetValue = when {
             isSelected -> luminousTeal
             isHovered -> electricMint
-            else -> SentioColors.TextTertiary
+            else -> KlarityColors.TextTertiary
         },
         animationSpec = tween(150),
         label = "iconColor"

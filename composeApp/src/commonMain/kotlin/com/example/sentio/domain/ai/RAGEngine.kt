@@ -1,4 +1,4 @@
-package com.example.sentio.domain.ai
+package com.example.klarity.domain.ai
 
 class RAGEngine {
 }

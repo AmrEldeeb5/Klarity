@@ -1,4 +1,4 @@
-package com.example.sentio.utils
+package com.example.klarity.utils
 
 class MarkdownParser {
 }

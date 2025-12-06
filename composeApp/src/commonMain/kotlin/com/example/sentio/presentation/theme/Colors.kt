@@ -1,12 +1,12 @@
-package com.example.sentio.presentation.theme
+package com.example.klarity.presentation.theme
 
 import androidx.compose.ui.graphics.Color
 
 /**
- * Sentio color palette - Dark teal theme matching the UI mockups.
+ * Klarity color palette - Dark teal theme matching the UI mockups.
  * Beautiful dark green/teal aesthetic with bright cyan accents.
  */
-object SentioColors {
+object KlarityColors {
     // ══════════════════════════════════════════════════════════════
     // BACKGROUNDS - Dark Teal/Green Palette with Elevation
     // Panel Hierarchy: NavRail (darkest) → NotesList → Editor (lightest)
@@ -259,18 +259,18 @@ data class GradientColors(
 )
 
 val AccentGradient = GradientColors(
-    start = SentioColors.AccentPrimary,
-    end = SentioColors.AccentSecondary
+    start = KlarityColors.AccentPrimary,
+    end = KlarityColors.AccentSecondary
 )
 
 val AIGradient = GradientColors(
-    start = SentioColors.AccentAI,
+    start = KlarityColors.AccentAI,
     end = Color(0xFF764BA2)
 )
 
 val CardGradient = GradientColors(
-    start = SentioColors.BgCard,
-    end = SentioColors.BgTertiary
+    start = KlarityColors.BgCard,
+    end = KlarityColors.BgTertiary
 )
 
 

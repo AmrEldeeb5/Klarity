@@ -1,4 +1,4 @@
-package com.example.sentio.presentation.screen.home
+package com.example.klarity.presentation.screen.home
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -11,14 +11,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.unit.dp
-import com.example.sentio.presentation.state.HomeUiEffect
-import com.example.sentio.presentation.state.HomeUiEvent
-import com.example.sentio.presentation.theme.SentioColors
-import com.example.sentio.presentation.viewmodel.HomeViewModel
+import com.example.klarity.presentation.state.HomeUiEffect
+import com.example.klarity.presentation.state.HomeUiEvent
+import com.example.klarity.presentation.theme.KlarityColors
+import com.example.klarity.presentation.viewmodel.HomeViewModel
 import org.koin.compose.viewmodel.koinViewModel
 
 /**
- * Main Home Screen - Sentio Desktop Experience
+ * Main Home Screen - Klarity Desktop Experience
  *
  * Desktop Philosophy:
  * - Keyboard-first with Command Palette (Ctrl+K)
@@ -136,7 +136,7 @@ fun HomeScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(SentioColors.BgPrimary)
+            .background(KlarityColors.BgPrimary)
             .onKeyEvent { event ->
                 // Command Palette shortcut: Ctrl+K
                 if (event.type == KeyEventType.KeyDown &&

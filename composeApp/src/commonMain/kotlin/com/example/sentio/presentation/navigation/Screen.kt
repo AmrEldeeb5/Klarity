@@ -1,4 +1,4 @@
-package com.example.sentio.presentation.navigation
+package com.example.klarity.presentation.navigation
 
 import kotlinx.serialization.Serializable
 

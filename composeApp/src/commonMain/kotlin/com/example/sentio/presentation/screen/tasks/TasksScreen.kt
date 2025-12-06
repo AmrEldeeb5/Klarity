@@ -1,4 +1,4 @@
-package com.example.sentio.presentation.screen.tasks
+package com.example.klarity.presentation.screen.tasks
 
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
@@ -16,7 +16,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.sentio.presentation.theme.SentioColors
+import com.example.klarity.presentation.theme.KlarityColors
 import kotlinx.datetime.Clock
 
 /**
@@ -47,7 +47,7 @@ fun TasksScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(SentioColors.BgPrimary)
+            .background(KlarityColors.BgPrimary)
     ) {
         // Top Toolbar
         TasksToolbar(
@@ -155,7 +155,7 @@ fun TasksScreen(
                         Text(
                             text = "🗓️ Calendar View Coming Soon",
                             style = MaterialTheme.typography.titleMedium,
-                            color = SentioColors.TextSecondary
+                            color = KlarityColors.TextSecondary
                         )
                     }
                 }
@@ -201,7 +201,7 @@ private fun TasksToolbar(
         modifier = modifier
             .fillMaxWidth()
             .height(48.dp)
-            .background(SentioColors.BgSecondary)
+            .background(KlarityColors.BgSecondary)
             .padding(horizontal = 16.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
@@ -219,7 +219,7 @@ private fun TasksToolbar(
                 text = "TaskFlow",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
-                color = SentioColors.TextPrimary
+                color = KlarityColors.TextPrimary
             )
         }
         
@@ -241,8 +241,8 @@ private fun TasksToolbar(
                         }
                     },
                     colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = SentioColors.AccentPrimary.copy(alpha = 0.2f),
-                        selectedLabelColor = SentioColors.AccentPrimary
+                        selectedContainerColor = KlarityColors.AccentPrimary.copy(alpha = 0.2f),
+                        selectedLabelColor = KlarityColors.AccentPrimary
                     )
                 )
             }
@@ -258,7 +258,7 @@ private fun TasksToolbar(
                 Icon(
                     imageVector = Icons.Default.Settings,
                     contentDescription = "Filters",
-                    tint = if (showFilterPanel) SentioColors.AccentPrimary else SentioColors.TextSecondary
+                    tint = if (showFilterPanel) KlarityColors.AccentPrimary else KlarityColors.TextSecondary
                 )
             }
             
@@ -267,7 +267,7 @@ private fun TasksToolbar(
                 Icon(
                     imageVector = Icons.Default.Search,
                     contentDescription = "Search",
-                    tint = SentioColors.TextSecondary
+                    tint = KlarityColors.TextSecondary
                 )
             }
             
@@ -275,7 +275,7 @@ private fun TasksToolbar(
             Button(
                 onClick = onCreateTask,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = SentioColors.AccentPrimary
+                    containerColor = KlarityColors.AccentPrimary
                 ),
                 shape = RoundedCornerShape(8.dp)
             ) {
@@ -302,7 +302,7 @@ private fun FilterPanel(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .background(SentioColors.BgTertiary)
+            .background(KlarityColors.BgTertiary)
             .padding(16.dp),
         horizontalArrangement = Arrangement.spacedBy(24.dp)
     ) {
@@ -311,7 +311,7 @@ private fun FilterPanel(
             Text(
                 text = "Status",
                 style = MaterialTheme.typography.labelMedium,
-                color = SentioColors.TextSecondary
+                color = KlarityColors.TextSecondary
             )
             Spacer(modifier = Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -337,7 +337,7 @@ private fun FilterPanel(
             Text(
                 text = "Priority",
                 style = MaterialTheme.typography.labelMedium,
-                color = SentioColors.TextSecondary
+                color = KlarityColors.TextSecondary
             )
             Spacer(modifier = Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -363,7 +363,7 @@ private fun FilterPanel(
             Text(
                 text = "Show",
                 style = MaterialTheme.typography.labelMedium,
-                color = SentioColors.TextSecondary
+                color = KlarityColors.TextSecondary
             )
             Spacer(modifier = Modifier.height(8.dp))
             FilterChip(
@@ -379,7 +379,7 @@ private fun FilterPanel(
         TextButton(
             onClick = { onFilterChange(TaskFilter()) }
         ) {
-            Text("Clear Filters", color = SentioColors.AccentPrimary)
+            Text("Clear Filters", color = KlarityColors.AccentPrimary)
         }
     }
 }
@@ -435,7 +435,7 @@ private fun TaskListItem(
             .fillMaxWidth()
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(containerColor = SentioColors.BgSecondary)
+        colors = CardDefaults.cardColors(containerColor = KlarityColors.BgSecondary)
     ) {
         Row(
             modifier = Modifier
@@ -449,8 +449,8 @@ private fun TaskListItem(
                 checked = task.status == TaskStatus.DONE,
                 onCheckedChange = { onToggleComplete() },
                 colors = CheckboxDefaults.colors(
-                    checkedColor = SentioColors.AccentSecondary,
-                    uncheckedColor = SentioColors.TextTertiary
+                    checkedColor = KlarityColors.AccentSecondary,
+                    uncheckedColor = KlarityColors.TextTertiary
                 )
             )
             
@@ -463,13 +463,13 @@ private fun TaskListItem(
                     text = task.title,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
-                    color = SentioColors.TextPrimary
+                    color = KlarityColors.TextPrimary
                 )
                 if (task.description.isNotEmpty()) {
                     Text(
                         text = task.description,
                         style = MaterialTheme.typography.bodySmall,
-                        color = SentioColors.TextSecondary,
+                        color = KlarityColors.TextSecondary,
                         maxLines = 1
                     )
                 }
@@ -484,7 +484,7 @@ private fun TaskListItem(
                     text = "📅",
                     style = MaterialTheme.typography.labelSmall,
                     color = if (task.isOverdue) androidx.compose.ui.graphics.Color(0xFFFF5252) 
-                           else SentioColors.TextSecondary
+                           else KlarityColors.TextSecondary
                 )
             }
         }
@@ -508,7 +508,7 @@ private fun TaskEditorPanel(
         modifier = modifier
             .width(400.dp)
             .fillMaxHeight()
-            .background(SentioColors.BgSecondary)
+            .background(KlarityColors.BgSecondary)
             .padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
@@ -522,18 +522,18 @@ private fun TaskEditorPanel(
                 text = if (task == null) "New Task" else "Edit Task",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = SentioColors.TextPrimary
+                color = KlarityColors.TextPrimary
             )
             IconButton(onClick = onClose) {
                 Icon(
                     imageVector = Icons.Default.Close,
                     contentDescription = "Close",
-                    tint = SentioColors.TextSecondary
+                    tint = KlarityColors.TextSecondary
                 )
             }
         }
         
-        HorizontalDivider(color = SentioColors.TextTertiary.copy(alpha = 0.2f))
+        HorizontalDivider(color = KlarityColors.TextTertiary.copy(alpha = 0.2f))
         
         // Title
         OutlinedTextField(
@@ -542,9 +542,9 @@ private fun TaskEditorPanel(
             label = { Text("Title") },
             modifier = Modifier.fillMaxWidth(),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = SentioColors.AccentPrimary,
-                unfocusedBorderColor = SentioColors.TextTertiary.copy(alpha = 0.3f),
-                focusedLabelColor = SentioColors.AccentPrimary
+                focusedBorderColor = KlarityColors.AccentPrimary,
+                unfocusedBorderColor = KlarityColors.TextTertiary.copy(alpha = 0.3f),
+                focusedLabelColor = KlarityColors.AccentPrimary
             )
         )
         
@@ -557,9 +557,9 @@ private fun TaskEditorPanel(
                 .fillMaxWidth()
                 .height(120.dp),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = SentioColors.AccentPrimary,
-                unfocusedBorderColor = SentioColors.TextTertiary.copy(alpha = 0.3f),
-                focusedLabelColor = SentioColors.AccentPrimary
+                focusedBorderColor = KlarityColors.AccentPrimary,
+                unfocusedBorderColor = KlarityColors.TextTertiary.copy(alpha = 0.3f),
+                focusedLabelColor = KlarityColors.AccentPrimary
             )
         )
         
@@ -568,7 +568,7 @@ private fun TaskEditorPanel(
             Text(
                 text = "Priority",
                 style = MaterialTheme.typography.labelMedium,
-                color = SentioColors.TextSecondary
+                color = KlarityColors.TextSecondary
             )
             Spacer(modifier = Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -590,7 +590,7 @@ private fun TaskEditorPanel(
             Text(
                 text = "Status",
                 style = MaterialTheme.typography.labelMedium,
-                color = SentioColors.TextSecondary
+                color = KlarityColors.TextSecondary
             )
             Spacer(modifier = Modifier.height(8.dp))
             Row(
@@ -643,7 +643,7 @@ private fun TaskEditorPanel(
                     onSave(updatedTask)
                 },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = SentioColors.AccentPrimary
+                    containerColor = KlarityColors.AccentPrimary
                 ),
                 modifier = Modifier.weight(1f)
             ) {

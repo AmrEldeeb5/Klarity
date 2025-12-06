@@ -1,8 +1,8 @@
-package com.example.sentio.data.mapper
+package com.example.klarity.data.mapper
 
-import com.example.sentio.domain.models.Folder
+import com.example.klarity.domain.models.Folder
 import kotlinx.datetime.Instant
-import com.example.sentio.db.Folder as FolderEntity
+import com.example.klarity.db.Folder as FolderEntity
 
 /**
  * Extension functions for converting between Folder domain model and database entity.

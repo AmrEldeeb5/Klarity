@@ -1,6 +1,6 @@
-package com.example.sentio.domain.repositories
+package com.example.klarity.domain.repositories
 
-import com.example.sentio.domain.models.Note
+import com.example.klarity.domain.models.Note
 import kotlinx.coroutines.flow.Flow
 
 /**

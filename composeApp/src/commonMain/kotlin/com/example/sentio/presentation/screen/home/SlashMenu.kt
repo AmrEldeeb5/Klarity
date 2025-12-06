@@ -1,4 +1,4 @@
-package com.example.sentio.presentation.screen.home
+package com.example.klarity.presentation.screen.home
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -18,7 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.sentio.presentation.theme.SentioColors
+import com.example.klarity.presentation.theme.KlarityColors
 
 /**
  * Slash Menu - Floating command menu for quick actions
@@ -29,7 +29,7 @@ fun SlashMenu(onDismiss: () -> Unit) {
         modifier = Modifier.width(320.dp),
         shape = RoundedCornerShape(12.dp),
         color = Color(0xFF1A342F),
-        border = BorderStroke(1.dp, SentioColors.BorderPrimary),
+        border = BorderStroke(1.dp, KlarityColors.BorderPrimary),
         shadowElevation = 16.dp
     ) {
         Column(modifier = Modifier.padding(8.dp)) {
@@ -37,7 +37,7 @@ fun SlashMenu(onDismiss: () -> Unit) {
                 "COMMANDS",
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
-                color = SentioColors.TextTertiary,
+                color = KlarityColors.TextTertiary,
                 letterSpacing = 1.sp,
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
             )
@@ -88,13 +88,13 @@ fun SlashMenuItem(
             Surface(
                 modifier = Modifier.size(32.dp),
                 shape = RoundedCornerShape(6.dp),
-                color = if (isActive) SentioColors.AccentAI.copy(alpha = 0.1f) else Color.Transparent
+                color = if (isActive) KlarityColors.AccentAI.copy(alpha = 0.1f) else Color.Transparent
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Text(
                         icon,
                         fontSize = 16.sp,
-                        color = if (isActive) SentioColors.AccentAI else SentioColors.TextTertiary
+                        color = if (isActive) KlarityColors.AccentAI else KlarityColors.TextTertiary
                     )
                 }
             }
@@ -103,12 +103,12 @@ fun SlashMenuItem(
                     title,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
-                    color = if (isActive) Color.White else SentioColors.TextSecondary
+                    color = if (isActive) Color.White else KlarityColors.TextSecondary
                 )
                 Text(
                     subtitle,
                     fontSize = 12.sp,
-                    color = SentioColors.TextTertiary
+                    color = KlarityColors.TextTertiary
                 )
             }
         }

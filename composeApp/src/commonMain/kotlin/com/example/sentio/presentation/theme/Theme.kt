@@ -1,4 +1,4 @@
-package com.example.sentio.presentation.theme
+package com.example.klarity.presentation.theme
 
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -6,59 +6,59 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 
 /**
- * Sentio Dark Color Scheme
+ * Klarity Dark Color Scheme
  * Beautiful dark teal/green theme matching the UI mockups.
  */
 private val DarkColorScheme = darkColorScheme(
     // Primary: Bright Teal - buttons, links, active states
-    primary = SentioColors.AccentPrimary,
-    onPrimary = SentioColors.BgPrimary,
-    primaryContainer = SentioColors.AccentSecondary,
-    onPrimaryContainer = SentioColors.TextPrimary,
+    primary = KlarityColors.AccentPrimary,
+    onPrimary = KlarityColors.BgPrimary,
+    primaryContainer = KlarityColors.AccentSecondary,
+    onPrimaryContainer = KlarityColors.TextPrimary,
 
     // Secondary: AI Accent - AI features, suggestions
-    secondary = SentioColors.AccentAI,
-    onSecondary = SentioColors.BgPrimary,
-    secondaryContainer = SentioColors.AccentAI.copy(alpha = 0.2f),
-    onSecondaryContainer = SentioColors.TextPrimary,
+    secondary = KlarityColors.AccentAI,
+    onSecondary = KlarityColors.BgPrimary,
+    secondaryContainer = KlarityColors.AccentAI.copy(alpha = 0.2f),
+    onSecondaryContainer = KlarityColors.TextPrimary,
 
     // Tertiary: Info color
-    tertiary = SentioColors.Info,
-    onTertiary = SentioColors.BgPrimary,
+    tertiary = KlarityColors.Info,
+    onTertiary = KlarityColors.BgPrimary,
 
     // Error
-    error = SentioColors.Error,
-    onError = SentioColors.TextPrimary,
+    error = KlarityColors.Error,
+    onError = KlarityColors.TextPrimary,
 
     // Background: Dark teal - main app background
-    background = SentioColors.BgPrimary,
-    onBackground = SentioColors.TextPrimary,
+    background = KlarityColors.BgPrimary,
+    onBackground = KlarityColors.TextPrimary,
 
     // Surface: Card backgrounds
-    surface = SentioColors.BgSecondary,
-    onSurface = SentioColors.TextPrimary,
-    surfaceVariant = SentioColors.BgTertiary,
-    onSurfaceVariant = SentioColors.TextSecondary,
+    surface = KlarityColors.BgSecondary,
+    onSurface = KlarityColors.TextPrimary,
+    surfaceVariant = KlarityColors.BgTertiary,
+    onSurfaceVariant = KlarityColors.TextSecondary,
 
     // Surface containers for different elevations
-    surfaceContainerLowest = SentioColors.BgPrimary,
-    surfaceContainerLow = SentioColors.BgSecondary,
-    surfaceContainer = SentioColors.BgTertiary,
-    surfaceContainerHigh = SentioColors.BgElevated,
-    surfaceContainerHighest = SentioColors.BgSelected,
+    surfaceContainerLowest = KlarityColors.BgPrimary,
+    surfaceContainerLow = KlarityColors.BgSecondary,
+    surfaceContainer = KlarityColors.BgTertiary,
+    surfaceContainerHigh = KlarityColors.BgElevated,
+    surfaceContainerHighest = KlarityColors.BgSelected,
 
     // Outline: Borders
-    outline = SentioColors.BorderPrimary,
-    outlineVariant = SentioColors.BorderSecondary,
+    outline = KlarityColors.BorderPrimary,
+    outlineVariant = KlarityColors.BorderSecondary,
 
     // Inverse colors
-    inverseSurface = SentioColors.TextPrimary,
-    inverseOnSurface = SentioColors.BgPrimary,
-    inversePrimary = SentioColors.AccentTertiary
+    inverseSurface = KlarityColors.TextPrimary,
+    inverseOnSurface = KlarityColors.BgPrimary,
+    inversePrimary = KlarityColors.AccentTertiary
 )
 
 /**
- * Sentio Shapes - Rounded corners for modern look
+ * Klarity Shapes - Rounded corners for modern look
  */
 private val Shapes = Shapes(
     extraSmall = RoundedCornerShape(4.dp),
@@ -69,44 +69,44 @@ private val Shapes = Shapes(
 )
 
 /**
- * Sentio app theme - Dark teal theme for developers.
+ * Klarity app theme - Dark teal theme for developers.
  */
 @Composable
-fun SentioTheme(
+fun KlarityTheme(
     content: @Composable () -> Unit
 ) {
     MaterialTheme(
         colorScheme = DarkColorScheme,
-        typography = SentioTypography,
+        typography = KlarityTypography,
         shapes = Shapes,
         content = content
     )
 }
 
 /**
- * Extension properties to access custom Sentio colors from MaterialTheme
+ * Extension properties to access custom Klarity colors from MaterialTheme
  */
 val ColorScheme.bgSelected: androidx.compose.ui.graphics.Color
-    get() = SentioColors.BgSelected
+    get() = KlarityColors.BgSelected
 
 val ColorScheme.borderSelected: androidx.compose.ui.graphics.Color
-    get() = SentioColors.BorderSelected
+    get() = KlarityColors.BorderSelected
 
 val ColorScheme.cardBg: androidx.compose.ui.graphics.Color
-    get() = SentioColors.BgCard
+    get() = KlarityColors.BgCard
 
 val ColorScheme.borderPrimary: androidx.compose.ui.graphics.Color
-    get() = SentioColors.BorderPrimary
+    get() = KlarityColors.BorderPrimary
 
 val ColorScheme.textTertiary: androidx.compose.ui.graphics.Color
-    get() = SentioColors.TextTertiary
+    get() = KlarityColors.TextTertiary
 
 val ColorScheme.accentAI: androidx.compose.ui.graphics.Color
-    get() = SentioColors.AccentAI
+    get() = KlarityColors.AccentAI
 
 val ColorScheme.success: androidx.compose.ui.graphics.Color
-    get() = SentioColors.Success
+    get() = KlarityColors.Success
 
 val ColorScheme.warning: androidx.compose.ui.graphics.Color
-    get() = SentioColors.Warning
+    get() = KlarityColors.Warning
 

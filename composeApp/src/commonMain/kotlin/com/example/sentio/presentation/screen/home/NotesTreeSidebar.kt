@@ -1,4 +1,4 @@
-package com.example.sentio.presentation.screen.home
+package com.example.klarity.presentation.screen.home
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -35,9 +35,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.sentio.domain.models.Folder
-import com.example.sentio.domain.models.Note
-import com.example.sentio.presentation.theme.SentioColors
+import com.example.klarity.domain.models.Folder
+import com.example.klarity.domain.models.Note
+import com.example.klarity.presentation.theme.KlarityColors
 
 /**
  * Notes Tree Sidebar - Right sidebar showing notes organized in tree structure
@@ -60,8 +60,8 @@ fun NotesTreeSidebar(
 ) {
     Surface(
         modifier = Modifier.width(320.dp).fillMaxHeight(),
-        color = SentioColors.BgPrimary,
-        border = BorderStroke(1.dp, SentioColors.BorderPrimary.copy(alpha = 0.5f))
+        color = KlarityColors.BgPrimary,
+        border = BorderStroke(1.dp, KlarityColors.BorderPrimary.copy(alpha = 0.5f))
     ) {
         Column(
             modifier = Modifier.fillMaxSize().padding(16.dp),
@@ -77,7 +77,7 @@ fun NotesTreeSidebar(
                 Surface(
                     modifier = Modifier.weight(1f).height(40.dp),
                     shape = RoundedCornerShape(8.dp),
-                    color = SentioColors.BgElevated,
+                    color = KlarityColors.BgElevated,
                     border = BorderStroke(1.dp, Color.Transparent)
                 ) {
                     Row(
@@ -85,7 +85,7 @@ fun NotesTreeSidebar(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text("🔍", fontSize = 14.sp, color = SentioColors.TextTertiary)
+                        Text("🔍", fontSize = 14.sp, color = KlarityColors.TextTertiary)
                         BasicTextField(
                             value = searchQuery,
                             onValueChange = onSearchQueryChange,
@@ -95,10 +95,10 @@ fun NotesTreeSidebar(
                                 color = Color.White,
                                 fontSize = 14.sp
                             ),
-                            cursorBrush = SolidColor(SentioColors.AccentAI),
+                            cursorBrush = SolidColor(KlarityColors.AccentAI),
                             decorationBox = { innerTextField ->
                                 if (searchQuery.isEmpty()) {
-                                    Text("Search notes...", color = SentioColors.TextTertiary, fontSize = 14.sp)
+                                    Text("Search notes...", color = KlarityColors.TextTertiary, fontSize = 14.sp)
                                 }
                                 innerTextField()
                             }
@@ -109,14 +109,14 @@ fun NotesTreeSidebar(
                 // New Button
                 Button(
                     onClick = onCreateNote,
-                    colors = ButtonDefaults.buttonColors(containerColor = SentioColors.AccentAI),
+                    colors = ButtonDefaults.buttonColors(containerColor = KlarityColors.AccentAI),
                     shape = RoundedCornerShape(8.dp),
                     contentPadding = PaddingValues(horizontal = 12.dp),
                     modifier = Modifier.height(40.dp)
                 ) {
-                    Text("+", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = SentioColors.BgSecondary)
+                    Text("+", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = KlarityColors.BgSecondary)
                     Spacer(Modifier.width(4.dp))
-                    Text("New", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = SentioColors.BgSecondary)
+                    Text("New", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = KlarityColors.BgSecondary)
                 }
             }
 
@@ -201,7 +201,7 @@ fun NotesTreeSidebar(
                             modifier = Modifier.fillMaxWidth().padding(32.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text("No notes found", color = SentioColors.TextTertiary, fontSize = 14.sp)
+                            Text("No notes found", color = KlarityColors.TextTertiary, fontSize = 14.sp)
                         }
                     }
                 }
@@ -214,7 +214,7 @@ fun NotesTreeSidebar(
 fun TreeSectionHeader(
     title: String,
     icon: String,
-    iconColor: Color = SentioColors.TextTertiary,
+    iconColor: Color = KlarityColors.TextTertiary,
     isExpanded: Boolean,
     onToggle: () -> Unit
 ) {
@@ -233,14 +233,14 @@ fun TreeSectionHeader(
         Text(
             if (isExpanded) "▼" else "▶",
             fontSize = 8.sp,
-            color = SentioColors.TextTertiary
+            color = KlarityColors.TextTertiary
         )
         Text(icon, fontSize = 12.sp, color = iconColor)
         Text(
             title,
             fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
-            color = if (isHovered) Color.White else SentioColors.TextTertiary,
+            color = if (isHovered) Color.White else KlarityColors.TextTertiary,
             letterSpacing = 1.sp
         )
     }
@@ -306,7 +306,7 @@ fun TreeDivider() {
             .fillMaxWidth()
             .padding(vertical = 8.dp)
             .height(1.dp)
-            .background(SentioColors.BorderPrimary.copy(alpha = 0.3f))
+            .background(KlarityColors.BorderPrimary.copy(alpha = 0.3f))
     )
 }
 
@@ -322,8 +322,8 @@ fun TreeNoteCard(
 
     val bgColor by animateColorAsState(
         targetValue = when {
-            isSelected -> SentioColors.BgSelected.copy(alpha = 0.8f)
-            isHovered -> SentioColors.BgElevated.copy(alpha = 0.4f)
+            isSelected -> KlarityColors.BgSelected.copy(alpha = 0.8f)
+            isHovered -> KlarityColors.BgElevated.copy(alpha = 0.4f)
             else -> Color.Transparent
         },
         animationSpec = tween(150)
@@ -336,7 +336,7 @@ fun TreeNoteCard(
             .hoverable(interactionSource),
         shape = RoundedCornerShape(10.dp),
         color = bgColor,
-        border = if (isSelected) BorderStroke(1.dp, SentioColors.BorderPrimary.copy(alpha = 0.5f)) else null
+        border = if (isSelected) BorderStroke(1.dp, KlarityColors.BorderPrimary.copy(alpha = 0.5f)) else null
     ) {
         Column(
             modifier = Modifier.padding(12.dp),
@@ -356,13 +356,13 @@ fun TreeNoteCard(
                     Text(
                         "📄",
                         fontSize = 14.sp,
-                        color = if (isSelected) SentioColors.AccentAI else SentioColors.TextTertiary
+                        color = if (isSelected) KlarityColors.AccentAI else KlarityColors.TextTertiary
                     )
                     Text(
                         note.title.ifBlank { "Untitled" },
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium,
-                        color = if (isSelected || isHovered) Color.White else SentioColors.TextSecondary,
+                        color = if (isSelected || isHovered) Color.White else KlarityColors.TextSecondary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -370,7 +370,7 @@ fun TreeNoteCard(
                 Text(
                     formatRelativeTime(note.updatedAt),
                     fontSize = 10.sp,
-                    color = SentioColors.TextTertiary
+                    color = KlarityColors.TextTertiary
                 )
             }
 
@@ -378,7 +378,7 @@ fun TreeNoteCard(
             Text(
                 note.preview(),
                 fontSize = 12.sp,
-                color = SentioColors.TextTertiary,
+                color = KlarityColors.TextTertiary,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 lineHeight = 18.sp,
@@ -461,9 +461,9 @@ fun TreeTagBadge(tag: String) {
             )
         else ->
             Triple(
-                SentioColors.BgSelected.copy(alpha = 0.5f),
-                SentioColors.TextSecondary,
-                SentioColors.BorderPrimary.copy(alpha = 0.5f)
+                KlarityColors.BgSelected.copy(alpha = 0.5f),
+                KlarityColors.TextSecondary,
+                KlarityColors.BorderPrimary.copy(alpha = 0.5f)
             )
     }
 

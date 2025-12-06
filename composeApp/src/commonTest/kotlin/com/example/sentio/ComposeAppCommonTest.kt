@@ -1,4 +1,4 @@
-package com.example.sentio
+package com.example.klarity
 
 import kotlin.test.Test
 import kotlin.test.assertEquals

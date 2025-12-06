@@ -1,4 +1,4 @@
-package com.example.sentio.presentation.screen.home
+package com.example.klarity.presentation.screen.home
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.animateFloatAsState
@@ -31,7 +31,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.sentio.presentation.theme.SentioColors
+import com.example.klarity.presentation.theme.KlarityColors
 
 /**
  * Sync status indicator
@@ -78,7 +78,7 @@ fun TopCommandBar(
     
     Surface(
         modifier = modifier.fillMaxWidth(),
-        color = SentioColors.BgSecondary.copy(alpha = 0.95f)
+        color = KlarityColors.BgSecondary.copy(alpha = 0.95f)
     ) {
         Row(
             modifier = Modifier
@@ -161,7 +161,7 @@ private fun Breadcrumbs(path: List<String>) {
             if (index > 0) {
                 Text(
                     text = "/",
-                    color = SentioColors.TextTertiary,
+                    color = KlarityColors.TextTertiary,
                     fontSize = 12.sp
                 )
             }
@@ -172,9 +172,9 @@ private fun Breadcrumbs(path: List<String>) {
             Text(
                 text = item,
                 color = if (index == path.lastIndex) 
-                    SentioColors.TextPrimary 
+                    KlarityColors.TextPrimary 
                 else 
-                    SentioColors.TextSecondary,
+                    KlarityColors.TextSecondary,
                 fontSize = 13.sp,
                 fontWeight = if (index == path.lastIndex) FontWeight.Medium else FontWeight.Normal,
                 modifier = Modifier
@@ -182,7 +182,7 @@ private fun Breadcrumbs(path: List<String>) {
                     .clip(RoundedCornerShape(4.dp))
                     .then(
                         if (isHovered && index < path.lastIndex) {
-                            Modifier.background(SentioColors.BgElevated)
+                            Modifier.background(KlarityColors.BgElevated)
                         } else Modifier
                     )
                     .padding(horizontal = 4.dp, vertical = 2.dp)
@@ -220,9 +220,9 @@ private fun OmniBar(
     
     val bgColor by animateColorAsState(
         targetValue = when {
-            isFocused -> SentioColors.BgElevated
-            isHovered -> SentioColors.BgTertiary.copy(alpha = 0.9f)
-            else -> SentioColors.BgTertiary.copy(alpha = 0.7f)
+            isFocused -> KlarityColors.BgElevated
+            isHovered -> KlarityColors.BgTertiary.copy(alpha = 0.9f)
+            else -> KlarityColors.BgTertiary.copy(alpha = 0.7f)
         },
         animationSpec = tween(150),
         label = "bgColor"
@@ -231,7 +231,7 @@ private fun OmniBar(
     val borderColor by animateColorAsState(
         targetValue = when {
             isFocused -> luminousTeal.copy(alpha = 0.5f)
-            isHovered -> SentioColors.BorderPrimary
+            isHovered -> KlarityColors.BorderPrimary
             else -> Color.Transparent
         },
         animationSpec = tween(150),
@@ -267,7 +267,7 @@ private fun OmniBar(
             Icon(
                 Icons.Default.Search,
                 contentDescription = null,
-                tint = if (isFocused) luminousTeal else SentioColors.TextTertiary,
+                tint = if (isFocused) luminousTeal else KlarityColors.TextTertiary,
                 modifier = Modifier.size(18.dp)
             )
             
@@ -275,7 +275,7 @@ private fun OmniBar(
                 value = query,
                 onValueChange = onQueryChange,
                 textStyle = TextStyle(
-                    color = SentioColors.TextPrimary,
+                    color = KlarityColors.TextPrimary,
                     fontSize = 14.sp
                 ),
                 cursorBrush = SolidColor(luminousTeal),
@@ -288,7 +288,7 @@ private fun OmniBar(
                         if (query.isEmpty()) {
                             Text(
                                 text = "Search or type a command...",
-                                color = SentioColors.TextTertiary,
+                                color = KlarityColors.TextTertiary,
                                 fontSize = 14.sp
                             )
                         }
@@ -311,12 +311,12 @@ private fun OmniBar(
 @Composable
 private fun KeyBadge(key: String) {
     Surface(
-        color = SentioColors.BgElevated,
+        color = KlarityColors.BgElevated,
         shape = RoundedCornerShape(4.dp)
     ) {
         Text(
             text = key,
-            color = SentioColors.TextTertiary,
+            color = KlarityColors.TextTertiary,
             fontSize = 11.sp,
             fontWeight = FontWeight.Medium,
             modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
@@ -372,7 +372,7 @@ private fun AIModelIndicator(
     val isHovered by interactionSource.collectIsHoveredAsState()
     
     Surface(
-        color = if (isHovered) SentioColors.BgElevated else Color.Transparent,
+        color = if (isHovered) KlarityColors.BgElevated else Color.Transparent,
         shape = RoundedCornerShape(6.dp),
         modifier = Modifier.hoverable(interactionSource)
     ) {
@@ -390,14 +390,14 @@ private fun AIModelIndicator(
             
             Text(
                 text = modelName,
-                color = SentioColors.TextSecondary,
+                color = KlarityColors.TextSecondary,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Medium
             )
             
             Text(
                 text = "T:${String.format("%.1f", temperature)}",
-                color = SentioColors.TextTertiary,
+                color = KlarityColors.TextTertiary,
                 fontSize = 10.sp
             )
         }
@@ -412,7 +412,7 @@ private fun SyncStatusIndicator(
     val statusColor = when (status) {
         SyncStatus.SYNCED -> luminousTeal
         SyncStatus.SYNCING -> Color(0xFFFFA500) // Orange
-        SyncStatus.OFFLINE -> SentioColors.TextTertiary
+        SyncStatus.OFFLINE -> KlarityColors.TextTertiary
         SyncStatus.ERROR -> Color(0xFFFF4444) // Red
     }
     
@@ -461,7 +461,7 @@ private fun ThemeToggle(
     
     Surface(
         onClick = { onThemeChange(nextTheme) },
-        color = if (isHovered) SentioColors.BgElevated else Color.Transparent,
+        color = if (isHovered) KlarityColors.BgElevated else Color.Transparent,
         shape = RoundedCornerShape(6.dp),
         modifier = Modifier.hoverable(interactionSource)
     ) {
@@ -472,7 +472,7 @@ private fun ThemeToggle(
             Icon(
                 icon,
                 contentDescription = "Toggle theme",
-                tint = SentioColors.TextSecondary,
+                tint = KlarityColors.TextSecondary,
                 modifier = Modifier.size(18.dp)
             )
         }
@@ -486,7 +486,7 @@ private fun ProfileButton() {
     
     Surface(
         onClick = { /* Open profile menu */ },
-        color = if (isHovered) SentioColors.BgElevated else SentioColors.BgTertiary,
+        color = if (isHovered) KlarityColors.BgElevated else KlarityColors.BgTertiary,
         shape = CircleShape,
         modifier = Modifier.hoverable(interactionSource)
     ) {
@@ -573,7 +573,7 @@ fun CommandPalette(
                         indication = null,
                         onClick = {} // Prevent click-through
                     ),
-                color = SentioColors.BgSecondary,
+                color = KlarityColors.BgSecondary,
                 shape = RoundedCornerShape(16.dp),
                 shadowElevation = 24.dp
             ) {
@@ -633,7 +633,7 @@ private fun CommandPaletteContent(
     ) {
         // Search input
         Surface(
-            color = SentioColors.BgTertiary,
+            color = KlarityColors.BgTertiary,
             shape = RoundedCornerShape(12.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -653,7 +653,7 @@ private fun CommandPaletteContent(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
                     textStyle = TextStyle(
-                        color = SentioColors.TextPrimary,
+                        color = KlarityColors.TextPrimary,
                         fontSize = 15.sp
                     ),
                     cursorBrush = SolidColor(luminousTeal),
@@ -684,7 +684,7 @@ private fun CommandPaletteContent(
                             if (searchQuery.isEmpty()) {
                                 Text(
                                     text = "Type a command or search…",
-                                    color = SentioColors.TextTertiary,
+                                    color = KlarityColors.TextTertiary,
                                     fontSize = 15.sp
                                 )
                             }
@@ -709,7 +709,7 @@ private fun CommandPaletteContent(
                 // Category header
                 Text(
                     text = category,
-                    color = SentioColors.TextTertiary,
+                    color = KlarityColors.TextTertiary,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
@@ -745,7 +745,7 @@ private fun CommandItemRow(
     val bgColor by animateColorAsState(
         targetValue = when {
             isSelected -> luminousTeal.copy(alpha = 0.15f)
-            isHovered -> SentioColors.BgElevated
+            isHovered -> KlarityColors.BgElevated
             else -> Color.Transparent
         },
         animationSpec = tween(100),
@@ -778,7 +778,7 @@ private fun CommandItemRow(
                 
                 Text(
                     text = command.title,
-                    color = if (isSelected) luminousTeal else SentioColors.TextPrimary,
+                    color = if (isSelected) luminousTeal else KlarityColors.TextPrimary,
                     fontSize = 14.sp,
                     fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal
                 )

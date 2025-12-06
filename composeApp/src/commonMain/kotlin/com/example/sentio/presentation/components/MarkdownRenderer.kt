@@ -1,4 +1,4 @@
-package com.example.sentio.presentation.components
+package com.example.klarity.presentation.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -19,7 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.sentio.presentation.theme.SentioColors
+import com.example.klarity.presentation.theme.KlarityColors
 
 /**
  * Markdown Renderer - Renders markdown content with syntax highlighting
@@ -138,7 +138,7 @@ fun MarkdownParagraph(text: String) {
     Text(
         text = parseInlineMarkdown(text),
         fontSize = 15.sp,
-        color = SentioColors.TextSecondary,
+        color = KlarityColors.TextSecondary,
         lineHeight = 24.sp
     )
 }
@@ -152,12 +152,12 @@ fun MarkdownListItem(text: String, indent: Int, isOrdered: Boolean) {
         Text(
             if (isOrdered) "•" else "•",
             fontSize = 15.sp,
-            color = SentioColors.AccentAI
+            color = KlarityColors.AccentAI
         )
         Text(
             text = parseInlineMarkdown(text),
             fontSize = 15.sp,
-            color = SentioColors.TextSecondary,
+            color = KlarityColors.TextSecondary,
             lineHeight = 24.sp
         )
     }
@@ -171,12 +171,12 @@ fun MarkdownCheckbox(text: String, checked: Boolean) {
         Text(
             if (checked) "☑" else "☐",
             fontSize = 15.sp,
-            color = if (checked) SentioColors.AccentAI else SentioColors.TextTertiary
+            color = if (checked) KlarityColors.AccentAI else KlarityColors.TextTertiary
         )
         Text(
             text = parseInlineMarkdown(text),
             fontSize = 15.sp,
-            color = if (checked) SentioColors.TextTertiary else SentioColors.TextSecondary,
+            color = if (checked) KlarityColors.TextTertiary else KlarityColors.TextSecondary,
             lineHeight = 24.sp
         )
     }
@@ -186,7 +186,7 @@ fun MarkdownCheckbox(text: String, checked: Boolean) {
 fun MarkdownBlockquote(text: String) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        color = SentioColors.BgElevated.copy(alpha = 0.3f),
+        color = KlarityColors.BgElevated.copy(alpha = 0.3f),
         shape = RoundedCornerShape(4.dp)
     ) {
         Row {
@@ -194,13 +194,13 @@ fun MarkdownBlockquote(text: String) {
                 modifier = Modifier
                     .width(3.dp)
                     .fillMaxHeight()
-                    .background(SentioColors.AccentAI)
+                    .background(KlarityColors.AccentAI)
             )
             Text(
                 text = parseInlineMarkdown(text),
                 fontSize = 15.sp,
                 fontStyle = FontStyle.Italic,
-                color = SentioColors.TextSecondary,
+                color = KlarityColors.TextSecondary,
                 modifier = Modifier.padding(12.dp)
             )
         }
@@ -214,7 +214,7 @@ fun MarkdownHorizontalRule() {
             .fillMaxWidth()
             .padding(vertical = 16.dp)
             .height(1.dp)
-            .background(SentioColors.BorderPrimary)
+            .background(KlarityColors.BorderPrimary)
     )
 }
 
@@ -225,7 +225,7 @@ fun CodeBlock(code: String, language: String) {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(8.dp),
         color = Color(0xFF0D1117),
-        border = BorderStroke(1.dp, SentioColors.BorderPrimary)
+        border = BorderStroke(1.dp, KlarityColors.BorderPrimary)
     ) {
         Column {
             // Language header
@@ -237,7 +237,7 @@ fun CodeBlock(code: String, language: String) {
                     Text(
                         language,
                         fontSize = 11.sp,
-                        color = SentioColors.TextTertiary,
+                        color = KlarityColors.TextTertiary,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                     )
                 }
@@ -317,7 +317,7 @@ fun parseInlineMarkdown(text: String): androidx.compose.ui.text.AnnotatedString 
                     val urlEnd = remaining.indexOf(")", urlStart)
                     if (textEnd > 1 && urlStart == textEnd + 1 && urlEnd > urlStart) {
                         val linkText = remaining.substring(1, textEnd)
-                        withStyle(SpanStyle(color = SentioColors.AccentAI)) {
+                        withStyle(SpanStyle(color = KlarityColors.AccentAI)) {
                             append(linkText)
                         }
                         remaining = remaining.substring(urlEnd + 1)

@@ -1,4 +1,4 @@
-package com.example.sentio.presentation.screen.tasks
+package com.example.klarity.presentation.screen.tasks
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -27,7 +27,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import com.example.sentio.presentation.theme.SentioColors
+import com.example.klarity.presentation.theme.KlarityColors
 import kotlinx.datetime.*
 import kotlin.math.roundToInt
 
@@ -58,7 +58,7 @@ fun KanbanBoard(
     Row(
         modifier = modifier
             .fillMaxSize()
-            .background(SentioColors.BgPrimary)
+            .background(KlarityColors.BgPrimary)
             .horizontalScroll(rememberScrollState())
             .padding(16.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -126,7 +126,7 @@ private fun KanbanColumnView(
 ) {
     val isDropTarget = dragState.isDragging && dragState.targetColumn == column.status
     val borderColor by animateColorAsState(
-        targetValue = if (isDropTarget) SentioColors.AccentPrimary else Color.Transparent,
+        targetValue = if (isDropTarget) KlarityColors.AccentPrimary else Color.Transparent,
         animationSpec = tween(150)
     )
     
@@ -134,7 +134,7 @@ private fun KanbanColumnView(
         modifier = modifier
             .fillMaxHeight()
             .clip(RoundedCornerShape(12.dp))
-            .background(SentioColors.BgSecondary)
+            .background(KlarityColors.BgSecondary)
             .border(
                 width = 2.dp,
                 color = borderColor,
@@ -220,7 +220,7 @@ private fun ColumnHeader(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .background(SentioColors.BgTertiary)
+            .background(KlarityColors.BgTertiary)
             .clickable { onCollapseToggle(!isCollapsed) }
             .padding(12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -241,7 +241,7 @@ private fun ColumnHeader(
                 text = column.status.label,
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
-                color = SentioColors.TextPrimary
+                color = KlarityColors.TextPrimary
             )
             
             // Task count badge
@@ -250,14 +250,14 @@ private fun ColumnHeader(
                     .clip(RoundedCornerShape(8.dp))
                     .background(
                         if (wipLimitExceeded) Color(0xFFFF5252).copy(alpha = 0.2f)
-                        else SentioColors.BgElevated
+                        else KlarityColors.BgElevated
                     )
                     .padding(horizontal = 8.dp, vertical = 2.dp)
             ) {
                 Text(
                     text = if (column.wipLimit != null) "$taskCount/${column.wipLimit}" else "$taskCount",
                     style = MaterialTheme.typography.labelSmall,
-                    color = if (wipLimitExceeded) Color(0xFFFF5252) else SentioColors.TextSecondary
+                    color = if (wipLimitExceeded) Color(0xFFFF5252) else KlarityColors.TextSecondary
                 )
             }
         }
@@ -274,7 +274,7 @@ private fun ColumnHeader(
                 Icon(
                     imageVector = Icons.Default.Add,
                     contentDescription = "Add task",
-                    tint = SentioColors.TextSecondary,
+                    tint = KlarityColors.TextSecondary,
                     modifier = Modifier.size(16.dp)
                 )
             }
@@ -283,7 +283,7 @@ private fun ColumnHeader(
             Icon(
                 imageVector = if (isCollapsed) Icons.Default.KeyboardArrowRight else Icons.Default.KeyboardArrowDown,
                 contentDescription = if (isCollapsed) "Expand" else "Collapse",
-                tint = SentioColors.TextTertiary,
+                tint = KlarityColors.TextTertiary,
                 modifier = Modifier.size(20.dp)
             )
         }
@@ -352,7 +352,7 @@ private fun TaskCard(
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(10.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isDragging) SentioColors.BgElevated else SentioColors.BgCard
+            containerColor = if (isDragging) KlarityColors.BgElevated else KlarityColors.BgCard
         )
     ) {
         Column(
@@ -385,7 +385,7 @@ private fun TaskCard(
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium,
                 color = if (task.status == TaskStatus.DONE) 
-                    SentioColors.TextTertiary else SentioColors.TextPrimary,
+                    KlarityColors.TextTertiary else KlarityColors.TextPrimary,
                 textDecoration = if (task.status == TaskStatus.DONE) 
                     TextDecoration.LineThrough else null,
                 maxLines = 2,
@@ -397,7 +397,7 @@ private fun TaskCard(
                 Text(
                     text = task.description.take(100),
                     style = MaterialTheme.typography.bodySmall,
-                    color = SentioColors.TextSecondary,
+                    color = KlarityColors.TextSecondary,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -416,7 +416,7 @@ private fun TaskCard(
                         Text(
                             text = "+${task.tags.size - 3}",
                             style = MaterialTheme.typography.labelSmall,
-                            color = SentioColors.TextTertiary
+                            color = KlarityColors.TextTertiary
                         )
                     }
                 }
@@ -456,7 +456,7 @@ private fun TaskCard(
                             Text(
                                 text = "${task.linkedNoteIds.size}",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = SentioColors.TextTertiary
+                                color = KlarityColors.TextTertiary
                             )
                         }
                     }
@@ -475,7 +475,7 @@ private fun TaskCard(
                                 imageVector = if (task.status == TaskStatus.DONE) 
                                     Icons.Default.Refresh else Icons.Default.Check,
                                 contentDescription = "Toggle complete",
-                                tint = SentioColors.AccentSecondary,
+                                tint = KlarityColors.AccentSecondary,
                                 modifier = Modifier.size(14.dp)
                             )
                         }
@@ -526,7 +526,7 @@ private fun DueDateBadge(
     isOverdue: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val color = if (isOverdue) Color(0xFFFF5252) else SentioColors.TextSecondary
+    val color = if (isOverdue) Color(0xFFFF5252) else KlarityColors.TextSecondary
     
     Row(
         modifier = modifier
@@ -557,13 +557,13 @@ private fun TagChip(
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(4.dp))
-            .background(SentioColors.AccentPrimary.copy(alpha = 0.15f))
+            .background(KlarityColors.AccentPrimary.copy(alpha = 0.15f))
             .padding(horizontal = 6.dp, vertical = 2.dp)
     ) {
         Text(
             text = tag,
             style = MaterialTheme.typography.labelSmall,
-            color = SentioColors.AccentPrimary
+            color = KlarityColors.AccentPrimary
         )
     }
 }
@@ -583,7 +583,7 @@ private fun SubtaskProgress(
         Text(
             text = "✓",
             fontSize = 12.sp,
-            color = SentioColors.AccentSecondary
+            color = KlarityColors.AccentSecondary
         )
         
         LinearProgressIndicator(
@@ -592,14 +592,14 @@ private fun SubtaskProgress(
                 .weight(1f)
                 .height(4.dp)
                 .clip(RoundedCornerShape(2.dp)),
-            color = SentioColors.AccentSecondary,
-            trackColor = SentioColors.BgTertiary,
+            color = KlarityColors.AccentSecondary,
+            trackColor = KlarityColors.BgTertiary,
         )
         
         Text(
             text = "$completed/$total",
             style = MaterialTheme.typography.labelSmall,
-            color = SentioColors.TextTertiary
+            color = KlarityColors.TextTertiary
         )
     }
 }
@@ -613,13 +613,13 @@ private fun AssigneeAvatar(
         modifier = modifier
             .size(24.dp)
             .clip(CircleShape)
-            .background(SentioColors.AccentPrimary.copy(alpha = 0.2f)),
+            .background(KlarityColors.AccentPrimary.copy(alpha = 0.2f)),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = name.take(1).uppercase(),
             style = MaterialTheme.typography.labelSmall,
-            color = SentioColors.AccentPrimary,
+            color = KlarityColors.AccentPrimary,
             fontWeight = FontWeight.Bold
         )
     }
@@ -634,7 +634,7 @@ private fun DropZoneIndicator(
             .fillMaxWidth()
             .height(4.dp)
             .clip(RoundedCornerShape(2.dp))
-            .background(SentioColors.AccentPrimary)
+            .background(KlarityColors.AccentPrimary)
     )
 }
 
@@ -655,13 +655,13 @@ private fun AddTaskButton(
         Icon(
             imageVector = Icons.Default.Add,
             contentDescription = "Add task",
-            tint = SentioColors.TextTertiary,
+            tint = KlarityColors.TextTertiary,
             modifier = Modifier.size(16.dp)
         )
         Text(
             text = "Add task",
             style = MaterialTheme.typography.bodySmall,
-            color = SentioColors.TextTertiary
+            color = KlarityColors.TextTertiary
         )
     }
 }
@@ -678,7 +678,7 @@ private fun AddColumnButton(
             .clip(RoundedCornerShape(12.dp))
             .border(
                 width = 2.dp,
-                color = SentioColors.TextTertiary.copy(alpha = 0.3f),
+                color = KlarityColors.TextTertiary.copy(alpha = 0.3f),
                 shape = RoundedCornerShape(12.dp)
             )
             .clickable(onClick = onClick)
@@ -689,14 +689,14 @@ private fun AddColumnButton(
         Icon(
             imageVector = Icons.Default.Add,
             contentDescription = "Add column",
-            tint = SentioColors.TextTertiary,
+            tint = KlarityColors.TextTertiary,
             modifier = Modifier.size(32.dp)
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = "Add Column",
             style = MaterialTheme.typography.bodyMedium,
-            color = SentioColors.TextTertiary
+            color = KlarityColors.TextTertiary
         )
     }
 }

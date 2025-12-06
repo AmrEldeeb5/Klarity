@@ -1,4 +1,4 @@
-package com.example.sentio.presentation.screen.home
+package com.example.klarity.presentation.screen.home
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -21,8 +21,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.sentio.domain.models.Note
-import com.example.sentio.presentation.theme.SentioColors
+import com.example.klarity.domain.models.Note
+import com.example.klarity.presentation.theme.KlarityColors
 import kotlinx.datetime.*
 
 /**
@@ -79,7 +79,7 @@ fun HomeDashboard(
     Row(
         modifier = modifier
             .fillMaxSize()
-            .background(SentioColors.BgPrimary)
+            .background(KlarityColors.BgPrimary)
             .padding(24.dp),
         horizontalArrangement = Arrangement.spacedBy(24.dp)
     ) {
@@ -106,7 +106,7 @@ fun HomeDashboard(
 private fun DashboardColumn(
     title: String,
     emoji: String,
-    accentColor: Color = SentioColors.AccentPrimary,
+    accentColor: Color = KlarityColors.AccentPrimary,
     modifier: Modifier = Modifier,
     actions: @Composable RowScope.() -> Unit = {},
     content: @Composable () -> Unit
@@ -115,7 +115,7 @@ private fun DashboardColumn(
         modifier = modifier
             .fillMaxHeight()
             .clip(RoundedCornerShape(16.dp))
-            .background(SentioColors.BgSecondary)
+            .background(KlarityColors.BgSecondary)
     ) {
         // Column Header
         Row(
@@ -145,7 +145,7 @@ private fun DashboardColumn(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = SentioColors.TextPrimary
+                    color = KlarityColors.TextPrimary
                 )
             }
             Row(
@@ -156,7 +156,7 @@ private fun DashboardColumn(
         }
         
         HorizontalDivider(
-            color = SentioColors.TextTertiary.copy(alpha = 0.2f),
+            color = KlarityColors.TextTertiary.copy(alpha = 0.2f),
             thickness = 1.dp
         )
         
@@ -190,14 +190,14 @@ private fun DashboardSubsection(
             Text(
                 text = title,
                 style = MaterialTheme.typography.labelLarge,
-                color = SentioColors.TextSecondary,
+                color = KlarityColors.TextSecondary,
                 fontWeight = FontWeight.Medium
             )
             if (count != null) {
                 Text(
                     text = count.toString(),
                     style = MaterialTheme.typography.labelMedium,
-                    color = SentioColors.TextTertiary
+                    color = KlarityColors.TextTertiary
                 )
             }
         }
@@ -220,7 +220,7 @@ private fun RecentWorkColumn(
     DashboardColumn(
         title = "Recent Work",
         emoji = "🕒",
-        accentColor = SentioColors.AccentPrimary,
+        accentColor = KlarityColors.AccentPrimary,
         modifier = modifier,
         actions = {
             IconButton(
@@ -230,7 +230,7 @@ private fun RecentWorkColumn(
                 Icon(
                     imageVector = Icons.Default.Refresh,
                     contentDescription = "Refresh",
-                    tint = SentioColors.TextTertiary,
+                    tint = KlarityColors.TextTertiary,
                     modifier = Modifier.size(18.dp)
                 )
             }
@@ -312,7 +312,7 @@ private fun RecentNoteItem(
             modifier = Modifier
                 .size(32.dp)
                 .clip(RoundedCornerShape(8.dp))
-                .background(SentioColors.AccentPrimary.copy(alpha = 0.1f)),
+                .background(KlarityColors.AccentPrimary.copy(alpha = 0.1f)),
             contentAlignment = Alignment.Center
         ) {
             Text(
@@ -330,7 +330,7 @@ private fun RecentNoteItem(
                 text = note.title.ifEmpty { "Untitled" },
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium,
-                color = SentioColors.TextPrimary,
+                color = KlarityColors.TextPrimary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -338,7 +338,7 @@ private fun RecentNoteItem(
                 Text(
                     text = note.content.take(80),
                     style = MaterialTheme.typography.bodySmall,
-                    color = SentioColors.TextSecondary,
+                    color = KlarityColors.TextSecondary,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -346,7 +346,7 @@ private fun RecentNoteItem(
             Text(
                 text = formatRelativeTime(note.updatedAt),
                 style = MaterialTheme.typography.labelSmall,
-                color = SentioColors.TextTertiary
+                color = KlarityColors.TextTertiary
             )
         }
         
@@ -355,13 +355,13 @@ private fun RecentNoteItem(
             Box(
                 modifier = Modifier
                     .clip(CircleShape)
-                    .background(SentioColors.AccentSecondary.copy(alpha = 0.2f))
+                    .background(KlarityColors.AccentSecondary.copy(alpha = 0.2f))
                     .padding(horizontal = 8.dp, vertical = 4.dp)
             ) {
                 Text(
                     text = "${note.tags.size}",
                     style = MaterialTheme.typography.labelSmall,
-                    color = SentioColors.AccentSecondary
+                    color = KlarityColors.AccentSecondary
                 )
             }
         }
@@ -375,9 +375,9 @@ private fun RecentItemCard(
     modifier: Modifier = Modifier
 ) {
     val (emoji, tint) = when (item.type) {
-        RecentItemType.NOTE -> "📝" to SentioColors.AccentPrimary
-        RecentItemType.TASK -> "✅" to SentioColors.AccentSecondary
-        RecentItemType.FOLDER -> "📁" to SentioColors.TextSecondary
+        RecentItemType.NOTE -> "📝" to KlarityColors.AccentPrimary
+        RecentItemType.TASK -> "✅" to KlarityColors.AccentSecondary
+        RecentItemType.FOLDER -> "📁" to KlarityColors.TextSecondary
     }
     
     Row(
@@ -405,14 +405,14 @@ private fun RecentItemCard(
             Text(
                 text = item.title,
                 style = MaterialTheme.typography.bodyMedium,
-                color = SentioColors.TextPrimary,
+                color = KlarityColors.TextPrimary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
             Text(
                 text = formatRelativeTime(item.lastModified),
                 style = MaterialTheme.typography.labelSmall,
-                color = SentioColors.TextTertiary
+                color = KlarityColors.TextTertiary
             )
         }
     }
@@ -437,7 +437,7 @@ private fun TodaysFocusColumn(
     DashboardColumn(
         title = "Today's Focus",
         emoji = "🎯",
-        accentColor = SentioColors.AccentSecondary,
+        accentColor = KlarityColors.AccentSecondary,
         modifier = modifier,
         actions = {
             IconButton(
@@ -447,7 +447,7 @@ private fun TodaysFocusColumn(
                 Icon(
                     imageVector = Icons.Default.Add,
                     contentDescription = "Add",
-                    tint = SentioColors.TextTertiary,
+                    tint = KlarityColors.TextTertiary,
                     modifier = Modifier.size(18.dp)
                 )
             }
@@ -573,7 +573,7 @@ private fun FocusProgressCard(
             .padding(horizontal = 20.dp, vertical = 12.dp),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = SentioColors.AccentSecondary.copy(alpha = 0.1f)
+            containerColor = KlarityColors.AccentSecondary.copy(alpha = 0.1f)
         )
     ) {
         Column(
@@ -588,13 +588,13 @@ private fun FocusProgressCard(
                 Text(
                     text = "Today's Progress",
                     style = MaterialTheme.typography.labelLarge,
-                    color = SentioColors.TextSecondary
+                    color = KlarityColors.TextSecondary
                 )
                 Text(
                     text = "$completedItems / $totalItems",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = SentioColors.AccentSecondary
+                    color = KlarityColors.AccentSecondary
                 )
             }
             
@@ -604,8 +604,8 @@ private fun FocusProgressCard(
                     .fillMaxWidth()
                     .height(8.dp)
                     .clip(RoundedCornerShape(4.dp)),
-                color = SentioColors.AccentSecondary,
-                trackColor = SentioColors.BgTertiary,
+                color = KlarityColors.AccentSecondary,
+                trackColor = KlarityColors.BgTertiary,
             )
         }
     }
@@ -621,8 +621,8 @@ private fun FocusTaskItem(
     val priorityColor = when (item.priority) {
         Priority.URGENT -> Color(0xFFFF5252)
         Priority.HIGH -> Color(0xFFFFAB40)
-        Priority.NORMAL -> SentioColors.AccentSecondary
-        Priority.LOW -> SentioColors.TextTertiary
+        Priority.NORMAL -> KlarityColors.AccentSecondary
+        Priority.LOW -> KlarityColors.TextTertiary
     }
     
     Row(
@@ -637,9 +637,9 @@ private fun FocusTaskItem(
             checked = item.isCompleted,
             onCheckedChange = { onToggle() },
             colors = CheckboxDefaults.colors(
-                checkedColor = SentioColors.AccentSecondary,
-                uncheckedColor = SentioColors.TextTertiary,
-                checkmarkColor = SentioColors.BgPrimary
+                checkedColor = KlarityColors.AccentSecondary,
+                uncheckedColor = KlarityColors.TextTertiary,
+                checkmarkColor = KlarityColors.BgPrimary
             )
         )
         
@@ -650,7 +650,7 @@ private fun FocusTaskItem(
             Text(
                 text = item.title,
                 style = MaterialTheme.typography.bodyMedium,
-                color = if (item.isCompleted) SentioColors.TextTertiary else SentioColors.TextPrimary,
+                color = if (item.isCompleted) KlarityColors.TextTertiary else KlarityColors.TextPrimary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -658,7 +658,7 @@ private fun FocusTaskItem(
                 Text(
                     text = item.dueTime,
                     style = MaterialTheme.typography.labelSmall,
-                    color = SentioColors.TextTertiary
+                    color = KlarityColors.TextTertiary
                 )
             }
         }
@@ -693,8 +693,8 @@ private fun FocusGoalItem(
                 .size(32.dp)
                 .clip(CircleShape)
                 .background(
-                    if (item.isCompleted) SentioColors.AccentSecondary
-                    else SentioColors.BgTertiary
+                    if (item.isCompleted) KlarityColors.AccentSecondary
+                    else KlarityColors.BgTertiary
                 )
                 .clickable(onClick = onToggle),
             contentAlignment = Alignment.Center
@@ -703,7 +703,7 @@ private fun FocusGoalItem(
                 Icon(
                     imageVector = Icons.Default.Check,
                     contentDescription = null,
-                    tint = SentioColors.BgPrimary,
+                    tint = KlarityColors.BgPrimary,
                     modifier = Modifier.size(18.dp)
                 )
             }
@@ -716,7 +716,7 @@ private fun FocusGoalItem(
             Text(
                 text = item.title,
                 style = MaterialTheme.typography.bodyMedium,
-                color = if (item.isCompleted) SentioColors.TextTertiary else SentioColors.TextPrimary,
+                color = if (item.isCompleted) KlarityColors.TextTertiary else KlarityColors.TextPrimary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -728,8 +728,8 @@ private fun FocusGoalItem(
                         .fillMaxWidth()
                         .height(4.dp)
                         .clip(RoundedCornerShape(2.dp)),
-                    color = SentioColors.AccentSecondary,
-                    trackColor = SentioColors.BgTertiary,
+                    color = KlarityColors.AccentSecondary,
+                    trackColor = KlarityColors.BgTertiary,
                 )
             }
         }
@@ -759,7 +759,7 @@ private fun FocusScheduleItem(
                 text = item.dueTime ?: "--:--",
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
-                color = SentioColors.AccentPrimary
+                color = KlarityColors.AccentPrimary
             )
         }
         
@@ -768,13 +768,13 @@ private fun FocusScheduleItem(
                 .width(3.dp)
                 .height(32.dp)
                 .clip(RoundedCornerShape(2.dp))
-                .background(SentioColors.AccentPrimary)
+                .background(KlarityColors.AccentPrimary)
         )
         
         Text(
             text = item.title,
             style = MaterialTheme.typography.bodyMedium,
-            color = SentioColors.TextPrimary,
+            color = KlarityColors.TextPrimary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f)
@@ -805,11 +805,11 @@ private fun FocusHabitItem(
                     if (item.isCompleted)
                         Modifier.background(
                             Brush.horizontalGradient(
-                                colors = listOf(SentioColors.AccentPrimary, SentioColors.AccentSecondary)
+                                colors = listOf(KlarityColors.AccentPrimary, KlarityColors.AccentSecondary)
                             )
                         )
                     else
-                        Modifier.background(SentioColors.BgTertiary)
+                        Modifier.background(KlarityColors.BgTertiary)
                 )
                 .clickable(onClick = onToggle),
             contentAlignment = Alignment.Center
@@ -817,14 +817,14 @@ private fun FocusHabitItem(
             Text(
                 text = if (item.isCompleted) "✓" else "○",
                 fontSize = 14.sp,
-                color = if (item.isCompleted) SentioColors.BgPrimary else SentioColors.TextTertiary
+                color = if (item.isCompleted) KlarityColors.BgPrimary else KlarityColors.TextTertiary
             )
         }
         
         Text(
             text = item.title,
             style = MaterialTheme.typography.bodyMedium,
-            color = if (item.isCompleted) SentioColors.TextTertiary else SentioColors.TextPrimary,
+            color = if (item.isCompleted) KlarityColors.TextTertiary else KlarityColors.TextPrimary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f)
@@ -858,12 +858,12 @@ private fun EmptyStateCard(
             text = title,
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Medium,
-            color = SentioColors.TextSecondary
+            color = KlarityColors.TextSecondary
         )
         Text(
             text = description,
             style = MaterialTheme.typography.bodySmall,
-            color = SentioColors.TextTertiary
+            color = KlarityColors.TextTertiary
         )
     }
 }

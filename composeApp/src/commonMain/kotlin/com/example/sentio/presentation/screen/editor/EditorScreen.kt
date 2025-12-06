@@ -1,4 +1,4 @@
-package com.example.sentio.presentation.screen.editor
+package com.example.klarity.presentation.screen.editor
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.animateDpAsState
@@ -45,13 +45,13 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.sentio.domain.models.Folder
-import com.example.sentio.domain.models.Note
-import com.example.sentio.presentation.state.EditorUiEvent
-import com.example.sentio.presentation.state.EditorUiState
-import com.example.sentio.presentation.state.EditorViewMode
-import com.example.sentio.presentation.theme.SentioColors
-import com.example.sentio.presentation.viewmodel.EditorViewModel
+import com.example.klarity.domain.models.Folder
+import com.example.klarity.domain.models.Note
+import com.example.klarity.presentation.state.EditorUiEvent
+import com.example.klarity.presentation.state.EditorUiState
+import com.example.klarity.presentation.state.EditorViewMode
+import com.example.klarity.presentation.theme.KlarityColors
+import com.example.klarity.presentation.viewmodel.EditorViewModel
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -83,7 +83,7 @@ fun EditorScreen(
 
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = SentioColors.BgPrimary
+        color = KlarityColors.BgPrimary
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             // Editor Header with view mode toggles
@@ -210,7 +210,7 @@ private fun EditorHeader(
     onToggleFavorite: () -> Unit
 ) {
     Surface(
-        color = SentioColors.BgSecondary,
+        color = KlarityColors.BgSecondary,
         tonalElevation = 2.dp
     ) {
         Row(
@@ -232,7 +232,7 @@ private fun EditorHeader(
                     Icon(
                         Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
-                        tint = SentioColors.TextSecondary
+                        tint = KlarityColors.TextSecondary
                     )
                 }
                 
@@ -244,19 +244,19 @@ private fun EditorHeader(
                     Box(
                         modifier = Modifier
                             .size(24.dp)
-                            .background(SentioColors.AccentPrimary, RoundedCornerShape(6.dp)),
+                            .background(KlarityColors.AccentPrimary, RoundedCornerShape(6.dp)),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "S",
-                            color = SentioColors.BgPrimary,
+                            text = "K",
+                            color = KlarityColors.BgPrimary,
                             fontWeight = FontWeight.Bold,
                             fontSize = 14.sp
                         )
                     }
                     Text(
-                        text = "Sentio",
-                        color = SentioColors.TextPrimary,
+                        text = "Klarity",
+                        color = KlarityColors.TextPrimary,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 16.sp
                     )
@@ -266,7 +266,7 @@ private fun EditorHeader(
             // Center - View mode toggles
             Row(
                 modifier = Modifier
-                    .background(SentioColors.BgTertiary, RoundedCornerShape(8.dp))
+                    .background(KlarityColors.BgTertiary, RoundedCornerShape(8.dp))
                     .padding(4.dp),
                 horizontalArrangement = Arrangement.spacedBy(2.dp)
             ) {
@@ -308,7 +308,7 @@ private fun EditorHeader(
                     Icon(
                         if (isPinned) Icons.Filled.Star else Icons.Outlined.Star,
                         contentDescription = "Pin",
-                        tint = if (isPinned) SentioColors.AccentPrimary else SentioColors.TextSecondary,
+                        tint = if (isPinned) KlarityColors.AccentPrimary else KlarityColors.TextSecondary,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -319,7 +319,7 @@ private fun EditorHeader(
                     Icon(
                         if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
                         contentDescription = "Favorite",
-                        tint = if (isFavorite) SentioColors.Error else SentioColors.TextSecondary,
+                        tint = if (isFavorite) KlarityColors.Error else KlarityColors.TextSecondary,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -334,7 +334,7 @@ private fun EditorHeader(
                     Icon(
                         Icons.Filled.Menu,
                         contentDescription = "Toggle sidebar",
-                        tint = if (showRightSidebar) SentioColors.AccentPrimary else SentioColors.TextSecondary,
+                        tint = if (showRightSidebar) KlarityColors.AccentPrimary else KlarityColors.TextSecondary,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -343,7 +343,7 @@ private fun EditorHeader(
                 Button(
                     onClick = { /* Share */ },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = SentioColors.AccentPrimary
+                        containerColor = KlarityColors.AccentPrimary
                     ),
                     shape = RoundedCornerShape(8.dp),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
@@ -368,8 +368,8 @@ private fun ViewModeButton(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    val bgColor = if (isSelected) SentioColors.AccentPrimary else Color.Transparent
-    val contentColor = if (isSelected) SentioColors.BgPrimary else SentioColors.TextSecondary
+    val bgColor = if (isSelected) KlarityColors.AccentPrimary else Color.Transparent
+    val contentColor = if (isSelected) KlarityColors.BgPrimary else KlarityColors.TextSecondary
     
     Surface(
         onClick = onClick,
@@ -607,8 +607,8 @@ private fun EditorPane(
 
             // Title
             val customSelectionColors = TextSelectionColors(
-                handleColor = SentioColors.AccentPrimary,
-                backgroundColor = SentioColors.EditorSelection
+                handleColor = KlarityColors.AccentPrimary,
+                backgroundColor = KlarityColors.EditorSelection
             )
             
             CompositionLocalProvider(LocalTextSelectionColors provides customSelectionColors) {
@@ -616,18 +616,18 @@ private fun EditorPane(
                     value = titleValue,
                     onValueChange = { titleValue = it },
                     textStyle = MaterialTheme.typography.headlineLarge.copy(
-                        color = SentioColors.TextPrimary,
+                        color = KlarityColors.TextPrimary,
                         fontWeight = FontWeight.Bold,
                         fontSize = if (isZenMode) 36.sp else 32.sp
                     ),
-                    cursorBrush = SolidColor(SentioColors.EditorCursor),
+                    cursorBrush = SolidColor(KlarityColors.EditorCursor),
                     decorationBox = { innerTextField ->
                         Box {
                             if (titleValue.text.isEmpty()) {
                                 Text(
                                     "Untitled",
                                     style = MaterialTheme.typography.headlineLarge.copy(
-                                        color = SentioColors.TextTertiary,
+                                        color = KlarityColors.TextTertiary,
                                         fontWeight = FontWeight.Bold,
                                         fontSize = if (isZenMode) 36.sp else 32.sp
                                     )
@@ -646,18 +646,18 @@ private fun EditorPane(
                     value = contentValue,
                     onValueChange = { contentValue = it },
                     textStyle = MaterialTheme.typography.bodyLarge.copy(
-                        color = SentioColors.TextPrimary,
+                        color = KlarityColors.TextPrimary,
                         lineHeight = 28.sp,
                         fontSize = if (isZenMode) 18.sp else 16.sp
                     ),
-                    cursorBrush = SolidColor(SentioColors.EditorCursor),
+                    cursorBrush = SolidColor(KlarityColors.EditorCursor),
                     decorationBox = { innerTextField ->
                         Box {
                             if (contentValue.text.isEmpty()) {
                                 Text(
                                     "Start writing your thoughts...",
                                     style = MaterialTheme.typography.bodyLarge.copy(
-                                        color = SentioColors.TextTertiary,
+                                        color = KlarityColors.TextTertiary,
                                         lineHeight = 28.sp,
                                         fontSize = if (isZenMode) 18.sp else 16.sp
                                     )
@@ -689,7 +689,7 @@ private fun EditorToolbar(
     onCodeBlock: () -> Unit
 ) {
     Surface(
-        color = SentioColors.BgSecondary,
+        color = KlarityColors.BgSecondary,
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
@@ -726,7 +726,7 @@ private fun EditorToolbar(
                 modifier = Modifier
                     .height(20.dp)
                     .padding(horizontal = 8.dp),
-                color = SentioColors.BorderPrimary
+                color = KlarityColors.BorderPrimary
             )
             
             TextToolbarButton(
@@ -740,7 +740,7 @@ private fun EditorToolbar(
             // AI Sparkles button
             Surface(
                 onClick = { /* AI Actions */ },
-                color = SentioColors.AccentAI.copy(alpha = 0.15f),
+                color = KlarityColors.AccentAI.copy(alpha = 0.15f),
                 shape = RoundedCornerShape(6.dp)
             ) {
                 Row(
@@ -754,7 +754,7 @@ private fun EditorToolbar(
                     )
                     Text(
                         "AI",
-                        color = SentioColors.AccentAI,
+                        color = KlarityColors.AccentAI,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Medium
                     )
@@ -777,7 +777,7 @@ private fun TextToolbarButton(
     
     Surface(
         onClick = onClick,
-        color = if (isHovered) SentioColors.BgTertiary else Color.Transparent,
+        color = if (isHovered) KlarityColors.BgTertiary else Color.Transparent,
         shape = RoundedCornerShape(6.dp),
         interactionSource = interactionSource,
         modifier = Modifier.hoverable(interactionSource)
@@ -790,7 +790,7 @@ private fun TextToolbarButton(
         ) {
             Text(
                 text = text,
-                color = if (isHovered) SentioColors.TextPrimary else SentioColors.TextSecondary,
+                color = if (isHovered) KlarityColors.TextPrimary else KlarityColors.TextSecondary,
                 fontSize = 14.sp,
                 fontWeight = if (isBold) FontWeight.Bold else FontWeight.Normal,
                 fontStyle = if (isItalic) androidx.compose.ui.text.font.FontStyle.Italic else androidx.compose.ui.text.font.FontStyle.Normal
@@ -810,7 +810,7 @@ private fun ToolbarButton(
     
     Surface(
         onClick = onClick,
-        color = if (isHovered) SentioColors.BgTertiary else Color.Transparent,
+        color = if (isHovered) KlarityColors.BgTertiary else Color.Transparent,
         shape = RoundedCornerShape(6.dp),
         interactionSource = interactionSource,
         modifier = Modifier.hoverable(interactionSource)
@@ -822,7 +822,7 @@ private fun ToolbarButton(
             Icon(
                 icon,
                 contentDescription = label,
-                tint = if (isHovered) SentioColors.TextPrimary else SentioColors.TextSecondary,
+                tint = if (isHovered) KlarityColors.TextPrimary else KlarityColors.TextSecondary,
                 modifier = Modifier.size(18.dp)
             )
         }
@@ -874,7 +874,7 @@ private fun BreadcrumbItem(
 ) {
     Text(
         text = text,
-        color = if (isCurrent) SentioColors.TextPrimary else SentioColors.TextTertiary,
+        color = if (isCurrent) KlarityColors.TextPrimary else KlarityColors.TextTertiary,
         fontSize = 13.sp,
         fontWeight = if (isCurrent) FontWeight.Medium else FontWeight.Normal,
         maxLines = 1,
@@ -887,7 +887,7 @@ private fun BreadcrumbItem(
 private fun BreadcrumbSeparator() {
     Text(
         text = "/",
-        color = SentioColors.TextTertiary.copy(alpha = 0.5f),
+        color = KlarityColors.TextTertiary.copy(alpha = 0.5f),
         fontSize = 13.sp
     )
 }
@@ -901,9 +901,9 @@ private fun AISuggestionCard(
     onDismiss: () -> Unit
 ) {
     Surface(
-        color = SentioColors.AccentAIGlow,
+        color = KlarityColors.AccentAIGlow,
         shape = RoundedCornerShape(12.dp),
-        border = BorderStroke(1.dp, SentioColors.AccentAI.copy(alpha = 0.3f))
+        border = BorderStroke(1.dp, KlarityColors.AccentAI.copy(alpha = 0.3f))
     ) {
         Row(
             modifier = Modifier
@@ -920,7 +920,7 @@ private fun AISuggestionCard(
                 Box(
                     modifier = Modifier
                         .size(36.dp)
-                        .background(SentioColors.AccentAI.copy(alpha = 0.2f), CircleShape),
+                        .background(KlarityColors.AccentAI.copy(alpha = 0.2f), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -931,13 +931,13 @@ private fun AISuggestionCard(
                 Column {
                     Text(
                         "AI Suggestion Available",
-                        color = SentioColors.TextPrimary,
+                        color = KlarityColors.TextPrimary,
                         fontWeight = FontWeight.Medium,
                         fontSize = 14.sp
                     )
                     Text(
                         "Type /ai or press Ctrl+J to ask AI for help with your writing",
-                        color = SentioColors.TextSecondary,
+                        color = KlarityColors.TextSecondary,
                         fontSize = 13.sp
                     )
                 }
@@ -950,7 +950,7 @@ private fun AISuggestionCard(
                 Icon(
                     Icons.Outlined.Close,
                     contentDescription = "Dismiss",
-                    tint = SentioColors.TextTertiary,
+                    tint = KlarityColors.TextTertiary,
                     modifier = Modifier.size(16.dp)
                 )
             }
@@ -972,7 +972,7 @@ private fun EditorFooter(
     updatedAt: kotlinx.datetime.Instant
 ) {
     Surface(
-        color = SentioColors.BgSecondary,
+        color = KlarityColors.BgSecondary,
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
@@ -989,32 +989,32 @@ private fun EditorFooter(
             ) {
                 Text(
                     text = "Created: ${formatDate(createdAt)}",
-                    color = SentioColors.TextTertiary,
+                    color = KlarityColors.TextTertiary,
                     fontSize = 12.sp
                 )
                 Text(
                     text = "•",
-                    color = SentioColors.TextTertiary.copy(alpha = 0.5f),
+                    color = KlarityColors.TextTertiary.copy(alpha = 0.5f),
                     fontSize = 12.sp
                 )
                 Text(
                     text = "Updated: ${formatDate(updatedAt)}",
-                    color = SentioColors.TextTertiary,
+                    color = KlarityColors.TextTertiary,
                     fontSize = 12.sp
                 )
                 Text(
                     text = "•",
-                    color = SentioColors.TextTertiary.copy(alpha = 0.5f),
+                    color = KlarityColors.TextTertiary.copy(alpha = 0.5f),
                     fontSize = 12.sp
                 )
                 Text(
                     text = "$wordCount words",
-                    color = SentioColors.TextTertiary,
+                    color = KlarityColors.TextTertiary,
                     fontSize = 12.sp
                 )
                 Text(
                     text = "${(wordCount / 200).coerceAtLeast(1)} min read",
-                    color = SentioColors.TextTertiary,
+                    color = KlarityColors.TextTertiary,
                     fontSize = 12.sp
                 )
             }
@@ -1027,11 +1027,11 @@ private fun EditorFooter(
                 Box(
                     modifier = Modifier
                         .size(6.dp)
-                        .background(SentioColors.AccentPrimary, CircleShape)
+                        .background(KlarityColors.AccentPrimary, CircleShape)
                 )
                 Text(
                     text = "Graph mapped",
-                    color = SentioColors.TextTertiary,
+                    color = KlarityColors.TextTertiary,
                     fontSize = 12.sp
                 )
             }
@@ -1046,11 +1046,11 @@ private fun EditorFooter(
                         CircularProgressIndicator(
                             modifier = Modifier.size(12.dp),
                             strokeWidth = 2.dp,
-                            color = SentioColors.AccentPrimary
+                            color = KlarityColors.AccentPrimary
                         )
                         Text(
                             text = "Saving...",
-                            color = SentioColors.TextTertiary,
+                            color = KlarityColors.TextTertiary,
                             fontSize = 12.sp
                         )
                     }
@@ -1058,11 +1058,11 @@ private fun EditorFooter(
                         Box(
                             modifier = Modifier
                                 .size(6.dp)
-                                .background(SentioColors.Warning, CircleShape)
+                                .background(KlarityColors.Warning, CircleShape)
                         )
                         Text(
                             text = "Unsaved changes",
-                            color = SentioColors.Warning,
+                            color = KlarityColors.Warning,
                             fontSize = 12.sp
                         )
                     }
@@ -1070,12 +1070,12 @@ private fun EditorFooter(
                         Icon(
                             Icons.Filled.Check,
                             contentDescription = null,
-                            tint = SentioColors.Success,
+                            tint = KlarityColors.Success,
                             modifier = Modifier.size(14.dp)
                         )
                         Text(
                             text = "All changes saved",
-                            color = SentioColors.TextTertiary,
+                            color = KlarityColors.TextTertiary,
                             fontSize = 12.sp
                         )
                     }
@@ -1128,7 +1128,7 @@ private fun RightSidebar(
     }
 
     Surface(
-        color = SentioColors.BgSecondary,
+        color = KlarityColors.BgSecondary,
         modifier = modifier
     ) {
         Column(
@@ -1139,7 +1139,7 @@ private fun RightSidebar(
         ) {
             // Search Bar
             Surface(
-                color = SentioColors.BgTertiary,
+                color = KlarityColors.BgTertiary,
                 shape = RoundedCornerShape(8.dp)
             ) {
                 Row(
@@ -1152,7 +1152,7 @@ private fun RightSidebar(
                     Icon(
                         Icons.Outlined.Search,
                         contentDescription = null,
-                        tint = SentioColors.TextTertiary,
+                        tint = KlarityColors.TextTertiary,
                         modifier = Modifier.size(18.dp)
                     )
                     BasicTextField(
@@ -1160,16 +1160,16 @@ private fun RightSidebar(
                         onValueChange = onSearchQueryChange,
                         singleLine = true,
                         textStyle = TextStyle(
-                            color = SentioColors.TextPrimary,
+                            color = KlarityColors.TextPrimary,
                             fontSize = 14.sp
                         ),
-                        cursorBrush = SolidColor(SentioColors.AccentPrimary),
+                        cursorBrush = SolidColor(KlarityColors.AccentPrimary),
                         modifier = Modifier.weight(1f),
                         decorationBox = { innerTextField ->
                             if (searchQuery.isEmpty()) {
                                 Text(
                                     text = "Search notes...",
-                                    color = SentioColors.TextTertiary,
+                                    color = KlarityColors.TextTertiary,
                                     fontSize = 14.sp
                                 )
                             }
@@ -1180,7 +1180,7 @@ private fun RightSidebar(
                         Icon(
                             Icons.Default.Close,
                             contentDescription = "Clear search",
-                            tint = SentioColors.TextTertiary,
+                            tint = KlarityColors.TextTertiary,
                             modifier = Modifier
                                 .size(16.dp)
                                 .clickable { onSearchQueryChange("") }
@@ -1210,7 +1210,7 @@ private fun RightSidebar(
                 if (recentNotes.isEmpty()) {
                     Text(
                         text = if (searchQuery.isNotBlank()) "No matching notes" else "No recent notes",
-                        color = SentioColors.TextTertiary,
+                        color = KlarityColors.TextTertiary,
                         fontSize = 13.sp,
                         modifier = Modifier.padding(8.dp)
                     )
@@ -1230,7 +1230,7 @@ private fun RightSidebar(
             // All notes count
             Text(
                 text = "${allNotes.size} notes total",
-                color = SentioColors.TextTertiary,
+                color = KlarityColors.TextTertiary,
                 fontSize = 12.sp,
                 modifier = Modifier.padding(8.dp)
             )
@@ -1246,7 +1246,7 @@ private fun SidebarSection(
     Column {
         Text(
             text = title,
-            color = SentioColors.TextTertiary,
+            color = KlarityColors.TextTertiary,
             fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(bottom = 8.dp)
@@ -1266,7 +1266,7 @@ private fun SidebarNoteCard(
     
     Surface(
         onClick = onClick,
-        color = if (isHovered) SentioColors.BgTertiary else Color.Transparent,
+        color = if (isHovered) KlarityColors.BgTertiary else Color.Transparent,
         shape = RoundedCornerShape(8.dp),
         interactionSource = interactionSource,
         modifier = Modifier
@@ -1280,7 +1280,7 @@ private fun SidebarNoteCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = note.title.ifBlank { "Untitled Note" },
-                    color = SentioColors.TextPrimary,
+                    color = KlarityColors.TextPrimary,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
                     maxLines = 1,
@@ -1289,7 +1289,7 @@ private fun SidebarNoteCard(
                 Spacer(Modifier.height(4.dp))
                 Text(
                     text = note.content.take(100).replace("\n", " "),
-                    color = SentioColors.TextTertiary,
+                    color = KlarityColors.TextTertiary,
                     fontSize = 12.sp,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
@@ -1330,7 +1330,7 @@ private fun LinkDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text("Insert Link", color = SentioColors.TextPrimary)
+            Text("Insert Link", color = KlarityColors.TextPrimary)
         },
         text = {
             OutlinedTextField(
@@ -1341,8 +1341,8 @@ private fun LinkDialog(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = SentioColors.AccentPrimary,
-                    cursorColor = SentioColors.AccentPrimary
+                    focusedBorderColor = KlarityColors.AccentPrimary,
+                    cursorColor = KlarityColors.AccentPrimary
                 )
             )
         },
@@ -1351,15 +1351,15 @@ private fun LinkDialog(
                 onClick = { onConfirm(url) },
                 enabled = url.isNotBlank()
             ) {
-                Text("Insert", color = SentioColors.AccentPrimary)
+                Text("Insert", color = KlarityColors.AccentPrimary)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", color = SentioColors.TextSecondary)
+                Text("Cancel", color = KlarityColors.TextSecondary)
             }
         },
-        containerColor = SentioColors.BgSecondary
+        containerColor = KlarityColors.BgSecondary
     )
 }
 
@@ -1373,7 +1373,7 @@ private fun LoadingState() {
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        CircularProgressIndicator(color = SentioColors.AccentPrimary)
+        CircularProgressIndicator(color = KlarityColors.AccentPrimary)
     }
 }
 
@@ -1394,7 +1394,7 @@ private fun ErrorState(
             Spacer(Modifier.height(16.dp))
             Text(
                 text = message,
-                color = SentioColors.Error,
+                color = KlarityColors.Error,
                 fontSize = 16.sp
             )
             retryAction?.let { retry ->
@@ -1402,7 +1402,7 @@ private fun ErrorState(
                 Button(
                     onClick = retry,
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = SentioColors.AccentPrimary
+                        containerColor = KlarityColors.AccentPrimary
                     )
                 ) {
                     Text("Retry")

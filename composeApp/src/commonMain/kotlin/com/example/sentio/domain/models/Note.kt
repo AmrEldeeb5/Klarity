@@ -1,4 +1,4 @@
-package com.example.sentio.domain.models
+package com.example.klarity.domain.models
 
 import com.benasher44.uuid.uuid4
 import kotlinx.datetime.Clock
@@ -18,7 +18,7 @@ enum class NoteStatus {
 }
 
 /**
- * Core domain model for a note in Sentio.
+ * Core domain model for a note in Klarity.
  * Represents a single document with markdown content, metadata, and relationships.
  */
 @Serializable

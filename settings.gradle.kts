@@ -1,4 +1,4 @@
-rootProject.name = "Sentio"
+rootProject.name = "Klarity"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 pluginManagement {

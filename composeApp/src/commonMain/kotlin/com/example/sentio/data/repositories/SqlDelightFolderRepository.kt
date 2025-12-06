@@ -1,12 +1,12 @@
-package com.example.sentio.data.repositories
+package com.example.klarity.data.repositories
 
 import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
-import com.example.sentio.data.util.DispatcherProvider
-import com.example.sentio.data.mapper.toDomain
-import com.example.sentio.db.SentioDatabase
-import com.example.sentio.domain.models.Folder
-import com.example.sentio.domain.repositories.FolderRepository
+import com.example.klarity.data.util.DispatcherProvider
+import com.example.klarity.data.mapper.toDomain
+import com.example.klarity.db.KlarityDatabase
+import com.example.klarity.domain.models.Folder
+import com.example.klarity.domain.repositories.FolderRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
@@ -16,7 +16,7 @@ import kotlinx.coroutines.withContext
  * Directly uses SQLDelight queries for database access.
  */
 class SqlDelightFolderRepository(
-    private val database: SentioDatabase,
+    private val database: KlarityDatabase,
     private val dispatchers: DispatcherProvider
 ) : FolderRepository {
 

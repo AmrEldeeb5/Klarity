@@ -1,4 +1,4 @@
-package com.example.sentio.presentation.screen.home
+package com.example.klarity.presentation.screen.home
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.animateDpAsState
@@ -27,7 +27,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.sentio.presentation.theme.SentioColors
+import com.example.klarity.presentation.theme.KlarityColors
 
 /**
  * Workspace layout modes
@@ -187,9 +187,9 @@ private fun WorkspacePane(
     Surface(
         modifier = modifier.fillMaxHeight(),
         color = when (position) {
-            PanePosition.LEFT -> SentioColors.BgSecondary
-            PanePosition.CENTER -> SentioColors.BgPrimary
-            PanePosition.RIGHT -> SentioColors.BgSecondary
+            PanePosition.LEFT -> KlarityColors.BgSecondary
+            PanePosition.CENTER -> KlarityColors.BgPrimary
+            PanePosition.RIGHT -> KlarityColors.BgSecondary
         }
     ) {
         content()
@@ -208,7 +208,7 @@ fun LayoutModeSelector(
     Row(
         modifier = modifier
             .background(
-                color = SentioColors.BgTertiary,
+                color = KlarityColors.BgTertiary,
                 shape = RoundedCornerShape(8.dp)
             )
             .padding(4.dp),
@@ -253,8 +253,8 @@ private fun LayoutModeButton(
     
     val bgColor by animateColorAsState(
         targetValue = when {
-            isSelected -> SentioColors.AccentPrimary.copy(alpha = 0.2f)
-            isHovered -> SentioColors.BgElevated
+            isSelected -> KlarityColors.AccentPrimary.copy(alpha = 0.2f)
+            isHovered -> KlarityColors.BgElevated
             else -> Color.Transparent
         },
         animationSpec = tween(100),
@@ -263,9 +263,9 @@ private fun LayoutModeButton(
     
     val contentColor by animateColorAsState(
         targetValue = when {
-            isSelected -> SentioColors.AccentPrimary
-            isHovered -> SentioColors.TextPrimary
-            else -> SentioColors.TextTertiary
+            isSelected -> KlarityColors.AccentPrimary
+            isHovered -> KlarityColors.TextPrimary
+            else -> KlarityColors.TextTertiary
         },
         animationSpec = tween(100),
         label = "contentColor"
@@ -296,7 +296,7 @@ private fun LayoutModeButton(
 }
 
 /**
- * Detached window wrapper with Sentio styling
+ * Detached window wrapper with Klarity styling
  * Note: Actual window detachment requires platform-specific implementation
  */
 @Composable
@@ -327,7 +327,7 @@ fun DetachedWindowStyle(
                 ),
                 shape = RoundedCornerShape(12.dp)
             ),
-        color = SentioColors.BgPrimary,
+        color = KlarityColors.BgPrimary,
         shape = RoundedCornerShape(12.dp)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -335,14 +335,14 @@ fun DetachedWindowStyle(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(SentioColors.BgSecondary)
+                    .background(KlarityColors.BgSecondary)
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = title,
-                    color = SentioColors.TextPrimary,
+                    color = KlarityColors.TextPrimary,
                     fontWeight = FontWeight.Medium,
                     fontSize = 14.sp
                 )
@@ -354,7 +354,7 @@ fun DetachedWindowStyle(
                     Icon(
                         Icons.Default.Close,
                         contentDescription = "Close",
-                        tint = SentioColors.TextTertiary,
+                        tint = KlarityColors.TextTertiary,
                         modifier = Modifier.size(16.dp)
                     )
                 }
@@ -388,9 +388,9 @@ fun PaneResizer(
     
     val color by animateColorAsState(
         targetValue = when {
-            isDragging -> SentioColors.AccentPrimary
-            isHovered -> SentioColors.AccentPrimary.copy(alpha = 0.5f)
-            else -> SentioColors.BorderPrimary.copy(alpha = 0.3f)
+            isDragging -> KlarityColors.AccentPrimary
+            isHovered -> KlarityColors.AccentPrimary.copy(alpha = 0.5f)
+            else -> KlarityColors.BorderPrimary.copy(alpha = 0.3f)
         },
         animationSpec = tween(100),
         label = "resizerColor"
@@ -424,7 +424,7 @@ fun WorkspaceTopBar(
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
-        color = SentioColors.BgSecondary
+        color = KlarityColors.BgSecondary
     ) {
         Row(
             modifier = Modifier
@@ -444,7 +444,7 @@ fun WorkspaceTopBar(
                 )
                 Text(
                     text = currentDestination.label,
-                    color = SentioColors.TextPrimary,
+                    color = KlarityColors.TextPrimary,
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 16.sp
                 )
@@ -490,7 +490,7 @@ private fun PanelToggleButton(
     
     Surface(
         onClick = onClick,
-        color = if (isHovered) SentioColors.BgElevated else Color.Transparent,
+        color = if (isHovered) KlarityColors.BgElevated else Color.Transparent,
         shape = RoundedCornerShape(6.dp),
         modifier = Modifier.hoverable(interactionSource)
     ) {
@@ -501,7 +501,7 @@ private fun PanelToggleButton(
             Text(
                 text = icon,
                 fontSize = 18.sp,
-                color = if (isHovered) SentioColors.TextPrimary else SentioColors.TextTertiary
+                color = if (isHovered) KlarityColors.TextPrimary else KlarityColors.TextTertiary
             )
         }
     }
@@ -519,7 +519,7 @@ fun GraphPane(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(SentioColors.BgPrimary),
+            .background(KlarityColors.BgPrimary),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -531,7 +531,7 @@ fun GraphPane(modifier: Modifier = Modifier) {
                 modifier = Modifier
                     .size(80.dp)
                     .background(
-                        color = SentioColors.AccentAI.copy(alpha = 0.1f),
+                        color = KlarityColors.AccentAI.copy(alpha = 0.1f),
                         shape = CircleShape
                     ),
                 contentAlignment = Alignment.Center
@@ -544,14 +544,14 @@ fun GraphPane(modifier: Modifier = Modifier) {
             
             Text(
                 text = "Knowledge Graph",
-                color = SentioColors.TextPrimary,
+                color = KlarityColors.TextPrimary,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 20.sp
             )
             
             Text(
                 text = "Visualize connections between your notes",
-                color = SentioColors.TextTertiary,
+                color = KlarityColors.TextTertiary,
                 fontSize = 14.sp,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.widthIn(max = 300.dp)
@@ -579,7 +579,7 @@ fun TasksPane(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(SentioColors.BgPrimary),
+            .background(KlarityColors.BgPrimary),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -591,7 +591,7 @@ fun TasksPane(modifier: Modifier = Modifier) {
                 modifier = Modifier
                     .size(80.dp)
                     .background(
-                        color = SentioColors.AccentPrimary.copy(alpha = 0.1f),
+                        color = KlarityColors.AccentPrimary.copy(alpha = 0.1f),
                         shape = CircleShape
                     ),
                 contentAlignment = Alignment.Center
@@ -604,14 +604,14 @@ fun TasksPane(modifier: Modifier = Modifier) {
             
             Text(
                 text = "Tasks",
-                color = SentioColors.TextPrimary,
+                color = KlarityColors.TextPrimary,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 20.sp
             )
             
             Text(
                 text = "Manage tasks extracted from your notes",
-                color = SentioColors.TextTertiary,
+                color = KlarityColors.TextTertiary,
                 fontSize = 14.sp,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.widthIn(max = 300.dp)
@@ -639,7 +639,7 @@ fun AIChatPane(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(SentioColors.BgPrimary),
+            .background(KlarityColors.BgPrimary),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -653,8 +653,8 @@ fun AIChatPane(modifier: Modifier = Modifier) {
                     .background(
                         brush = Brush.radialGradient(
                             colors = listOf(
-                                SentioColors.AccentAI.copy(alpha = 0.2f),
-                                SentioColors.AccentAI.copy(alpha = 0.05f),
+                                KlarityColors.AccentAI.copy(alpha = 0.2f),
+                                KlarityColors.AccentAI.copy(alpha = 0.05f),
                                 Color.Transparent
                             )
                         ),
@@ -670,14 +670,14 @@ fun AIChatPane(modifier: Modifier = Modifier) {
             
             Text(
                 text = "AI Assistant",
-                color = SentioColors.TextPrimary,
+                color = KlarityColors.TextPrimary,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 20.sp
             )
             
             Text(
                 text = "Chat with AI about your notes and ideas",
-                color = SentioColors.TextTertiary,
+                color = KlarityColors.TextTertiary,
                 fontSize = 14.sp,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.widthIn(max = 300.dp)
@@ -688,7 +688,7 @@ fun AIChatPane(modifier: Modifier = Modifier) {
             // Start chat button
             Surface(
                 onClick = { /* Start chat */ },
-                color = SentioColors.AccentAI.copy(alpha = 0.15f),
+                color = KlarityColors.AccentAI.copy(alpha = 0.15f),
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Row(
@@ -699,7 +699,7 @@ fun AIChatPane(modifier: Modifier = Modifier) {
                     Text("✨", fontSize = 16.sp)
                     Text(
                         text = "Start a conversation",
-                        color = SentioColors.AccentAI,
+                        color = KlarityColors.AccentAI,
                         fontWeight = FontWeight.Medium,
                         fontSize = 14.sp
                     )
@@ -719,13 +719,13 @@ private fun StatItem(
     ) {
         Text(
             text = value,
-            color = SentioColors.TextPrimary,
+            color = KlarityColors.TextPrimary,
             fontWeight = FontWeight.Bold,
             fontSize = 24.sp
         )
         Text(
             text = label,
-            color = SentioColors.TextTertiary,
+            color = KlarityColors.TextTertiary,
             fontSize = 12.sp
         )
     }

@@ -1,4 +1,4 @@
-package com.example.sentio.presentation.screen.home
+package com.example.klarity.presentation.screen.home
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -18,7 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.sentio.presentation.theme.SentioColors
+import com.example.klarity.presentation.theme.KlarityColors
 
 /**
  * Common UI components used across the home screen
@@ -40,7 +40,7 @@ fun ViewModeButton(
             .hoverable(interactionSource),
         shape = RoundedCornerShape(6.dp),
         color = when {
-            isSelected -> SentioColors.BgSecondary
+            isSelected -> KlarityColors.BgSecondary
             isHovered -> Color.White.copy(alpha = 0.05f)
             else -> Color.Transparent
         },
@@ -51,12 +51,12 @@ fun ViewModeButton(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Text(icon, fontSize = 12.sp, color = if (isSelected) Color.White else SentioColors.TextTertiary)
+            Text(icon, fontSize = 12.sp, color = if (isSelected) Color.White else KlarityColors.TextTertiary)
             Text(
                 label,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium,
-                color = if (isSelected) Color.White else SentioColors.TextTertiary
+                color = if (isSelected) Color.White else KlarityColors.TextTertiary
             )
         }
     }
@@ -78,14 +78,14 @@ fun IconActionButton(
             .hoverable(interactionSource),
         shape = RoundedCornerShape(8.dp),
         color = when {
-            isActive -> SentioColors.AccentAI.copy(alpha = 0.2f)
-            isHovered -> SentioColors.BgElevated
-            else -> SentioColors.BgElevated
+            isActive -> KlarityColors.AccentAI.copy(alpha = 0.2f)
+            isHovered -> KlarityColors.BgElevated
+            else -> KlarityColors.BgElevated
         },
-        border = BorderStroke(1.dp, if (isActive) SentioColors.AccentAI.copy(alpha = 0.5f) else Color.White.copy(alpha = 0.05f))
+        border = BorderStroke(1.dp, if (isActive) KlarityColors.AccentAI.copy(alpha = 0.5f) else Color.White.copy(alpha = 0.05f))
     ) {
         Box(contentAlignment = Alignment.Center) {
-            Text(icon, fontSize = 16.sp, color = if (isActive) SentioColors.AccentAI else Color.White)
+            Text(icon, fontSize = 16.sp, color = if (isActive) KlarityColors.AccentAI else Color.White)
         }
     }
 }
@@ -101,10 +101,10 @@ fun SmallIconButton(icon: String, onClick: () -> Unit) {
             .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
             .hoverable(interactionSource),
         shape = RoundedCornerShape(4.dp),
-        color = if (isHovered) SentioColors.BgElevated else Color.Transparent
+        color = if (isHovered) KlarityColors.BgElevated else Color.Transparent
     ) {
         Box(contentAlignment = Alignment.Center) {
-            Text(icon, fontSize = 14.sp, color = SentioColors.TextTertiary)
+            Text(icon, fontSize = 14.sp, color = KlarityColors.TextTertiary)
         }
     }
 }
@@ -126,8 +126,8 @@ fun NavItem(
             .hoverable(interactionSource),
         shape = RoundedCornerShape(8.dp),
         color = when {
-            isActive -> SentioColors.BgElevated
-            isHovered -> SentioColors.BgElevated.copy(alpha = 0.8f)
+            isActive -> KlarityColors.BgElevated
+            isHovered -> KlarityColors.BgElevated.copy(alpha = 0.8f)
             else -> Color.Transparent
         },
         border = if (isActive) BorderStroke(1.dp, Color.White.copy(alpha = 0.05f)) else null
@@ -144,20 +144,20 @@ fun NavItem(
                 Text(
                     icon,
                     fontSize = 18.sp,
-                    color = if (isActive) SentioColors.AccentAI else SentioColors.TextTertiary
+                    color = if (isActive) KlarityColors.AccentAI else KlarityColors.TextTertiary
                 )
                 Text(
                     label,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
-                    color = if (isActive || isHovered) Color.White else SentioColors.TextSecondary
+                    color = if (isActive || isHovered) Color.White else KlarityColors.TextSecondary
                 )
             }
             if (shortcut != null && (isActive || isHovered)) {
                 Text(
                     shortcut,
                     fontSize = 10.sp,
-                    color = SentioColors.TextTertiary
+                    color = KlarityColors.TextTertiary
                 )
             }
         }

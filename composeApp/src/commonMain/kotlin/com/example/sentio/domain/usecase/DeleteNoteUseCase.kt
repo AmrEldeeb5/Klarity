@@ -1,6 +1,6 @@
-package com.example.sentio.domain.usecase
+package com.example.klarity.domain.usecase
 
-import com.example.sentio.domain.repositories.NoteRepository
+import com.example.klarity.domain.repositories.NoteRepository
 
 class DeleteNoteUseCase(
     private val noteRepository: NoteRepository

@@ -1,8 +1,8 @@
-package com.example.sentio.di
+package com.example.klarity.di
 
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
-import com.example.sentio.db.SentioDatabase
+import com.example.klarity.db.KlarityDatabase
 import org.koin.core.module.Module
 import org.koin.dsl.module
 import java.io.File
@@ -21,7 +21,7 @@ actual fun platformModule(): Module = module {
         
         // Only create schema if database is new
         if (!databaseExists) {
-            SentioDatabase.Schema.create(driver)
+            KlarityDatabase.Schema.create(driver)
         }
         
         driver
@@ -30,9 +30,9 @@ actual fun platformModule(): Module = module {
 
 private fun getDatabasePath(): String {
     val userHome = System.getProperty("user.home")
-    val sentioDir = File(userHome, ".sentio")
-    if (!sentioDir.exists()) {
-        sentioDir.mkdirs()
+    val klarityDir = File(userHome, ".klarity")
+    if (!klarityDir.exists()) {
+        klarityDir.mkdirs()
     }
-    return File(sentioDir, "sentio.db").absolutePath
+    return File(klarityDir, "klarity.db").absolutePath
 }

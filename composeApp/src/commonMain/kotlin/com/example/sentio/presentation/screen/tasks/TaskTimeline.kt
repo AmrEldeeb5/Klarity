@@ -1,4 +1,4 @@
-package com.example.sentio.presentation.screen.tasks
+package com.example.klarity.presentation.screen.tasks
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -19,7 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.sentio.presentation.theme.SentioColors
+import com.example.klarity.presentation.theme.KlarityColors
 import kotlinx.datetime.*
 
 /**
@@ -54,7 +54,7 @@ fun TaskTimeline(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(SentioColors.BgPrimary)
+            .background(KlarityColors.BgPrimary)
     ) {
         // Timeline Header with scale selector
         TimelineHeader(
@@ -76,7 +76,7 @@ fun TaskTimeline(
             
             // Divider
             VerticalDivider(
-                color = SentioColors.TextTertiary.copy(alpha = 0.2f),
+                color = KlarityColors.TextTertiary.copy(alpha = 0.2f),
                 modifier = Modifier.fillMaxHeight()
             )
             
@@ -107,7 +107,7 @@ private fun TimelineHeader(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .background(SentioColors.BgSecondary)
+            .background(KlarityColors.BgSecondary)
             .padding(16.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
@@ -116,7 +116,7 @@ private fun TimelineHeader(
             text = "📅 Timeline",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
-            color = SentioColors.TextPrimary
+            color = KlarityColors.TextPrimary
         )
         
         // Scale selector
@@ -134,8 +134,8 @@ private fun TimelineHeader(
                         )
                     },
                     colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = SentioColors.AccentPrimary.copy(alpha = 0.2f),
-                        selectedLabelColor = SentioColors.AccentPrimary
+                        selectedContainerColor = KlarityColors.AccentPrimary.copy(alpha = 0.2f),
+                        selectedLabelColor = KlarityColors.AccentPrimary
                     )
                 )
             }
@@ -152,26 +152,26 @@ private fun TaskListSidebar(
     Column(
         modifier = modifier
             .fillMaxHeight()
-            .background(SentioColors.BgSecondary)
+            .background(KlarityColors.BgSecondary)
     ) {
         // Header
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp)
-                .background(SentioColors.BgTertiary)
+                .background(KlarityColors.BgTertiary)
                 .padding(horizontal = 16.dp),
             contentAlignment = Alignment.CenterStart
         ) {
             Text(
                 text = "Tasks",
                 style = MaterialTheme.typography.labelLarge,
-                color = SentioColors.TextSecondary,
+                color = KlarityColors.TextSecondary,
                 fontWeight = FontWeight.Medium
             )
         }
         
-        HorizontalDivider(color = SentioColors.TextTertiary.copy(alpha = 0.2f))
+        HorizontalDivider(color = KlarityColors.TextTertiary.copy(alpha = 0.2f))
         
         // Task list
         LazyColumn(
@@ -183,7 +183,7 @@ private fun TaskListSidebar(
                     onClick = { onTaskClick(task) }
                 )
                 HorizontalDivider(
-                    color = SentioColors.TextTertiary.copy(alpha = 0.1f)
+                    color = KlarityColors.TextTertiary.copy(alpha = 0.1f)
                 )
             }
         }
@@ -217,7 +217,7 @@ private fun TimelineTaskRow(
         Text(
             text = task.title,
             style = MaterialTheme.typography.bodyMedium,
-            color = SentioColors.TextPrimary,
+            color = KlarityColors.TextPrimary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f)
@@ -254,7 +254,7 @@ private fun TimelineGrid(
         Row(
             modifier = Modifier
                 .height(48.dp)
-                .background(SentioColors.BgTertiary)
+                .background(KlarityColors.BgTertiary)
         ) {
             dateRange.forEach { date ->
                 Box(
@@ -263,21 +263,21 @@ private fun TimelineGrid(
                         .fillMaxHeight()
                         .border(
                             width = 0.5.dp,
-                            color = SentioColors.TextTertiary.copy(alpha = 0.2f)
+                            color = KlarityColors.TextTertiary.copy(alpha = 0.2f)
                         ),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = formatDateHeader(date, scale),
                         style = MaterialTheme.typography.labelSmall,
-                        color = if (isToday(date, today)) SentioColors.AccentPrimary 
-                               else SentioColors.TextSecondary
+                        color = if (isToday(date, today)) KlarityColors.AccentPrimary 
+                               else KlarityColors.TextSecondary
                     )
                 }
             }
         }
         
-        HorizontalDivider(color = SentioColors.TextTertiary.copy(alpha = 0.2f))
+        HorizontalDivider(color = KlarityColors.TextTertiary.copy(alpha = 0.2f))
         
         // Task bars
         LazyColumn {
@@ -290,7 +290,7 @@ private fun TimelineGrid(
                     onClick = { onTaskClick(task) }
                 )
                 HorizontalDivider(
-                    color = SentioColors.TextTertiary.copy(alpha = 0.1f)
+                    color = KlarityColors.TextTertiary.copy(alpha = 0.1f)
                 )
             }
         }
@@ -332,7 +332,7 @@ private fun TimelineTaskBar(
                     .offset(x = (todayIndex * columnWidth.value + columnWidth.value / 2).dp)
                     .width(2.dp)
                     .fillMaxHeight()
-                    .background(SentioColors.AccentPrimary.copy(alpha = 0.5f))
+                    .background(KlarityColors.AccentPrimary.copy(alpha = 0.5f))
             )
         }
         
@@ -346,16 +346,16 @@ private fun TimelineTaskBar(
                     .clip(RoundedCornerShape(4.dp))
                     .background(
                         when (task.status) {
-                            TaskStatus.DONE -> SentioColors.AccentSecondary.copy(alpha = 0.3f)
-                            TaskStatus.IN_PROGRESS -> SentioColors.AccentPrimary.copy(alpha = 0.5f)
+                            TaskStatus.DONE -> KlarityColors.AccentSecondary.copy(alpha = 0.3f)
+                            TaskStatus.IN_PROGRESS -> KlarityColors.AccentPrimary.copy(alpha = 0.5f)
                             else -> Color(task.priority.color).copy(alpha = 0.3f)
                         }
                     )
                     .border(
                         width = 1.dp,
                         color = when (task.status) {
-                            TaskStatus.DONE -> SentioColors.AccentSecondary
-                            TaskStatus.IN_PROGRESS -> SentioColors.AccentPrimary
+                            TaskStatus.DONE -> KlarityColors.AccentSecondary
+                            TaskStatus.IN_PROGRESS -> KlarityColors.AccentPrimary
                             else -> Color(task.priority.color)
                         },
                         shape = RoundedCornerShape(4.dp)
@@ -373,8 +373,8 @@ private fun TimelineTaskBar(
                             .clip(RoundedCornerShape(4.dp))
                             .background(
                                 when (task.status) {
-                                    TaskStatus.DONE -> SentioColors.AccentSecondary
-                                    TaskStatus.IN_PROGRESS -> SentioColors.AccentPrimary
+                                    TaskStatus.DONE -> KlarityColors.AccentSecondary
+                                    TaskStatus.IN_PROGRESS -> KlarityColors.AccentPrimary
                                     else -> Color(task.priority.color)
                                 }.copy(alpha = 0.3f)
                             )
