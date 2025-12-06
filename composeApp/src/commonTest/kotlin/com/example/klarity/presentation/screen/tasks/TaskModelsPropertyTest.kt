@@ -1,11 +1,13 @@
 package com.example.klarity.presentation.screen.tasks
 
+import com.example.klarity.data.mapper.TaskMapper
 import com.example.klarity.data.serialization.BoardState
 import com.example.klarity.data.serialization.BoardStateSerializer
 import com.example.klarity.data.serialization.ColumnState
 import com.example.klarity.data.serialization.SubtaskState
 import com.example.klarity.data.serialization.TagState
 import com.example.klarity.data.serialization.TaskState
+import com.example.klarity.db.TaskEntity
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.arbitrary
 import io.kotest.property.arbitrary.boolean
@@ -24,6 +26,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
@@ -396,5 +399,255 @@ class TaskModelsPropertyTest {
         
         assertEquals(0, result.columns.size, "Invalid JSON should return empty columns")
         assertEquals(0, result.tasks.size, "Invalid JSON should return empty tasks")
+    }
+
+    // ============================================================================
+    // Property 12: Task persistence round-trip
+    // **Feature: kanban-board, Property 12: Task persistence round-trip**
+    // **Validates: Requirements 9.1, 9.2**
+    //
+    // For any task that is created or modified, reading from storage 
+    // SHALL return the same task data.
+    // ============================================================================
+
+    /**
+     * Generates valid TaskTag instances.
+     */
+    private fun arbTaskTag(): Arb<TaskTag> = arbitrary {
+        TaskTag(
+            label = Arb.string(1..20).bind(),
+            colorClass = Arb.enum<TagColor>().bind()
+        )
+    }
+
+    /**
+     * Generates valid Subtask instances.
+     */
+    private fun arbSubtask(): Arb<Subtask> = arbitrary {
+        Subtask(
+            id = "subtask-${Arb.string(5..10).bind()}",
+            title = Arb.string(1..50).bind(),
+            isCompleted = Arb.boolean().bind(),
+            order = Arb.int(0..100).bind()
+        )
+    }
+
+    /**
+     * Generates valid Task instances with all fields populated.
+     */
+    private fun arbTask(): Arb<Task> = arbitrary {
+        val now = Clock.System.now()
+        val createdAt = now - Arb.long(1L, 86400000L * 30).bind().milliseconds
+        val updatedAt = createdAt + Arb.long(0L, 86400000L).bind().milliseconds
+        
+        // Generate timer with valid constraints
+        val hasTimer = Arb.boolean().bind()
+        val timer = if (hasTimer) {
+            val timerStartedAt = now - Arb.long(0L, 3600000L).bind().milliseconds
+            val pausedDuration = Arb.long(0L, 1800000L).bind().milliseconds
+            TaskTimer(
+                startedAt = timerStartedAt,
+                pausedDuration = pausedDuration,
+                isPaused = Arb.boolean().bind()
+            )
+        } else null
+        
+        Task(
+            id = "task-${Arb.string(5..10).bind()}",
+            title = Arb.string(1..100).bind(),
+            description = Arb.string(0..200).bind(),
+            status = Arb.enum<TaskStatus>().bind(),
+            priority = Arb.enum<TaskPriority>().bind(),
+            tags = Arb.list(arbTaskTag(), 0..5).bind(),
+            points = Arb.int(1..13).orNull().bind(),
+            assignee = Arb.string(1..20).orNull().bind(),
+            dueDate = Arb.long(now.toEpochMilliseconds(), now.toEpochMilliseconds() + 86400000L * 30).orNull().bind()?.let { Instant.fromEpochMilliseconds(it) },
+            startDate = Arb.long(now.toEpochMilliseconds() - 86400000L * 30, now.toEpochMilliseconds()).orNull().bind()?.let { Instant.fromEpochMilliseconds(it) },
+            estimatedHours = Arb.int(1..100).orNull().bind()?.toFloat(),
+            actualHours = Arb.int(1..100).orNull().bind()?.toFloat(),
+            subtasks = Arb.list(arbSubtask(), 0..3).bind(),
+            linkedNoteIds = Arb.list(Arb.string(5..10), 0..3).bind(),
+            timer = timer,
+            isActive = Arb.boolean().bind(),
+            completed = Arb.boolean().bind(),
+            createdAt = createdAt,
+            updatedAt = updatedAt,
+            completedAt = if (Arb.boolean().bind()) updatedAt else null,
+            order = Arb.int(0..100).bind()
+        )
+    }
+
+    @Test
+    fun property12_taskPersistenceRoundTrip() {
+        runBlocking {
+            checkAll(100, arbTask()) { originalTask ->
+                // Convert Task to entity values (simulating save to database)
+                val entityValues = TaskMapper.toEntityValues(originalTask)
+                
+                // Create a TaskEntity from the values (simulating database read)
+                val entity = TaskEntity(
+                    id = entityValues.id,
+                    title = entityValues.title,
+                    description = entityValues.description,
+                    status = entityValues.status,
+                    priority = entityValues.priority,
+                    tags = entityValues.tags,
+                    points = entityValues.points,
+                    assignee = entityValues.assignee,
+                    dueDate = entityValues.dueDate,
+                    startDate = entityValues.startDate,
+                    estimatedHours = entityValues.estimatedHours,
+                    actualHours = entityValues.actualHours,
+                    subtasks = entityValues.subtasks,
+                    linkedNoteIds = entityValues.linkedNoteIds,
+                    timerStartedAt = entityValues.timerStartedAt,
+                    timerPausedDuration = entityValues.timerPausedDuration,
+                    timerIsPaused = entityValues.timerIsPaused,
+                    isActive = entityValues.isActive,
+                    completed = entityValues.completed,
+                    columnOrder = entityValues.columnOrder,
+                    createdAt = entityValues.createdAt,
+                    updatedAt = entityValues.updatedAt,
+                    completedAt = entityValues.completedAt
+                )
+                
+                // Convert back to domain model (simulating read from database)
+                val restoredTask = TaskMapper.toDomain(entity)
+                
+                // Verify all fields are preserved
+                assertEquals(originalTask.id, restoredTask.id, "Task id should be preserved")
+                assertEquals(originalTask.title, restoredTask.title, "Task title should be preserved")
+                assertEquals(originalTask.description, restoredTask.description, "Task description should be preserved")
+                assertEquals(originalTask.status, restoredTask.status, "Task status should be preserved")
+                assertEquals(originalTask.priority, restoredTask.priority, "Task priority should be preserved")
+                assertEquals(originalTask.points, restoredTask.points, "Task points should be preserved")
+                assertEquals(originalTask.assignee, restoredTask.assignee, "Task assignee should be preserved")
+                assertEquals(originalTask.isActive, restoredTask.isActive, "Task isActive should be preserved")
+                assertEquals(originalTask.completed, restoredTask.completed, "Task completed should be preserved")
+                assertEquals(originalTask.order, restoredTask.order, "Task order should be preserved")
+                
+                // Verify dates (comparing epoch milliseconds to avoid precision issues)
+                assertEquals(
+                    originalTask.createdAt.toEpochMilliseconds(),
+                    restoredTask.createdAt.toEpochMilliseconds(),
+                    "Task createdAt should be preserved"
+                )
+                assertEquals(
+                    originalTask.updatedAt.toEpochMilliseconds(),
+                    restoredTask.updatedAt.toEpochMilliseconds(),
+                    "Task updatedAt should be preserved"
+                )
+                assertEquals(
+                    originalTask.dueDate?.toEpochMilliseconds(),
+                    restoredTask.dueDate?.toEpochMilliseconds(),
+                    "Task dueDate should be preserved"
+                )
+                assertEquals(
+                    originalTask.startDate?.toEpochMilliseconds(),
+                    restoredTask.startDate?.toEpochMilliseconds(),
+                    "Task startDate should be preserved"
+                )
+                assertEquals(
+                    originalTask.completedAt?.toEpochMilliseconds(),
+                    restoredTask.completedAt?.toEpochMilliseconds(),
+                    "Task completedAt should be preserved"
+                )
+                
+                // Verify tags
+                assertEquals(originalTask.tags.size, restoredTask.tags.size, "Tag count should be preserved")
+                originalTask.tags.forEachIndexed { index, originalTag ->
+                    val restoredTag = restoredTask.tags[index]
+                    assertEquals(originalTag.label, restoredTag.label, "Tag label should be preserved")
+                    assertEquals(originalTag.colorClass, restoredTag.colorClass, "Tag color should be preserved")
+                }
+                
+                // Verify subtasks
+                assertEquals(originalTask.subtasks.size, restoredTask.subtasks.size, "Subtask count should be preserved")
+                originalTask.subtasks.forEachIndexed { index, originalSubtask ->
+                    val restoredSubtask = restoredTask.subtasks[index]
+                    assertEquals(originalSubtask.id, restoredSubtask.id, "Subtask id should be preserved")
+                    assertEquals(originalSubtask.title, restoredSubtask.title, "Subtask title should be preserved")
+                    assertEquals(originalSubtask.isCompleted, restoredSubtask.isCompleted, "Subtask isCompleted should be preserved")
+                    assertEquals(originalSubtask.order, restoredSubtask.order, "Subtask order should be preserved")
+                }
+                
+                // Verify linked note IDs
+                assertEquals(originalTask.linkedNoteIds, restoredTask.linkedNoteIds, "Linked note IDs should be preserved")
+                
+                // Verify timer
+                if (originalTask.timer != null) {
+                    assertTrue(restoredTask.timer != null, "Timer should be preserved when present")
+                    assertEquals(
+                        originalTask.timer!!.startedAt.toEpochMilliseconds(),
+                        restoredTask.timer!!.startedAt.toEpochMilliseconds(),
+                        "Timer startedAt should be preserved"
+                    )
+                    assertEquals(
+                        originalTask.timer!!.pausedDuration.inWholeMilliseconds,
+                        restoredTask.timer!!.pausedDuration.inWholeMilliseconds,
+                        "Timer pausedDuration should be preserved"
+                    )
+                    assertEquals(
+                        originalTask.timer!!.isPaused,
+                        restoredTask.timer!!.isPaused,
+                        "Timer isPaused should be preserved"
+                    )
+                } else {
+                    assertTrue(restoredTask.timer == null, "Timer should be null when original was null")
+                }
+            }
+        }
+    }
+
+    @Test
+    fun property12_taskWithEmptyCollectionsRoundTrip() {
+        // Test edge case: task with empty tags, subtasks, and linkedNoteIds
+        val now = Clock.System.now()
+        val task = Task(
+            id = "empty-task",
+            title = "Empty Task",
+            description = "",
+            tags = emptyList(),
+            subtasks = emptyList(),
+            linkedNoteIds = emptyList(),
+            timer = null,
+            createdAt = now,
+            updatedAt = now
+        )
+        
+        val entityValues = TaskMapper.toEntityValues(task)
+        val entity = TaskEntity(
+            id = entityValues.id,
+            title = entityValues.title,
+            description = entityValues.description,
+            status = entityValues.status,
+            priority = entityValues.priority,
+            tags = entityValues.tags,
+            points = entityValues.points,
+            assignee = entityValues.assignee,
+            dueDate = entityValues.dueDate,
+            startDate = entityValues.startDate,
+            estimatedHours = entityValues.estimatedHours,
+            actualHours = entityValues.actualHours,
+            subtasks = entityValues.subtasks,
+            linkedNoteIds = entityValues.linkedNoteIds,
+            timerStartedAt = entityValues.timerStartedAt,
+            timerPausedDuration = entityValues.timerPausedDuration,
+            timerIsPaused = entityValues.timerIsPaused,
+            isActive = entityValues.isActive,
+            completed = entityValues.completed,
+            columnOrder = entityValues.columnOrder,
+            createdAt = entityValues.createdAt,
+            updatedAt = entityValues.updatedAt,
+            completedAt = entityValues.completedAt
+        )
+        val restoredTask = TaskMapper.toDomain(entity)
+        
+        assertEquals(task.id, restoredTask.id)
+        assertEquals(task.title, restoredTask.title)
+        assertTrue(restoredTask.tags.isEmpty(), "Empty tags should be preserved")
+        assertTrue(restoredTask.subtasks.isEmpty(), "Empty subtasks should be preserved")
+        assertTrue(restoredTask.linkedNoteIds.isEmpty(), "Empty linkedNoteIds should be preserved")
+        assertTrue(restoredTask.timer == null, "Null timer should be preserved")
     }
 }
