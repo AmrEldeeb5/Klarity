@@ -4,6 +4,7 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.CircleShape
@@ -317,6 +318,20 @@ private fun TaskCard(
         animationSpec = tween(150)
     )
     
+    // Pulsing glow animation for active timer (Property 6.3)
+    val infiniteTransition = rememberInfiniteTransition()
+    val glowAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 0.8f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        )
+    )
+    
+    // Apply opacity when task is completed (Requirement 3.3)
+    val cardAlpha = if (task.completed) 0.6f else 1f
+    
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -325,8 +340,20 @@ private fun TaskCard(
                 scaleX = scale
                 scaleY = scale
                 shadowElevation = elevation
+                alpha = cardAlpha
             }
             .zIndex(if (isDragging) 10f else 0f)
+            // Apply pulsing glow shadow when task has active timer
+            .then(
+                if (task.isActive && task.timer != null) {
+                    Modifier.shadow(
+                        elevation = (8 * glowAlpha).dp,
+                        shape = RoundedCornerShape(10.dp),
+                        ambientColor = KlarityColors.AccentPrimary.copy(alpha = glowAlpha),
+                        spotColor = KlarityColors.AccentPrimary.copy(alpha = glowAlpha)
+                    )
+                } else Modifier
+            )
             .pointerInput(Unit) {
                 detectDragGestures(
                     onDragStart = {
@@ -355,20 +382,64 @@ private fun TaskCard(
             containerColor = if (isDragging) KlarityColors.BgElevated else KlarityColors.BgCard
         )
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            // Priority & Labels Row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Priority indicator
-                PriorityBadge(priority = task.priority)
+                // Priority & Labels Row with priority dot at top-right
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Priority badge (left side)
+                    PriorityBadge(priority = task.priority)
+                    
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Story points display with eco icon (Requirement 1.4)
+                        task.points?.let { points ->
+                            StoryPointsBadge(points = points)
+                        }
+                        
+                        // Priority color dot indicator (top-right position, Requirement 8.1)
+                        PriorityDot(priority = task.priority)
+                    }
+                }
+                
+                // Timer display when task has active timer (Requirement 6.1)
+                task.timer?.let { timer ->
+                    TimerDisplay(timer = timer, isActive = task.isActive)
+                }
+                
+                // Task Title with strikethrough when completed (Requirement 3.3)
+                Text(
+                    text = task.title,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = if (task.completed || task.status == TaskStatus.DONE) 
+                        KlarityColors.TextTertiary else KlarityColors.TextPrimary,
+                    textDecoration = if (task.completed || task.status == TaskStatus.DONE) 
+                        TextDecoration.LineThrough else null,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                
+                // Description preview (if exists)
+                if (task.description.isNotEmpty()) {
+                    Text(
+                        text = task.description.take(100),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = KlarityColors.TextSecondary,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
                 
                 // Due date if exists
                 task.dueDate?.let { dueDate ->
@@ -377,122 +448,135 @@ private fun TaskCard(
                         isOverdue = task.isOverdue
                     )
                 }
-            }
-            
-            // Task Title
-            Text(
-                text = task.title,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
-                color = if (task.status == TaskStatus.DONE) 
-                    KlarityColors.TextTertiary else KlarityColors.TextPrimary,
-                textDecoration = if (task.status == TaskStatus.DONE) 
-                    TextDecoration.LineThrough else null,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-            
-            // Description preview (if exists)
-            if (task.description.isNotEmpty()) {
-                Text(
-                    text = task.description.take(100),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = KlarityColors.TextSecondary,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-            
-            // Tags
-            if (task.tags.isNotEmpty()) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    modifier = Modifier.horizontalScroll(rememberScrollState())
-                ) {
-                    task.tags.take(3).forEach { tag ->
-                        TagChip(tag = tag.label, color = tag.colorClass)
-                    }
-                    if (task.tags.size > 3) {
-                        Text(
-                            text = "+${task.tags.size - 3}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = KlarityColors.TextTertiary
-                        )
-                    }
-                }
-            }
-            
-            // Subtasks progress
-            if (task.subtasks.isNotEmpty()) {
-                SubtaskProgress(
-                    completed = task.subtasks.count { it.isCompleted },
-                    total = task.subtasks.size,
-                    progress = task.progress
-                )
-            }
-            
-            // Footer: Assignee, Links, Actions
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Assignee avatar
-                    task.assignee?.let { assignee ->
-                        AssigneeAvatar(name = assignee)
-                    }
-                    
-                    // Linked notes indicator
-                    if (task.linkedNoteIds.isNotEmpty()) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(2.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(text = "🔗", fontSize = 12.sp)
-                            Text(
-                                text = "${task.linkedNoteIds.size}",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = KlarityColors.TextTertiary
-                            )
-                        }
-                    }
+                
+                // Tags - Render all tags in wrapping FlowRow layout (Requirement 7.2)
+                if (task.tags.isNotEmpty()) {
+                    TagsFlowRow(tags = task.tags)
                 }
                 
-                // Quick actions (visible on hover)
-                AnimatedVisibility(visible = isHovered || isDragging) {
+                // Subtasks progress
+                if (task.subtasks.isNotEmpty()) {
+                    SubtaskProgress(
+                        completed = task.subtasks.count { it.isCompleted },
+                        total = task.subtasks.size,
+                        progress = task.progress
+                    )
+                }
+                
+                // Footer: Assignee, Links, Actions
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        IconButton(
-                            onClick = onToggleComplete,
-                            modifier = Modifier.size(24.dp)
-                        ) {
-                            Icon(
-                                imageVector = if (task.status == TaskStatus.DONE) 
-                                    Icons.Default.Refresh else Icons.Default.Check,
-                                contentDescription = "Toggle complete",
-                                tint = KlarityColors.AccentSecondary,
-                                modifier = Modifier.size(14.dp)
-                            )
+                        // Assignee avatar
+                        task.assignee?.let { assignee ->
+                            AssigneeAvatar(name = assignee)
                         }
-                        IconButton(
-                            onClick = onDelete,
-                            modifier = Modifier.size(24.dp)
+                        
+                        // Linked notes indicator
+                        if (task.linkedNoteIds.isNotEmpty()) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(text = "🔗", fontSize = 12.sp)
+                                Text(
+                                    text = "${task.linkedNoteIds.size}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = KlarityColors.TextTertiary
+                                )
+                            }
+                        }
+                    }
+                    
+                    // Quick actions (visible on hover)
+                    AnimatedVisibility(visible = isHovered || isDragging) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = "Delete",
-                                tint = Color(0xFFFF5252),
-                                modifier = Modifier.size(14.dp)
-                            )
+                            IconButton(
+                                onClick = onToggleComplete,
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (task.completed || task.status == TaskStatus.DONE) 
+                                        Icons.Default.Refresh else Icons.Default.Check,
+                                    contentDescription = "Toggle complete",
+                                    tint = KlarityColors.AccentSecondary,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                            }
+                            IconButton(
+                                onClick = onDelete,
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = "Delete",
+                                    tint = Color(0xFFFF5252),
+                                    modifier = Modifier.size(14.dp)
+                                )
+                            }
                         }
                     }
                 }
             }
+            
+            // Checkbox overlay for completion toggle (positioned at top-right corner)
+            // Requirement 3.2: Toggle completion without opening modal
+            CompletionCheckbox(
+                isCompleted = task.completed || task.status == TaskStatus.DONE,
+                onToggle = onToggleComplete,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(8.dp)
+            )
+        }
+    }
+}
+
+/**
+ * Checkbox overlay for task completion toggle (Requirement 3.2)
+ * Positioned at top-right corner with click handling that doesn't propagate to card
+ */
+@Composable
+private fun CompletionCheckbox(
+    isCompleted: Boolean,
+    onToggle: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .size(20.dp)
+            .clip(RoundedCornerShape(4.dp))
+            .border(
+                width = 1.5.dp,
+                color = if (isCompleted) KlarityColors.AccentPrimary else KlarityColors.BorderPrimary,
+                shape = RoundedCornerShape(4.dp)
+            )
+            .background(
+                if (isCompleted) KlarityColors.AccentPrimary.copy(alpha = 0.2f) 
+                else Color.Transparent
+            )
+            .clickable(
+                onClick = onToggle,
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() }
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        if (isCompleted) {
+            Icon(
+                imageVector = Icons.Default.Check,
+                contentDescription = "Completed",
+                tint = KlarityColors.AccentPrimary,
+                modifier = Modifier.size(14.dp)
+            )
         }
     }
 }
@@ -515,6 +599,85 @@ private fun PriorityBadge(
             text = priority.label,
             style = MaterialTheme.typography.labelSmall,
             color = Color(priority.color),
+            fontWeight = FontWeight.Medium
+        )
+    }
+}
+
+/**
+ * Priority color dot indicator (Requirement 8.1, 8.2, 8.3, 8.4)
+ * Displays a colored dot based on priority level:
+ * - HIGH = red
+ * - MEDIUM = yellow
+ * - LOW = blue
+ */
+@Composable
+private fun PriorityDot(
+    priority: TaskPriority,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .size(8.dp)
+            .clip(CircleShape)
+            .background(Color(priority.color))
+    )
+}
+
+/**
+ * Story points display with eco icon (Requirement 1.4)
+ */
+@Composable
+private fun StoryPointsBadge(
+    points: Int,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(4.dp))
+            .background(KlarityColors.BgTertiary)
+            .padding(horizontal = 6.dp, vertical = 2.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "🌱",
+            fontSize = 10.sp
+        )
+        Text(
+            text = "$points",
+            style = MaterialTheme.typography.labelSmall,
+            color = KlarityColors.TextSecondary,
+            fontWeight = FontWeight.Medium
+        )
+    }
+}
+
+/**
+ * Timer display showing elapsed time (Requirement 6.1)
+ */
+@Composable
+private fun TimerDisplay(
+    timer: TaskTimer,
+    isActive: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(4.dp))
+            .background(KlarityColors.TimerBg)
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = if (isActive) "⏱️" else "⏸️",
+            fontSize = 12.sp
+        )
+        Text(
+            text = timer.formattedTime(),
+            style = MaterialTheme.typography.labelMedium,
+            color = if (isActive) KlarityColors.TimerActive else KlarityColors.TimerText,
             fontWeight = FontWeight.Medium
         )
     }
@@ -567,6 +730,56 @@ private fun TagChip(
             style = MaterialTheme.typography.labelSmall,
             color = tagColor
         )
+    }
+}
+
+/**
+ * TagBadge composable for rendering task tags with colored styling.
+ * 
+ * Accepts a TaskTag with label and color, applies background alpha and text color
+ * from TagColor enum, uses rounded corners and padding.
+ * 
+ * **Requirement 7.1**: Display each tag as a colored badge with label text
+ */
+@Composable
+fun TagBadge(
+    tag: TaskTag,
+    modifier: Modifier = Modifier
+) {
+    val tagColor = Color(tag.colorClass.textColor)
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(4.dp))
+            .background(tagColor.copy(alpha = tag.colorClass.bgAlpha))
+            .padding(horizontal = 6.dp, vertical = 2.dp)
+    ) {
+        Text(
+            text = tag.label,
+            style = MaterialTheme.typography.labelSmall,
+            color = tagColor
+        )
+    }
+}
+
+/**
+ * Renders all tags in a wrapping FlowRow layout.
+ * 
+ * **Requirement 7.2**: Display all tags in a wrapping layout, handle overflow gracefully
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun TagsFlowRow(
+    tags: List<TaskTag>,
+    modifier: Modifier = Modifier
+) {
+    FlowRow(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        tags.forEach { tag ->
+            TagBadge(tag = tag)
+        }
     }
 }
 
