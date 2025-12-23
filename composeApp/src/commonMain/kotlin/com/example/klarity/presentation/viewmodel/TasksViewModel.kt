@@ -2,6 +2,7 @@ package com.example.klarity.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.klarity.domain.repositories.TaskRepository
 import com.example.klarity.presentation.screen.tasks.KanbanColumn
 import com.example.klarity.presentation.screen.tasks.Task
 import com.example.klarity.presentation.screen.tasks.TaskFilter
@@ -27,9 +28,11 @@ import kotlinx.datetime.Clock
  * ViewModel for the Tasks/Kanban screen.
  * 
  * Manages task state, filtering, sorting, and timer functionality
- * using an event-based architecture.
+ * using an event-based architecture with repository-backed persistence.
  */
-class TasksViewModel : ViewModel() {
+class TasksViewModel(
+    private val taskRepository: TaskRepository
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow<TasksUiState>(TasksUiState.Loading)
     val uiState: StateFlow<TasksUiState> = _uiState.asStateFlow()
@@ -39,6 +42,34 @@ class TasksViewModel : ViewModel() {
 
     init {
         loadInitialData()
+        observeTasks()
+    }
+    
+    /**
+     * Observe tasks from repository and update UI state reactively.
+     */
+    private fun observeTasks() {
+        viewModelScope.launch {
+            taskRepository.getAllTasks().collect { tasks ->
+                updateColumnsFromTasks(tasks)
+            }
+        }
+    }
+    
+    /**
+     * Update columns from task list, grouping by status.
+     */
+    private fun updateColumnsFromTasks(tasks: List<Task>) {
+        val currentState = _uiState.value
+        if (currentState !is TasksUiState.Success) return
+        
+        val tasksByStatus = tasks.groupBy { it.status }
+        val updatedColumns = currentState.columns.map { column ->
+            val columnTasks = tasksByStatus[column.status] ?: emptyList()
+            column.copy(tasks = columnTasks.sortedBy { it.order })
+        }
+        
+        _uiState.value = currentState.copy(columns = updatedColumns)
     }
 
     /**
@@ -79,6 +110,27 @@ class TasksViewModel : ViewModel() {
             
             // Refresh
             TasksUiEvent.Refresh -> loadInitialData()
+            
+            // AI Suggestion events
+            TasksUiEvent.ReviewAiSuggestions -> handleReviewAiSuggestions()
+            TasksUiEvent.DismissAiSuggestion -> handleDismissAiSuggestion()
+        }
+    }
+    
+    // ============================================================================
+    // AI Suggestion Handlers
+    // ============================================================================
+    
+    private fun handleReviewAiSuggestions() {
+        // TODO: Open AI suggestions review modal
+        viewModelScope.launch {
+            _effects.send(TasksUiEffect.ShowSnackbar("AI Suggestions review coming soon"))
+        }
+    }
+    
+    private fun handleDismissAiSuggestion() {
+        updateSuccessState { state ->
+            state.copy(showAiSuggestion = false)
         }
     }
 
@@ -97,118 +149,96 @@ class TasksViewModel : ViewModel() {
     }
 
     private fun handleTaskToggleComplete(taskId: String) {
-        updateSuccessState { state ->
-            val updatedColumns = state.columns.map { column ->
-                val updatedTasks = column.tasks.map { task ->
-                    if (task.id == taskId) {
-                        task.copy(
-                            completed = !task.completed,
-                            updatedAt = Clock.System.now()
-                        )
-                    } else task
+        viewModelScope.launch {
+            // Find current task state
+            val currentState = _uiState.value as? TasksUiState.Success ?: return@launch
+            val task = currentState.columns.flatMap { it.tasks }.find { it.id == taskId } ?: return@launch
+            
+            // Toggle completion in repository
+            taskRepository.updateTaskCompletion(taskId, !task.completed)
+                .onSuccess {
+                    // UI will update via observeTasks flow
                 }
-                column.copy(tasks = updatedTasks)
-            }
-            state.copy(columns = updatedColumns)
+                .onFailure { error ->
+                    _effects.send(TasksUiEffect.ShowError("Failed to update task: ${error.message}"))
+                }
         }
     }
 
     private fun handleTaskMoved(taskId: String, toColumn: TaskStatus, index: Int) {
-        updateSuccessState { state ->
-            // Find the task and its source column
-            var movedTask: Task? = null
-            var sourceColumn: TaskStatus? = null
-            
-            for (column in state.columns) {
-                val task = column.tasks.find { it.id == taskId }
-                if (task != null) {
-                    movedTask = task
-                    sourceColumn = column.status
-                    break
+        viewModelScope.launch {
+            taskRepository.updateTaskStatus(taskId, toColumn, index)
+                .onSuccess {
+                    // UI will update via observeTasks flow
                 }
-            }
-            
-            if (movedTask == null || sourceColumn == null) return@updateSuccessState state
-            
-            val updatedTask = movedTask.copy(
-                status = toColumn,
-                updatedAt = Clock.System.now()
-            )
-            
-            val updatedColumns = state.columns.map { column ->
-                when (column.status) {
-                    sourceColumn -> column.copy(tasks = column.tasks.filter { it.id != taskId })
-                    toColumn -> {
-                        val newTasks = column.tasks.toMutableList()
-                        val insertIndex = index.coerceIn(0, newTasks.size)
-                        newTasks.add(insertIndex, updatedTask)
-                        column.copy(tasks = newTasks)
-                    }
-                    else -> column
+                .onFailure { error ->
+                    _effects.send(TasksUiEffect.ShowError("Failed to move task: ${error.message}"))
                 }
-            }
-            
-            state.copy(columns = updatedColumns)
         }
     }
 
     private fun handleTaskCreated(status: TaskStatus) {
-        val newTask = Task(
-            id = "task-${Clock.System.now().toEpochMilliseconds()}",
-            title = "New Task",
-            status = status,
-            createdAt = Clock.System.now(),
-            updatedAt = Clock.System.now()
-        )
-        
-        updateSuccessState { state ->
-            val updatedColumns = state.columns.map { column ->
-                if (column.status == status) {
-                    column.copy(tasks = column.tasks + newTask)
-                } else column
-            }
-            state.copy(
-                columns = updatedColumns,
-                selectedTask = newTask,
-                isModalOpen = true
-            )
-        }
-        
         viewModelScope.launch {
-            _effects.send(TasksUiEffect.ShowSnackbar("Task created"))
+            val currentState = _uiState.value as? TasksUiState.Success ?: return@launch
+            val columnTasks = currentState.columns.find { it.status == status }?.tasks ?: emptyList()
+            
+            val newTask = Task(
+                id = "task-${Clock.System.now().toEpochMilliseconds()}",
+                title = "New Task",
+                status = status,
+                order = columnTasks.size,
+                createdAt = Clock.System.now(),
+                updatedAt = Clock.System.now()
+            )
+            
+            taskRepository.createTask(newTask)
+                .onSuccess { task ->
+                    updateSuccessState { state ->
+                        state.copy(
+                            selectedTask = task,
+                            isModalOpen = true
+                        )
+                    }
+                    _effects.send(TasksUiEffect.ShowSnackbar("Task created"))
+                }
+                .onFailure { error ->
+                    _effects.send(TasksUiEffect.ShowError("Failed to create task: ${error.message}"))
+                }
         }
     }
 
     private fun handleTaskDeleted(task: Task) {
-        updateSuccessState { state ->
-            val updatedColumns = state.columns.map { column ->
-                column.copy(tasks = column.tasks.filter { it.id != task.id })
-            }
-            state.copy(
-                columns = updatedColumns,
-                selectedTask = if (state.selectedTask?.id == task.id) null else state.selectedTask,
-                isModalOpen = if (state.selectedTask?.id == task.id) false else state.isModalOpen
-            )
-        }
-        
         viewModelScope.launch {
-            _effects.send(TasksUiEffect.ShowSnackbar("Task deleted"))
+            taskRepository.deleteTask(task.id)
+                .onSuccess {
+                    updateSuccessState { state ->
+                        state.copy(
+                            selectedTask = if (state.selectedTask?.id == task.id) null else state.selectedTask,
+                            isModalOpen = if (state.selectedTask?.id == task.id) false else state.isModalOpen
+                        )
+                    }
+                    _effects.send(TasksUiEffect.ShowSnackbar("Task deleted"))
+                }
+                .onFailure { error ->
+                    _effects.send(TasksUiEffect.ShowError("Failed to delete task: ${error.message}"))
+                }
         }
     }
 
     private fun handleTaskUpdated(task: Task) {
-        updateSuccessState { state ->
-            val updatedColumns = state.columns.map { column ->
-                column.copy(
-                    tasks = column.tasks.map { 
-                        if (it.id == task.id) task.copy(updatedAt = Clock.System.now()) else it 
+        viewModelScope.launch {
+            val updatedTask = task.copy(updatedAt = Clock.System.now())
+            taskRepository.updateTask(updatedTask)
+                .onSuccess {
+                    updateSuccessState { state ->
+                        state.copy(
+                            selectedTask = if (state.selectedTask?.id == task.id) updatedTask else state.selectedTask
+                        )
                     }
-                )
-            }
-            state.copy(
-                columns = updatedColumns,
-                selectedTask = if (state.selectedTask?.id == task.id) task else state.selectedTask
-            )
+                }
+                .onFailure { error ->
+                    _effects.send(TasksUiEffect.ShowError("Failed to update task: ${error.message}"))
+                }
         }
     }
 
@@ -217,82 +247,52 @@ class TasksViewModel : ViewModel() {
     // ============================================================================
 
     private fun handleTimerStarted(taskId: String) {
-        updateSuccessState { state ->
-            val updatedColumns = state.columns.map { column ->
-                column.copy(
-                    tasks = column.tasks.map { task ->
-                        if (task.id == taskId) {
-                            task.copy(
-                                timer = TaskTimer(
-                                    startedAt = Clock.System.now(),
-                                    isPaused = false
-                                ),
-                                isActive = true,
-                                updatedAt = Clock.System.now()
-                            )
-                        } else {
-                            // Deactivate other tasks
-                            task.copy(isActive = false)
-                        }
-                    }
-                )
-            }
-            state.copy(columns = updatedColumns)
+        viewModelScope.launch {
+            taskRepository.startTimer(taskId)
+                .onFailure { error ->
+                    _effects.send(TasksUiEffect.ShowError("Failed to start timer: ${error.message}"))
+                }
         }
     }
 
     private fun handleTimerStopped(taskId: String) {
-        updateSuccessState { state ->
-            val updatedColumns = state.columns.map { column ->
-                column.copy(
-                    tasks = column.tasks.map { task ->
-                        if (task.id == taskId) {
-                            task.copy(
-                                timer = null,
-                                isActive = false,
-                                updatedAt = Clock.System.now()
-                            )
-                        } else task
-                    }
-                )
-            }
-            state.copy(columns = updatedColumns)
+        viewModelScope.launch {
+            taskRepository.stopTimer(taskId)
+                .onFailure { error ->
+                    _effects.send(TasksUiEffect.ShowError("Failed to stop timer: ${error.message}"))
+                }
         }
     }
 
     private fun handleTimerPaused(taskId: String) {
-        updateSuccessState { state ->
-            val updatedColumns = state.columns.map { column ->
-                column.copy(
-                    tasks = column.tasks.map { task ->
-                        if (task.id == taskId && task.timer != null) {
-                            task.copy(
-                                timer = task.timer.copy(isPaused = true),
-                                updatedAt = Clock.System.now()
-                            )
-                        } else task
-                    }
+        viewModelScope.launch {
+            // Get current task and update with paused state
+            val currentState = _uiState.value as? TasksUiState.Success ?: return@launch
+            val task = currentState.columns.flatMap { it.tasks }.find { it.id == taskId } ?: return@launch
+            
+            if (task.timer != null) {
+                val updatedTask = task.copy(
+                    timer = task.timer.copy(isPaused = true),
+                    updatedAt = Clock.System.now()
                 )
+                taskRepository.updateTask(updatedTask)
             }
-            state.copy(columns = updatedColumns)
         }
     }
 
     private fun handleTimerResumed(taskId: String) {
-        updateSuccessState { state ->
-            val updatedColumns = state.columns.map { column ->
-                column.copy(
-                    tasks = column.tasks.map { task ->
-                        if (task.id == taskId && task.timer != null) {
-                            task.copy(
-                                timer = task.timer.copy(isPaused = false),
-                                updatedAt = Clock.System.now()
-                            )
-                        } else task
-                    }
+        viewModelScope.launch {
+            // Get current task and update with resumed state
+            val currentState = _uiState.value as? TasksUiState.Success ?: return@launch
+            val task = currentState.columns.flatMap { it.tasks }.find { it.id == taskId } ?: return@launch
+            
+            if (task.timer != null) {
+                val updatedTask = task.copy(
+                    timer = task.timer.copy(isPaused = false),
+                    updatedAt = Clock.System.now()
                 )
+                taskRepository.updateTask(updatedTask)
             }
-            state.copy(columns = updatedColumns)
         }
     }
 
@@ -401,15 +401,130 @@ class TasksViewModel : ViewModel() {
     private fun loadInitialData() {
         _uiState.value = TasksUiState.Loading
         
-        // For now, load sample data. In a real app, this would come from a repository.
-        val columns = createInitialColumns()
+        viewModelScope.launch {
+            // Initialize with empty columns, tasks will be loaded via observeTasks
+            val columns = createInitialColumns()
+            
+            _uiState.value = TasksUiState.Success(
+                columns = columns,
+                viewMode = TaskViewMode.KANBAN,
+                filter = TaskFilter(),
+                sortBy = TaskSortOption.PRIORITY
+            )
+            
+            // Create sample data if database is empty
+            createSampleDataIfEmpty()
+        }
+    }
+    
+    /**
+     * Creates sample tasks if the database is empty.
+     * This helps demonstrate the UI on first launch.
+     */
+    private suspend fun createSampleDataIfEmpty() {
+        val counts = taskRepository.getTaskCountsByStatus()
+        val totalTasks = counts.values.sum()
         
-        _uiState.value = TasksUiState.Success(
-            columns = columns,
-            viewMode = TaskViewMode.KANBAN,
-            filter = TaskFilter(),
-            sortBy = TaskSortOption.PRIORITY
-        )
+        if (totalTasks == 0) {
+            val now = Clock.System.now()
+            val sampleTasks = listOf(
+                Task(
+                    id = "task-sample-1",
+                    title = "Design Login Flow Mockups",
+                    description = "Create wireframes and high-fidelity mockups for the login flow",
+                    status = TaskStatus.TODO,
+                    priority = TaskPriority.HIGH,
+                    tags = listOf(
+                        com.example.klarity.presentation.screen.tasks.TaskTag("UI Design", com.example.klarity.presentation.screen.tasks.TagColor.PURPLE),
+                        com.example.klarity.presentation.screen.tasks.TaskTag("High-Effort", com.example.klarity.presentation.screen.tasks.TagColor.ORANGE)
+                    ),
+                    points = 3,
+                    assignee = "Alice",
+                    order = 0,
+                    createdAt = now,
+                    updatedAt = now
+                ),
+                Task(
+                    id = "task-sample-2",
+                    title = "Setup Database Schema",
+                    description = "Define and implement the database schema for user data",
+                    status = TaskStatus.TODO,
+                    priority = TaskPriority.MEDIUM,
+                    tags = listOf(
+                        com.example.klarity.presentation.screen.tasks.TaskTag("Backend", com.example.klarity.presentation.screen.tasks.TagColor.BLUE)
+                    ),
+                    points = 2,
+                    assignee = "Bob",
+                    order = 1,
+                    createdAt = now,
+                    updatedAt = now
+                ),
+                Task(
+                    id = "task-sample-3",
+                    title = "Develop Authentication API",
+                    description = "Implement JWT-based authentication endpoints",
+                    status = TaskStatus.IN_PROGRESS,
+                    priority = TaskPriority.HIGH,
+                    tags = listOf(
+                        com.example.klarity.presentation.screen.tasks.TaskTag("Backend", com.example.klarity.presentation.screen.tasks.TagColor.BLUE),
+                        com.example.klarity.presentation.screen.tasks.TaskTag("High-Effort", com.example.klarity.presentation.screen.tasks.TagColor.ORANGE)
+                    ),
+                    points = 5,
+                    assignee = "Charlie",
+                    order = 0,
+                    createdAt = now,
+                    updatedAt = now
+                ),
+                Task(
+                    id = "task-sample-4",
+                    title = "Onboarding Flow User Research",
+                    description = "Conduct user interviews and analyze onboarding patterns",
+                    status = TaskStatus.BACKLOG,
+                    priority = TaskPriority.LOW,
+                    tags = listOf(
+                        com.example.klarity.presentation.screen.tasks.TaskTag("Research", com.example.klarity.presentation.screen.tasks.TagColor.GREEN)
+                    ),
+                    points = 2,
+                    order = 0,
+                    createdAt = now,
+                    updatedAt = now
+                ),
+                Task(
+                    id = "task-sample-5",
+                    title = "Landing Page Copywriting",
+                    description = "Write compelling copy for the marketing landing page",
+                    status = TaskStatus.IN_REVIEW,
+                    priority = TaskPriority.MEDIUM,
+                    tags = listOf(
+                        com.example.klarity.presentation.screen.tasks.TaskTag("Marketing", com.example.klarity.presentation.screen.tasks.TagColor.PURPLE)
+                    ),
+                    points = 1,
+                    assignee = "Diana",
+                    order = 0,
+                    createdAt = now,
+                    updatedAt = now
+                ),
+                Task(
+                    id = "task-sample-6",
+                    title = "Update Brand Guidelines",
+                    description = "Refresh brand colors and typography guidelines",
+                    status = TaskStatus.DONE,
+                    priority = TaskPriority.LOW,
+                    completed = true,
+                    tags = listOf(
+                        com.example.klarity.presentation.screen.tasks.TaskTag("Design", com.example.klarity.presentation.screen.tasks.TagColor.PURPLE)
+                    ),
+                    order = 0,
+                    createdAt = now,
+                    updatedAt = now,
+                    completedAt = now
+                )
+            )
+            
+            sampleTasks.forEach { task ->
+                taskRepository.createTask(task)
+            }
+        }
     }
 
     private fun updateSuccessState(update: (TasksUiState.Success) -> TasksUiState.Success) {

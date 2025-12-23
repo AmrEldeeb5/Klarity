@@ -54,6 +54,7 @@ fun KanbanBoard(
     onTaskDelete: (Task) -> Unit,
     onTaskToggleComplete: (Task) -> Unit,
     onColumnCollapse: (TaskStatus, Boolean) -> Unit,
+    highlightedColumns: Set<TaskStatus> = emptySet(),
     modifier: Modifier = Modifier
 ) {
     var dragState by remember { mutableStateOf(DragState()) }
@@ -101,6 +102,7 @@ fun KanbanBoard(
                 onTaskDelete = onTaskDelete,
                 onTaskToggleComplete = onTaskToggleComplete,
                 onColumnCollapse = { collapsed -> onColumnCollapse(column.status, collapsed) },
+                isHighlighted = column.status in highlightedColumns,
                 modifier = Modifier.width(320.dp)
             )
         }
@@ -125,24 +127,42 @@ private fun KanbanColumnView(
     onTaskDelete: (Task) -> Unit,
     onTaskToggleComplete: (Task) -> Unit,
     onColumnCollapse: (Boolean) -> Unit,
+    isHighlighted: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val isDropTarget = dragState.isDragging && dragState.targetColumn == column.status
     val borderColor by animateColorAsState(
-        targetValue = if (isDropTarget) KlarityColors.AccentPrimary else Color.Transparent,
+        targetValue = when {
+            isDropTarget -> KlarityColors.AccentPrimary
+            isHighlighted -> KlarityColors.AccentPrimary.copy(alpha = 0.6f)
+            else -> Color.Transparent
+        },
         animationSpec = tween(150)
     )
+    
+    // Apply dashed border for highlighted columns (like AI suggestion grouping)
+    val borderModifier = if (isHighlighted && !isDropTarget) {
+        Modifier.dashedBorder(
+            width = 2.dp,
+            color = KlarityColors.AccentPrimary.copy(alpha = 0.6f),
+            shape = RoundedCornerShape(12.dp),
+            dashLength = 8.dp,
+            gapLength = 4.dp
+        )
+    } else {
+        Modifier.border(
+            width = 2.dp,
+            color = borderColor,
+            shape = RoundedCornerShape(12.dp)
+        )
+    }
     
     Column(
         modifier = modifier
             .fillMaxHeight()
             .clip(RoundedCornerShape(12.dp))
             .background(KlarityColors.BgSecondary)
-            .border(
-                width = 2.dp,
-                color = borderColor,
-                shape = RoundedCornerShape(12.dp)
-            )
+            .then(borderModifier)
     ) {
         // Column Header
         ColumnHeader(

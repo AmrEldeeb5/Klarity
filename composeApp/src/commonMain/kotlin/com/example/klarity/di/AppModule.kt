@@ -3,12 +3,14 @@ package com.example.klarity.di
 import com.example.klarity.data.repositories.SqlDelightFolderRepository
 import com.example.klarity.data.repositories.SqlDelightNoteRepository
 import com.example.klarity.data.repositories.SqlDelightTagRepository
+import com.example.klarity.data.repositories.SqlDelightTaskRepository
 import com.example.klarity.data.util.DefaultDispatcherProvider
 import com.example.klarity.data.util.DispatcherProvider
 import com.example.klarity.db.KlarityDatabase
 import com.example.klarity.domain.repositories.FolderRepository
 import com.example.klarity.domain.repositories.NoteRepository
 import com.example.klarity.domain.repositories.TagRepository
+import com.example.klarity.domain.repositories.TaskRepository
 import com.example.klarity.domain.usecase.CreateNoteUseCase
 import com.example.klarity.domain.usecase.DeleteNoteUseCase
 import com.example.klarity.domain.usecase.NoteUseCases
@@ -16,6 +18,7 @@ import com.example.klarity.domain.usecase.SearchNotesUseCase
 import com.example.klarity.domain.usecase.UpdateNoteUseCase
 import com.example.klarity.presentation.viewmodel.EditorViewModel
 import com.example.klarity.presentation.viewmodel.HomeViewModel
+import com.example.klarity.presentation.viewmodel.TasksViewModel
 import org.koin.core.module.dsl.bind
 import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf
@@ -49,6 +52,7 @@ val repositoryModule = module {
     single<NoteRepository> { SqlDelightNoteRepository(get(), get()) }
     single<FolderRepository> { SqlDelightFolderRepository(get(), get()) }
     single<TagRepository> { SqlDelightTagRepository(get(), get()) }
+    single<TaskRepository> { SqlDelightTaskRepository(get(), get()) }
 }
 
 /**
@@ -71,6 +75,7 @@ val domainModule = module {
 val viewModelModule = module {
     viewModelOf(::HomeViewModel)
     viewModelOf(::EditorViewModel)
+    viewModelOf(::TasksViewModel)
 }
 
 /**

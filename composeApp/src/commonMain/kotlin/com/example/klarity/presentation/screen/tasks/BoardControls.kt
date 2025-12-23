@@ -1,6 +1,9 @@
 package com.example.klarity.presentation.screen.tasks
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -10,11 +13,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -23,7 +30,7 @@ import com.example.klarity.presentation.theme.KlarityColors
 /**
  * BoardControls - Header component for the Kanban board
  * 
- * Displays board title, subtitle, "Add Column" button, and filter chips.
+ * Displays AI suggestion banner, board title, subtitle, "Add Column" button, and filter chips.
  * 
  * **Requirements: 2.1, 5.1, 5.2, 5.3, 5.4**
  */
@@ -36,6 +43,16 @@ fun BoardControls(
     onSortByClick: () -> Unit,
     onAssigneeClick: () -> Unit,
     onTagsClick: () -> Unit,
+    // AI Suggestion state
+    showAiSuggestion: Boolean = true,
+    aiSuggestionText: String = "Cluster 'Q3 Product Launch' tasks",
+    aiSuggestionDescription: String = "AI has identified 4 conceptually related tasks. Review and confirm to group them.",
+    onReviewSuggestions: () -> Unit = {},
+    onDismissSuggestion: () -> Unit = {},
+    // Filter state for showing selected values
+    currentSortBy: TaskSortOption = TaskSortOption.PRIORITY,
+    currentAssignee: String? = null,
+    selectedTags: Set<String> = emptySet(),
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -45,6 +62,16 @@ fun BoardControls(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        // AI Suggestion Banner
+        if (showAiSuggestion) {
+            AiSuggestionBanner(
+                title = "AI Suggestion: $aiSuggestionText",
+                description = aiSuggestionDescription,
+                onReviewClick = onReviewSuggestions,
+                onDismiss = onDismissSuggestion
+            )
+        }
+        
         // Title row with Add Column button
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -75,8 +102,104 @@ fun BoardControls(
             onFilterClick = onFilterClick,
             onSortByClick = onSortByClick,
             onAssigneeClick = onAssigneeClick,
-            onTagsClick = onTagsClick
+            onTagsClick = onTagsClick,
+            currentSortBy = currentSortBy,
+            currentAssignee = currentAssignee,
+            selectedTags = selectedTags
         )
+    }
+}
+
+/**
+ * AI Suggestion Banner - Teal colored banner with suggestion and review button
+ */
+@Composable
+private fun AiSuggestionBanner(
+    title: String,
+    description: String,
+    onReviewClick: () -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isHovered by interactionSource.collectIsHoveredAsState()
+    
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(
+                Brush.horizontalGradient(
+                    colors = listOf(
+                        Color(0xFF0D3D3D),  // Dark teal
+                        Color(0xFF0A4040)   // Slightly lighter teal
+                    )
+                )
+            )
+            .border(
+                width = 1.dp,
+                color = KlarityColors.AccentPrimary.copy(alpha = 0.3f),
+                shape = RoundedCornerShape(12.dp)
+            )
+            .padding(16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(
+            modifier = Modifier.weight(1f),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // AI Icon (using star as placeholder for AutoAwesome)
+            Icon(
+                imageVector = Icons.Default.Star,
+                contentDescription = "AI Suggestion",
+                tint = KlarityColors.AccentPrimary,
+                modifier = Modifier.size(24.dp)
+            )
+            
+            Column(
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = KlarityColors.TextPrimary
+                )
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = KlarityColors.TextSecondary
+                )
+            }
+        }
+        
+        // Review Suggestions Button
+        Button(
+            onClick = onReviewClick,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = KlarityColors.AccentPrimary
+            ),
+            shape = RoundedCornerShape(8.dp),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Star,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+                Text(
+                    text = "Review Suggestions",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
     }
 }
 
@@ -124,6 +247,7 @@ private fun AddColumnButton(
 
 /**
  * Filter chip row containing Filter, Sort By, Assignee, and Tags chips
+ * Shows selected values when filters are active.
  * 
  * **Requirements: 5.1, 5.2, 5.3, 5.4**
  */
@@ -133,6 +257,9 @@ private fun FilterChipRow(
     onSortByClick: () -> Unit,
     onAssigneeClick: () -> Unit,
     onTagsClick: () -> Unit,
+    currentSortBy: TaskSortOption = TaskSortOption.PRIORITY,
+    currentAssignee: String? = null,
+    selectedTags: Set<String> = emptySet(),
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -142,65 +269,96 @@ private fun FilterChipRow(
     ) {
         // Filter chip (Requirement 5.1)
         FilterDropdownChip(
+            emoji = "⚙️",
             label = "Filter",
             onClick = onFilterClick
         )
         
-        // Sort By chip (Requirement 5.2)
+        // Sort By chip with selected value (Requirement 5.2)
         FilterDropdownChip(
-            label = "Sort By",
-            onClick = onSortByClick
+            emoji = "↕️",
+            label = "Sort By: ${currentSortBy.label}",
+            onClick = onSortByClick,
+            isActive = true
         )
         
-        // Assignee chip (Requirement 5.3)
+        // Assignee chip with selected value (Requirement 5.3)
         FilterDropdownChip(
-            label = "Assignee",
-            onClick = onAssigneeClick
+            emoji = "👤",
+            label = if (currentAssignee != null) "Assignee: $currentAssignee" else "Assignee",
+            onClick = onAssigneeClick,
+            isActive = currentAssignee != null
         )
         
-        // Tags chip (Requirement 5.4)
+        // Tags chip with count (Requirement 5.4)
         FilterDropdownChip(
-            label = "Tags",
-            onClick = onTagsClick
+            emoji = "🏷️",
+            label = if (selectedTags.isNotEmpty()) "Tags (${selectedTags.size})" else "Tags",
+            onClick = onTagsClick,
+            isActive = selectedTags.isNotEmpty()
         )
     }
 }
 
 /**
- * Individual filter chip with dropdown icon and hover state
+ * Individual filter chip with emoji, dropdown indicator, and hover state.
+ * Shows active state when a filter is selected.
  */
 @Composable
 private fun FilterDropdownChip(
+    emoji: String? = null,
     label: String,
     onClick: () -> Unit,
+    isActive: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isHovered by interactionSource.collectIsHoveredAsState()
     
+    val backgroundColor by animateColorAsState(
+        targetValue = when {
+            isActive -> KlarityColors.AccentPrimary.copy(alpha = 0.15f)
+            isHovered -> KlarityColors.BgElevated
+            else -> KlarityColors.BgTertiary
+        },
+        animationSpec = tween(150)
+    )
+    
+    val contentColor by animateColorAsState(
+        targetValue = when {
+            isActive -> KlarityColors.AccentPrimary
+            isHovered -> KlarityColors.TextPrimary
+            else -> KlarityColors.TextSecondary
+        },
+        animationSpec = tween(150)
+    )
+    
     Row(
         modifier = modifier
             .clip(RoundedCornerShape(6.dp))
-            .background(
-                if (isHovered) KlarityColors.BgElevated
-                else KlarityColors.BgTertiary
-            )
+            .background(backgroundColor)
             .hoverable(interactionSource = interactionSource)
             .clickable(onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 6.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        emoji?.let {
+            Text(
+                text = it,
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
         Text(
             text = label,
             style = MaterialTheme.typography.bodySmall,
-            fontWeight = FontWeight.Medium,
-            color = if (isHovered) KlarityColors.TextPrimary else KlarityColors.TextSecondary
+            fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Medium,
+            color = contentColor
         )
         Icon(
             imageVector = Icons.Default.KeyboardArrowDown,
             contentDescription = "Dropdown",
-            tint = if (isHovered) KlarityColors.TextPrimary else KlarityColors.TextTertiary,
+            tint = contentColor.copy(alpha = 0.7f),
             modifier = Modifier.size(16.dp)
         )
     }

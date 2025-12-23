@@ -28,6 +28,11 @@ sealed interface TasksUiState {
      * @property viewMode Current view mode (Kanban, List, Calendar)
      * @property filter Current filter settings
      * @property sortBy Current sort option
+     * @property currentAssignee Currently selected assignee filter
+     * @property selectedTags Currently selected tag filters
+     * @property showAiSuggestion Whether to show AI suggestion banner
+     * @property aiSuggestionText AI suggestion title text
+     * @property aiSuggestionDescription AI suggestion description
      */
     data class Success(
         val columns: List<KanbanColumn>,
@@ -35,7 +40,12 @@ sealed interface TasksUiState {
         val isModalOpen: Boolean = false,
         val viewMode: TaskViewMode = TaskViewMode.KANBAN,
         val filter: TaskFilter = TaskFilter(),
-        val sortBy: TaskSortOption = TaskSortOption.PRIORITY
+        val sortBy: TaskSortOption = TaskSortOption.PRIORITY,
+        val currentAssignee: String? = null,
+        val selectedTags: Set<String> = emptySet(),
+        val showAiSuggestion: Boolean = true,
+        val aiSuggestionText: String = "Cluster 'Q3 Product Launch' tasks",
+        val aiSuggestionDescription: String = "AI has identified 4 conceptually related tasks. Review and confirm to group them."
     ) : TasksUiState
     
     /**
@@ -83,6 +93,10 @@ sealed interface TasksUiEvent {
     
     // Refresh event
     data object Refresh : TasksUiEvent
+    
+    // AI Suggestion events
+    data object ReviewAiSuggestions : TasksUiEvent
+    data object DismissAiSuggestion : TasksUiEvent
 }
 
 /**

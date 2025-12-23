@@ -16,7 +16,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.klarity.presentation.state.TasksUiEffect
 import com.example.klarity.presentation.state.TasksUiEvent
 import com.example.klarity.presentation.state.TasksUiState
@@ -24,6 +23,7 @@ import com.example.klarity.presentation.theme.KlarityColors
 import com.example.klarity.presentation.viewmodel.TasksViewModel
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
+import org.koin.compose.viewmodel.koinViewModel
 
 /**
  * TasksScreen - Main TaskFlow Interface
@@ -36,7 +36,7 @@ import kotlinx.datetime.Clock
  */
 @Composable
 fun TasksScreen(
-    viewModel: TasksViewModel = viewModel { TasksViewModel() },
+    viewModel: TasksViewModel = koinViewModel(),
     modifier: Modifier = Modifier
 ) {
     // Collect UI state from ViewModel
@@ -144,7 +144,17 @@ private fun TasksScreenContent(
                 onFilterClick = onToggleFilterPanel,
                 onSortByClick = { /* TODO: Sort dropdown */ },
                 onAssigneeClick = { /* TODO: Assignee filter */ },
-                onTagsClick = { /* TODO: Tags filter */ }
+                onTagsClick = { /* TODO: Tags filter */ },
+                // AI Suggestion state
+                showAiSuggestion = state.showAiSuggestion,
+                aiSuggestionText = state.aiSuggestionText,
+                aiSuggestionDescription = state.aiSuggestionDescription,
+                onReviewSuggestions = { onEvent(TasksUiEvent.ReviewAiSuggestions) },
+                onDismissSuggestion = { onEvent(TasksUiEvent.DismissAiSuggestion) },
+                // Filter state
+                currentSortBy = state.sortBy,
+                currentAssignee = state.currentAssignee,
+                selectedTags = state.selectedTags
             )
             
             // Filter Panel (Collapsible)
