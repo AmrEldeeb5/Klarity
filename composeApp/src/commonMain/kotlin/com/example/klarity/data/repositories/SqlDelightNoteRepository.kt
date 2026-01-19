@@ -17,6 +17,8 @@ import kotlinx.coroutines.withContext
 /**
  * Repository implementation for Note operations.
  * Directly uses SQLDelight database - no DataSource layer needed for simple cases.
+ *
+ * Performance: Uses batch tag loading to avoid N+1 query problem.
  */
 class SqlDelightNoteRepository(
     private val database: KlarityDatabase,
@@ -31,9 +33,10 @@ class SqlDelightNoteRepository(
             .asFlow()
             .mapToList(dispatchers.io)
             .map { entities ->
+                // Batch load all tags in single query (fixes N+1 problem)
+                val allTags = getAllNoteTagsMap()
                 entities.map { entity ->
-                    val tags = getTagsForNote(entity.id)
-                    entity.toDomain(tags)
+                    entity.toDomain(allTags[entity.id] ?: emptyList())
                 }
             }
             .catch { e ->
@@ -53,9 +56,9 @@ class SqlDelightNoteRepository(
             .asFlow()
             .mapToList(dispatchers.io)
             .map { entities ->
+                val allTags = getAllNoteTagsMap()
                 entities.map { entity ->
-                    val tags = getTagsForNote(entity.id)
-                    entity.toDomain(tags)
+                    entity.toDomain(allTags[entity.id] ?: emptyList())
                 }
             }
 
@@ -69,9 +72,9 @@ class SqlDelightNoteRepository(
             .asFlow()
             .mapToList(dispatchers.io)
             .map { entities ->
+                val allTags = getAllNoteTagsMap()
                 entities.map { entity ->
-                    val tags = getTagsForNote(entity.id)
-                    entity.toDomain(tags)
+                    entity.toDomain(allTags[entity.id] ?: emptyList())
                 }
             }
 
@@ -80,9 +83,9 @@ class SqlDelightNoteRepository(
             .asFlow()
             .mapToList(dispatchers.io)
             .map { entities ->
+                val allTags = getAllNoteTagsMap()
                 entities.map { entity ->
-                    val tags = getTagsForNote(entity.id)
-                    entity.toDomain(tags)
+                    entity.toDomain(allTags[entity.id] ?: emptyList())
                 }
             }
 
@@ -143,16 +146,35 @@ class SqlDelightNoteRepository(
             .asFlow()
             .mapToList(dispatchers.io)
             .map { entities ->
+                // Batch load tags for search results
+                val allTags = getAllNoteTagsMap()
                 entities.map { entity ->
-                    val tags = getTagsForNote(entity.id)
-                    entity.toDomain(tags)
+                    entity.toDomain(allTags[entity.id] ?: emptyList())
                 }
             }
 
+    /**
+     * Get tags for a single note (used for single note operations)
+     */
     private suspend fun getTagsForNote(noteId: String): List<String> =
         withContext(dispatchers.io) {
             tagQueries.selectByNote(noteId)
                 .executeAsList()
                 .map { it.name }
+        }
+
+    /**
+     * Batch load all note-tag relationships in a single query.
+     * Returns a map of noteId -> list of tag names.
+     * This avoids the N+1 query problem when loading many notes.
+     */
+    private suspend fun getAllNoteTagsMap(): Map<String, List<String>> =
+        withContext(dispatchers.io) {
+            tagQueries.selectAllNoteTags()
+                .executeAsList()
+                .groupBy(
+                    keySelector = { it.noteId },
+                    valueTransform = { it.name }
+                )
         }
 }

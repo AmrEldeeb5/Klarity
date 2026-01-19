@@ -1,9 +1,9 @@
 [versions]
-# AGP 8.7.2 is a stable release
-agp = "8.7.2"
+# AGP 8.7.3 is latest stable in 8.x line
+agp = "8.7.3"
 # Kotest for property-based testing
 kotest = "5.9.1"
-# Android 15 is API 35. 36 is not standard yet.
+# Android SDK versions
 android-compileSdk = "35"
 android-minSdk = "24"
 android-targetSdk = "35"
@@ -11,29 +11,29 @@ androidx-activity = "1.9.3"
 androidx-appcompat = "1.7.0"
 androidx-core = "1.15.0"
 androidx-espresso = "3.6.1"
-androidx-lifecycle = "2.8.3"
+androidx-lifecycle = "2.8.4"
 androidx-testExt = "1.2.1"
-commonmark = "0.22.0" # 0.27 might not exist yet
-composeHotReload = "1.0.0-dev-18" # Experimental versions vary
-# Latest stable Compose Multiplatform
-composeMultiplatform = "1.7.0"
+commonmark = "0.24.0"
+composeHotReload = "1.0.0-dev-18"
+# Compose Multiplatform - compatible with Kotlin 2.0.21
+composeMultiplatform = "1.7.3"
 junit = "4.13.2"
-# Latest stable Kotlin
+# Kotlin - stable 2.0.x line
 kotlin = "2.0.21"
-kotlinLoggingJvm = "7.0.0"
-# Coroutines 1.9.0 is current
+kotlinLoggingJvm = "7.0.3"
+# Coroutines
 kotlinx-coroutines = "1.9.0"
 kotlinxSerializationJson = "1.7.3"
 kotlinxDatetime = "0.6.1"
-# Ktor 3.0.0 is the new major version
-ktor = "3.0.0"
-logbackClassic = "1.5.12"
+# Ktor 3.x
+ktor = "3.0.3"
+logbackClassic = "1.5.15"
 uuid = "0.8.4"
 # Koin for DI
-koin = "4.0.0"
+koin = "4.0.2"
 # SQLDelight
-sqldelight = "2.0.1"
-# Navigation Compose
+sqldelight = "2.0.2"
+# Navigation Compose - stable
 navigation = "2.8.0-alpha10"
 
 [libraries]

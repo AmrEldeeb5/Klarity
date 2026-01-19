@@ -71,6 +71,7 @@ kotlin {
             implementation(libs.kotest.property)
             implementation(libs.kotest.framework.engine)
             implementation(libs.kotlinx.datetime)
+            implementation(libs.kotlinx.coroutines.test)
         }
 
         jvmMain.dependencies {

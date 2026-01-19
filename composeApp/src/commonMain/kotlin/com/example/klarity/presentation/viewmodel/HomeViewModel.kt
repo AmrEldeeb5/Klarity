@@ -17,7 +17,11 @@ import kotlinx.coroutines.launch
 
 /**
  * ViewModel for the Home screen following MVVM pattern.
- * Uses sealed classes for state management.
+ *
+ * State Management:
+ * - Single source of truth via [uiState] StateFlow
+ * - UI emits events → ViewModel processes → State updates → UI recomposes
+ * - One-time effects via [effects] Channel (snackbars, navigation)
  */
 class HomeViewModel(
     private val noteRepository: NoteRepository,
@@ -25,32 +29,22 @@ class HomeViewModel(
     private val noteUseCases: NoteUseCases
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
-    val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+    // ══════════════════════════════════════════════════════════════
+    // INTERNAL STATE HOLDERS (private - not exposed to UI)
+    // ══════════════════════════════════════════════════════════════
 
     private val _searchQuery = MutableStateFlow("")
-    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
-
     private val _selectedNoteId = MutableStateFlow<String?>(null)
-    val selectedNoteId: StateFlow<String?> = _selectedNoteId.asStateFlow()
-
     private val _expandedFolderIds = MutableStateFlow<Set<String>>(emptySet())
-    val expandedFolderIds: StateFlow<Set<String>> = _expandedFolderIds.asStateFlow()
-
     private val _pinnedSectionExpanded = MutableStateFlow(true)
-    val pinnedSectionExpanded: StateFlow<Boolean> = _pinnedSectionExpanded.asStateFlow()
 
-    private val _effects = Channel<HomeUiEffect>(Channel.BUFFERED)
-    val effects: Flow<HomeUiEffect> = _effects.receiveAsFlow()
+    // ══════════════════════════════════════════════════════════════
+    // DATA FLOWS FROM REPOSITORY
+    // ══════════════════════════════════════════════════════════════
 
-    val folders: StateFlow<List<Folder>> = folderRepository.getAllFolders()
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
+    private val _folders: Flow<List<Folder>> = folderRepository.getAllFolders()
 
-    val notes: StateFlow<List<Note>> = searchQuery
+    private val _notes: Flow<List<Note>> = _searchQuery
         .flatMapLatest { query ->
             if (query.isBlank()) {
                 noteRepository.getAllNotes()
@@ -58,30 +52,119 @@ class HomeViewModel(
                 noteUseCases.search(query)
             }
         }
-        .onEach { notes ->
-            _uiState.value = HomeUiState.Success(
-                notes = notes,
-                folders = folders.value,
-                expandedFolderIds = _expandedFolderIds.value,
-                searchQuery = _searchQuery.value,
-                isSearching = _searchQuery.value.isNotBlank()
-            )
-        }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
 
-    val pinnedNotes: StateFlow<List<Note>> = noteRepository.getPinnedNotes()
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
+    private val _pinnedNotes: Flow<List<Note>> = noteRepository.getPinnedNotes()
+
+    // ══════════════════════════════════════════════════════════════
+    // PUBLIC STATE (Single Source of Truth)
+    // ══════════════════════════════════════════════════════════════
+
+    /**
+     * Combined UI state - the single source of truth for the Home screen.
+     * Combines all data flows and UI state into one reactive stream.
+     */
+    val uiState: StateFlow<HomeUiState> = combine(
+        _notes,
+        _pinnedNotes,
+        _folders,
+        _searchQuery,
+        _selectedNoteId,
+        _expandedFolderIds
+    ) { notes, pinnedNotes, folders, searchQuery, selectedNoteId, expandedFolderIds ->
+        HomeUiState.Success(
+            notes = notes,
+            pinnedNotes = pinnedNotes,
+            folders = folders,
+            expandedFolderIds = expandedFolderIds,
+            searchQuery = searchQuery,
+            isSearching = searchQuery.isNotBlank(),
+            selectedNoteId = selectedNoteId
         )
+    }.catch { e ->
+        emit(HomeUiState.Error(
+            message = e.message ?: "An unexpected error occurred",
+            retryAction = { refresh() }
+        ))
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = HomeUiState.Loading
+    )
+
+    /**
+     * Expose search query for UI binding (read-only)
+     */
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    /**
+     * Expose selected note ID for UI binding (read-only)
+     */
+    val selectedNoteId: StateFlow<String?> = _selectedNoteId.asStateFlow()
+
+    /**
+     * Expose expanded folder IDs for UI binding (read-only)
+     */
+    val expandedFolderIds: StateFlow<Set<String>> = _expandedFolderIds.asStateFlow()
+
+    /**
+     * Expose pinned section state for UI binding (read-only)
+     */
+    val pinnedSectionExpanded: StateFlow<Boolean> = _pinnedSectionExpanded.asStateFlow()
+
+    // ══════════════════════════════════════════════════════════════
+    // DERIVED STATE (Computed from uiState for convenience)
+    // ══════════════════════════════════════════════════════════════
+
+    /**
+     * Current notes list - derived from uiState for backward compatibility
+     */
+    val notes: StateFlow<List<Note>> = uiState
+        .map { state ->
+            when (state) {
+                is HomeUiState.Success -> state.notes
+                else -> emptyList()
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    /**
+     * Current pinned notes - derived from uiState for backward compatibility
+     */
+    val pinnedNotes: StateFlow<List<Note>> = uiState
+        .map { state ->
+            when (state) {
+                is HomeUiState.Success -> state.pinnedNotes
+                else -> emptyList()
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    /**
+     * Current folders - derived from uiState for backward compatibility
+     */
+    val folders: StateFlow<List<Folder>> = uiState
+        .map { state ->
+            when (state) {
+                is HomeUiState.Success -> state.folders
+                else -> emptyList()
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // ══════════════════════════════════════════════════════════════
+    // EFFECTS CHANNEL (One-time events)
+    // ══════════════════════════════════════════════════════════════
+
+    private val _effects = Channel<HomeUiEffect>(Channel.BUFFERED)
+    val effects: Flow<HomeUiEffect> = _effects.receiveAsFlow()
+
+    // ══════════════════════════════════════════════════════════════
+    // EVENT HANDLING
+    // ══════════════════════════════════════════════════════════════
 
     /**
      * Handle UI events from the screen.
+     * Single entry point for all user interactions.
      */
     fun onEvent(event: HomeUiEvent) {
         when (event) {
@@ -97,20 +180,20 @@ class HomeViewModel(
             is HomeUiEvent.OpenNote -> openNote(event.noteId)
             is HomeUiEvent.SelectNote -> selectNote(event.noteId)
             HomeUiEvent.CloseNote -> closeNote()
-            // Editor events
             is HomeUiEvent.UpdateNoteTitle -> updateNoteTitle(event.noteId, event.title)
             is HomeUiEvent.UpdateNoteContent -> updateNoteContent(event.noteId, event.content)
             is HomeUiEvent.SaveNote -> saveNote(event.noteId)
             is HomeUiEvent.ToggleNotePin -> toggleNotePin(event.noteId)
-            // Folder management
             is HomeUiEvent.RenameFolder -> renameFolder(event.folderId, event.newName)
             is HomeUiEvent.DeleteFolder -> deleteFolder(event.folderId)
-            // Note status
             is HomeUiEvent.UpdateNoteStatus -> updateNoteStatus(event.noteId, event.status)
-            // Drag & drop
             is HomeUiEvent.MoveNoteToFolder -> moveNoteToFolder(event.noteId, event.folderId)
         }
     }
+
+    // ══════════════════════════════════════════════════════════════
+    // PRIVATE HANDLERS
+    // ══════════════════════════════════════════════════════════════
 
     private fun updateNoteTitle(noteId: String, title: String) {
         viewModelScope.launch {
@@ -174,6 +257,7 @@ class HomeViewModel(
         viewModelScope.launch {
             noteUseCases.create(title = title)
                 .onSuccess { note ->
+                    _selectedNoteId.value = note.id
                     _effects.send(HomeUiEffect.NavigateToEditor(note.id))
                 }
                 .onFailure { error ->
@@ -182,10 +266,6 @@ class HomeViewModel(
         }
     }
 
-    /**
-     * Create a new note with a specific title (from wiki link click)
-     * and immediately select it for editing
-     */
     private fun createNoteWithTitle(title: String) {
         viewModelScope.launch {
             noteUseCases.create(title = title)
@@ -203,7 +283,6 @@ class HomeViewModel(
         viewModelScope.launch {
             noteUseCases.delete(noteId)
                 .onSuccess {
-                    // Clear selection if deleted note was selected
                     if (_selectedNoteId.value == noteId) {
                         _selectedNoteId.value = null
                     }
@@ -223,16 +302,12 @@ class HomeViewModel(
         _searchQuery.value = ""
     }
 
-    private fun navigateToNote(noteId: String) {
-        viewModelScope.launch {
-            _selectedNoteId.value = noteId
-            _effects.send(HomeUiEffect.NavigateToEditor(noteId))
-        }
-    }
-
     private fun refresh() {
-        _uiState.value = HomeUiState.Loading
-        // Notes will auto-refresh via Flow
+        // State will automatically refresh via Flow collection
+        // Force a resubscription by updating search query
+        val currentQuery = _searchQuery.value
+        _searchQuery.value = ""
+        _searchQuery.value = currentQuery
     }
 
     private fun openNote(noteId: String) {
@@ -249,7 +324,9 @@ class HomeViewModel(
 
     private fun renameFolder(folderId: String, newName: String) {
         viewModelScope.launch {
-            val folder = folders.value.find { it.id == folderId } ?: return@launch
+            val currentState = uiState.value
+            if (currentState !is HomeUiState.Success) return@launch
+            val folder = currentState.folders.find { it.id == folderId } ?: return@launch
             folderRepository.updateFolder(folder.copy(name = newName))
         }
     }

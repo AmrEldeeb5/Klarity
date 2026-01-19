@@ -27,6 +27,12 @@ INNER JOIN NoteTag ON Tag.id = NoteTag.tagId
 WHERE NoteTag.noteId = ?
 ORDER BY Tag.name ASC;
 
+-- Batch query: get all tags for all notes (avoids N+1 problem)
+selectAllNoteTags:
+SELECT NoteTag.noteId, Tag.name FROM Tag
+INNER JOIN NoteTag ON Tag.id = NoteTag.tagId
+ORDER BY NoteTag.noteId, Tag.name ASC;
+
 insert:
 INSERT INTO Tag(id, name, color) VALUES (?, ?, ?);
 
