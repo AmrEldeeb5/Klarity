@@ -1,10 +1,9 @@
 package com.example.klarity.presentation.screen.tasks
 
-import androidx.compose.ui.graphics.Color
+import androidx.compose.runtime.Immutable
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
 
 /**
  * TaskFlow Data Models
@@ -13,6 +12,8 @@ import kotlin.time.Duration.Companion.seconds
  * - Kanban columns with draggable cards
  * - Timeline/Gantt view for scheduling
  * - Priority indicators and due dates
+ *
+ * All data classes are marked @Immutable for Compose recomposition optimization.
  */
 
 // ============================================================================
@@ -58,6 +59,7 @@ enum class TagColor(val bgAlpha: Float, val textColor: Long) {
 /**
  * A labeled tag for categorizing tasks.
  */
+@Immutable
 data class TaskTag(
     val label: String,
     val colorClass: TagColor = TagColor.GRAY
@@ -74,6 +76,7 @@ data class TaskTag(
  * @property pausedDuration Total duration the timer has been paused
  * @property isPaused Whether the timer is currently paused
  */
+@Immutable
 data class TaskTimer(
     val startedAt: Instant,
     val pausedDuration: Duration = Duration.ZERO,
@@ -106,6 +109,7 @@ data class TaskTimer(
 // Task Model
 // ============================================================================
 
+@Immutable
 data class Task(
     val id: String,
     val title: String,
@@ -147,6 +151,7 @@ data class Task(
         get() = timer != null
 }
 
+@Immutable
 data class Subtask(
     val id: String,
     val title: String,
@@ -158,6 +163,7 @@ data class Subtask(
 // Kanban Column Model
 // ============================================================================
 
+@Immutable
 data class KanbanColumn(
     val status: TaskStatus,
     val tasks: List<Task>,
@@ -183,6 +189,7 @@ enum class TaskViewMode(val label: String, val emoji: String) {
 // Filter & Sort
 // ============================================================================
 
+@Immutable
 data class TaskFilter(
     val statuses: Set<TaskStatus> = TaskStatus.entries.toSet(),
     val priorities: Set<TaskPriority> = TaskPriority.entries.toSet(),
@@ -205,6 +212,7 @@ enum class TaskSortOption(val label: String) {
 // Drag & Drop State
 // ============================================================================
 
+@Immutable
 data class DragState(
     val isDragging: Boolean = false,
     val draggedTaskId: String? = null,

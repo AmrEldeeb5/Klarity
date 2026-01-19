@@ -2,14 +2,23 @@ package com.example.klarity.presentation.screen.home
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.*
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.klarity.presentation.navigation.NavDestination
 import com.example.klarity.presentation.navigation.NavigationRail
 import com.example.klarity.presentation.screen.graph.GraphScreen
 import com.example.klarity.presentation.state.HomeUiEffect
 import com.example.klarity.presentation.state.HomeUiEvent
+import com.example.klarity.presentation.state.HomeUiState
 import com.example.klarity.presentation.theme.KlarityColors
 import com.example.klarity.presentation.viewmodel.HomeViewModel
 import org.koin.compose.viewmodel.koinViewModel
@@ -33,17 +42,125 @@ import org.koin.compose.viewmodel.koinViewModel
 fun HomeScreen(
     viewModel: HomeViewModel = koinViewModel()
 ) {
-    val notes by viewModel.notes.collectAsState()
-    val folders by viewModel.folders.collectAsState()
-    val searchQuery by viewModel.searchQuery.collectAsState()
-    val selectedNoteId by viewModel.selectedNoteId.collectAsState()
-    val expandedFolderIds by viewModel.expandedFolderIds.collectAsState()
-    val pinnedSectionExpanded by viewModel.pinnedSectionExpanded.collectAsState()
-    
-    val selectedNote = notes.find { it.id == selectedNoteId }
-    val pinnedNotes = notes.filter { it.isPinned }
-    val recentNotes = notes.sortedByDescending { it.updatedAt }.take(10)
-    
+    // Collect unified UI state with lifecycle awareness for better performance
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    // Render based on state
+    when (val state = uiState) {
+        is HomeUiState.Idle,
+        is HomeUiState.Loading -> {
+            HomeLoadingScreen()
+        }
+        is HomeUiState.Error -> {
+            HomeErrorScreen(
+                message = state.message,
+                onRetry = state.retryAction
+            )
+        }
+        is HomeUiState.Success -> {
+            HomeScreenContent(
+                state = state,
+                viewModel = viewModel
+            )
+        }
+    }
+}
+
+/**
+ * Loading screen with skeleton placeholder
+ */
+@Composable
+private fun HomeLoadingScreen() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(KlarityColors.BgPrimary),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            CircularProgressIndicator(
+                color = KlarityColors.AccentPrimary,
+                strokeWidth = 3.dp
+            )
+            Text(
+                text = "Loading your workspace...",
+                style = MaterialTheme.typography.bodyMedium,
+                color = KlarityColors.TextSecondary
+            )
+        }
+    }
+}
+
+/**
+ * Error screen with retry option
+ */
+@Composable
+private fun HomeErrorScreen(
+    message: String,
+    onRetry: (() -> Unit)?
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(KlarityColors.BgPrimary),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.padding(32.dp)
+        ) {
+            Text(
+                text = "⚠️",
+                style = MaterialTheme.typography.displayMedium
+            )
+            Text(
+                text = "Something went wrong",
+                style = MaterialTheme.typography.titleLarge,
+                color = KlarityColors.TextPrimary
+            )
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyMedium,
+                color = KlarityColors.TextSecondary,
+                textAlign = TextAlign.Center
+            )
+            if (onRetry != null) {
+                TextButton(onClick = onRetry) {
+                    Text(
+                        text = "Try Again",
+                        color = KlarityColors.AccentPrimary
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Main content when state is Success
+ */
+@Composable
+private fun HomeScreenContent(
+    state: HomeUiState.Success,
+    viewModel: HomeViewModel
+) {
+    // Derived state from success state
+    val notes = state.notes
+    val folders = state.folders
+    val searchQuery = state.searchQuery
+    val selectedNoteId = state.selectedNoteId
+    val expandedFolderIds = state.expandedFolderIds
+
+    val selectedNote = remember(notes, selectedNoteId) {
+        notes.find { it.id == selectedNoteId }
+    }
+    val pinnedNotes = remember(notes) { notes.filter { it.isPinned } }
+    val recentNotes = remember(notes) { notes.sortedByDescending { it.updatedAt }.take(10) }
+
     var showSlashMenu by remember { mutableStateOf(false) }
     var currentNavDestination by remember { mutableStateOf(NavDestination.HOME) }
     

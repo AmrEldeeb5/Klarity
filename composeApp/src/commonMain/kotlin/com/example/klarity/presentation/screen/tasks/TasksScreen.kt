@@ -6,16 +6,15 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.klarity.presentation.state.TasksUiEffect
 import com.example.klarity.presentation.state.TasksUiEvent
 import com.example.klarity.presentation.state.TasksUiState
@@ -39,9 +38,9 @@ fun TasksScreen(
     viewModel: TasksViewModel = koinViewModel(),
     modifier: Modifier = Modifier
 ) {
-    // Collect UI state from ViewModel
-    val uiState by viewModel.uiState.collectAsState()
-    
+    // Collect UI state with lifecycle awareness for better performance
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
     // Local UI state for filter panel visibility
     var showFilterPanel by remember { mutableStateOf(false) }
     
@@ -86,10 +85,10 @@ fun TasksScreen(
     // Render based on UI state
     when (val state = uiState) {
         is TasksUiState.Loading -> {
-            LoadingScreen()
+            TasksLoadingScreen()
         }
         is TasksUiState.Error -> {
-            ErrorScreen(
+            TasksErrorScreen(
                 message = state.message,
                 onRetry = { viewModel.onEvent(TasksUiEvent.Refresh) }
             )
@@ -103,6 +102,78 @@ fun TasksScreen(
                 onToggleFilterPanel = { showFilterPanel = !showFilterPanel },
                 modifier = modifier
             )
+        }
+    }
+}
+
+/**
+ * Loading screen for Tasks
+ */
+@Composable
+private fun TasksLoadingScreen() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(KlarityColors.BgPrimary),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            CircularProgressIndicator(
+                color = KlarityColors.AccentPrimary,
+                strokeWidth = 3.dp
+            )
+            Text(
+                text = "Loading tasks...",
+                style = MaterialTheme.typography.bodyMedium,
+                color = KlarityColors.TextSecondary
+            )
+        }
+    }
+}
+
+/**
+ * Error screen for Tasks
+ */
+@Composable
+private fun TasksErrorScreen(
+    message: String,
+    onRetry: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(KlarityColors.BgPrimary),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.padding(32.dp)
+        ) {
+            Text(
+                text = "⚠️",
+                style = MaterialTheme.typography.displayMedium
+            )
+            Text(
+                text = "Failed to load tasks",
+                style = MaterialTheme.typography.titleLarge,
+                color = KlarityColors.TextPrimary
+            )
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyMedium,
+                color = KlarityColors.TextSecondary,
+                textAlign = TextAlign.Center
+            )
+            TextButton(onClick = onRetry) {
+                Text(
+                    text = "Try Again",
+                    color = KlarityColors.AccentPrimary
+                )
+            }
         }
     }
 }
@@ -253,55 +324,6 @@ private fun TasksScreenContent(
     }
 }
 
-@Composable
-private fun LoadingScreen() {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(KlarityColors.BgPrimary),
-        contentAlignment = Alignment.Center
-    ) {
-        CircularProgressIndicator(
-            color = KlarityColors.AccentPrimary
-        )
-    }
-}
-
-@Composable
-private fun ErrorScreen(
-    message: String,
-    onRetry: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(KlarityColors.BgPrimary),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Text(
-                text = "⚠️",
-                fontSize = 48.sp
-            )
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodyLarge,
-                color = KlarityColors.TextSecondary
-            )
-            Button(
-                onClick = onRetry,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = KlarityColors.AccentPrimary
-                )
-            ) {
-                Text("Retry")
-            }
-        }
-    }
-}
 
 @Composable
 private fun FilterPanel(

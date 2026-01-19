@@ -429,47 +429,23 @@ fun NoteStatusSelector(
     }
 }
 
+/**
+ * Breadcrumbs component - now using shared EditorBreadcrumbs from components package.
+ * @deprecated Use [com.example.klarity.presentation.components.EditorBreadcrumbs] directly
+ */
 @Composable
 fun Breadcrumbs(
     projectName: String,
     folderName: String,
     noteName: String
 ) {
-    Row(
-        modifier = Modifier.padding(horizontal = 32.dp, vertical = 24.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        BreadcrumbItem(projectName, isClickable = true)
-        Text("/", color = KlarityColors.BorderPrimary, fontSize = 14.sp)
-        BreadcrumbItem(folderName, isClickable = true)
-        Text("/", color = KlarityColors.BorderPrimary, fontSize = 14.sp)
-        BreadcrumbItem(noteName, isActive = true)
-    }
-}
-
-@Composable
-fun BreadcrumbItem(
-    text: String,
-    isClickable: Boolean = false,
-    isActive: Boolean = false
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isHovered by interactionSource.collectIsHoveredAsState()
-
-    Text(
-        text,
-        fontSize = 14.sp,
-        fontWeight = if (isActive) FontWeight.Medium else FontWeight.Normal,
-        color = when {
-            isActive -> Color.White
-            isHovered -> KlarityColors.AccentAI
-            else -> KlarityColors.TextTertiary
-        },
-        modifier = if (isClickable) Modifier
-            .clickable(interactionSource = interactionSource, indication = null) { }
-            .hoverable(interactionSource)
-        else Modifier
+    // Delegate to shared component
+    com.example.klarity.presentation.components.EditorBreadcrumbs(
+        projectName = projectName,
+        folderName = folderName,
+        itemName = noteName,
+        onProjectClick = null,
+        onFolderClick = null
     )
 }
 

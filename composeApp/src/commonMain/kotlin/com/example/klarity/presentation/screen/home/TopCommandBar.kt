@@ -73,9 +73,10 @@ fun TopCommandBar(
     aiTemperature: Float = 0.7f,
     modifier: Modifier = Modifier
 ) {
-    val luminousTeal = Color(0xFF1FDBC8)
-    val electricMint = Color(0xFF3DD68C)
-    
+    // Use centralized theme colors instead of hardcoded values
+    val luminousTeal = KlarityColors.LuminousTeal
+    val electricMint = KlarityColors.ElectricMint
+
     Surface(
         modifier = modifier.fillMaxWidth(),
         color = KlarityColors.BgSecondary.copy(alpha = 0.95f)

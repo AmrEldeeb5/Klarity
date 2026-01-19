@@ -1,6 +1,6 @@
 [versions]
 # AGP 8.7.3 is latest stable in 8.x line
-agp = "8.7.3"
+agp = "8.13.2"
 # Kotest for property-based testing
 kotest = "5.9.1"
 # Android SDK versions

@@ -50,8 +50,10 @@ enum class PaneType {
 }
 
 /**
- * Configuration for a workspace layout
+ * Configuration for a workspace layout.
+ * Marked as @Immutable for Compose recomposition optimization.
  */
+@Immutable
 data class WorkspaceConfig(
     val mode: WorkspaceLayoutMode,
     val leftPane: PaneType? = null,
