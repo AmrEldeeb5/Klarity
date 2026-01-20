@@ -1,5 +1,6 @@
 package com.example.klarity.presentation.state
 
+import androidx.compose.runtime.Stable
 import com.example.klarity.presentation.screen.tasks.KanbanColumn
 import com.example.klarity.presentation.screen.tasks.Task
 import com.example.klarity.presentation.screen.tasks.TaskFilter
@@ -12,7 +13,9 @@ import com.example.klarity.presentation.screen.tasks.TaskViewMode
  * UI State for the Tasks/Kanban screen.
  * 
  * Follows the sealed interface pattern for type-safe state management.
+ * Marked @Stable for Compose recomposition optimization.
  */
+@Stable
 sealed interface TasksUiState {
     /**
      * Initial loading state while fetching tasks from storage.
@@ -34,6 +37,7 @@ sealed interface TasksUiState {
      * @property aiSuggestionText AI suggestion title text
      * @property aiSuggestionDescription AI suggestion description
      */
+    @Stable
     data class Success(
         val columns: List<KanbanColumn>,
         val selectedTask: Task? = null,

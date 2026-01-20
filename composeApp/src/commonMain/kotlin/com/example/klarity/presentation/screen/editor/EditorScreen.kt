@@ -14,22 +14,17 @@ import androidx.compose.foundation.text.selection.LocalTextSelectionColors
 import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.*
-import androidx.compose.ui.text.intl.LocaleList
-import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,6 +40,7 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.klarity.domain.models.Folder
 import com.example.klarity.domain.models.Note
 import com.example.klarity.presentation.state.EditorUiEvent
@@ -61,10 +57,10 @@ fun EditorScreen(
     onNavigateToNote: (String) -> Unit = {},
     viewModel: EditorViewModel = koinViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val allNotes by viewModel.allNotes.collectAsState()
-    val pinnedNotes by viewModel.pinnedNotes.collectAsState()
-    
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val allNotes by viewModel.allNotes.collectAsStateWithLifecycle()
+    val pinnedNotes by viewModel.pinnedNotes.collectAsStateWithLifecycle()
+
     // Sidebar search state
     var sidebarSearchQuery by remember { mutableStateOf("") }
     

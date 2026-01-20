@@ -62,19 +62,21 @@ class HomeViewModel(
     /**
      * Combined UI state - the single source of truth for the Home screen.
      * Combines all data flows and UI state into one reactive stream.
+     * Uses nested combine to handle 6 flows (Kotlin's combine supports max 5 directly).
      */
     val uiState: StateFlow<HomeUiState> = combine(
-        _notes,
-        _pinnedNotes,
-        _folders,
-        _searchQuery,
-        _selectedNoteId
-    ) { notes, pinnedNotes, folders, searchQuery, selectedNoteId ->
+        combine(_notes, _pinnedNotes, _folders) { notes, pinnedNotes, folders ->
+            Triple(notes, pinnedNotes, folders)
+        },
+        combine(_searchQuery, _selectedNoteId, _expandedFolderIds) { searchQuery, selectedNoteId, expandedFolderIds ->
+            Triple(searchQuery, selectedNoteId, expandedFolderIds)
+        }
+    ) { (notes, pinnedNotes, folders), (searchQuery, selectedNoteId, expandedFolderIds) ->
         HomeUiState.Success(
             notes = notes,
             pinnedNotes = pinnedNotes,
             folders = folders,
-            expandedFolderIds = _expandedFolderIds.value,
+            expandedFolderIds = expandedFolderIds,
             searchQuery = searchQuery,
             isSearching = searchQuery.isNotBlank(),
             selectedNoteId = selectedNoteId

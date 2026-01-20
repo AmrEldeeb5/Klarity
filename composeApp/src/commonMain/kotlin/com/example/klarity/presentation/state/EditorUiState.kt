@@ -1,10 +1,14 @@
 package com.example.klarity.presentation.state
 
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 import com.example.klarity.domain.models.Note
 
 /**
  * Sealed class representing the UI state for the Editor screen.
+ * Marked @Stable for Compose recomposition optimization.
  */
+@Stable
 sealed class EditorUiState {
     /**
      * Initial/idle state.
@@ -18,7 +22,9 @@ sealed class EditorUiState {
 
     /**
      * Success state - note has been loaded and ready for editing.
+     * Marked @Immutable as Note is already immutable and all other fields are primitives.
      */
+    @Immutable
     data class Success(
         val note: Note,
         val isSaving: Boolean = false,
@@ -29,6 +35,7 @@ sealed class EditorUiState {
     /**
      * New note state - creating a new note.
      */
+    @Immutable
     data class NewNote(
         val title: String = "",
         val content: String = "",
@@ -37,7 +44,9 @@ sealed class EditorUiState {
 
     /**
      * Error state - an error occurred.
+     * Contains lambda, marked @Stable to indicate it won't change unexpectedly.
      */
+    @Stable
     data class Error(
         val message: String,
         val retryAction: (() -> Unit)? = null

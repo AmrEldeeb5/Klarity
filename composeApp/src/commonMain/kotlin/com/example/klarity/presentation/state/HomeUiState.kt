@@ -1,5 +1,7 @@
 package com.example.klarity.presentation.state
 
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 import com.example.klarity.domain.models.Folder
 import com.example.klarity.domain.models.Note
 import com.example.klarity.domain.models.NoteStatus
@@ -7,7 +9,9 @@ import com.example.klarity.domain.models.NoteStatus
 /**
  * Sealed class representing the UI state for the Home screen.
  * Using sealed classes provides type-safe state handling.
+ * Marked @Stable for Compose recomposition optimization.
  */
+@Stable
 sealed class HomeUiState {
     /**
      * Initial/idle state - no data loaded yet.
@@ -21,7 +25,9 @@ sealed class HomeUiState {
 
     /**
      * Success state - data has been loaded successfully.
+     * Note and Folder are @Immutable, so this state is safe.
      */
+    @Immutable
     data class Success(
         val notes: List<Note> = emptyList(),
         val pinnedNotes: List<Note> = emptyList(),
@@ -37,7 +43,9 @@ sealed class HomeUiState {
 
     /**
      * Error state - an error occurred while loading data.
+     * Contains lambda, marked @Stable to indicate it won't change unexpectedly.
      */
+    @Stable
     data class Error(
         val message: String,
         val retryAction: (() -> Unit)? = null
