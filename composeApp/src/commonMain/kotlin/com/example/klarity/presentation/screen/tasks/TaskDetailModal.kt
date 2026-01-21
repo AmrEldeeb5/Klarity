@@ -1,12 +1,10 @@
 package com.example.klarity.presentation.screen.tasks
 
 import androidx.compose.animation.*
-import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -15,24 +13,25 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.klarity.presentation.theme.KlarityColors
+import com.example.klarity.presentation.theme.KlarityMotion
 
 /**
- * TaskDetailModal - Bottom sheet modal for viewing and editing task details.
- * 
- * **Requirements 4.1, 4.2, 4.3, 4.4**:
- * - Displays task ID, title, description, subtasks, activity log, and properties
- * - Animates with slide-up transition from the bottom
- * - Closes on backdrop click or close button with slide-down animation
- * - Shows status, priority, and story points in a sidebar section
+ * TaskDetailModal - Material 3 styled Bottom Sheet modal for viewing and editing task details.
+ *
+ * Uses M3 motion tokens and styling with AnimatedVisibility for cross-platform compatibility.
+ * Features:
+ * - Smooth slide-up/slide-down animations with M3 easing curves
+ * - Proper scrim handling
+ * - Drag handle for visual affordance
  */
 @Composable
 fun TaskDetailModal(
@@ -43,16 +42,16 @@ fun TaskDetailModal(
     onAddTag: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Backdrop with blur effect and click-to-close (Requirement 4.3)
+    // Backdrop with M3 scrim color and click-to-close
     AnimatedVisibility(
         visible = isVisible && task != null,
-        enter = fadeIn(animationSpec = tween(200)),
-        exit = fadeOut(animationSpec = tween(200))
+        enter = fadeIn(animationSpec = KlarityMotion.emphasizedEnter()),
+        exit = fadeOut(animationSpec = KlarityMotion.emphasizedExit())
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(KlarityColors.ModalOverlay)
+                .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.32f))
                 .clickable(
                     onClick = onClose,
                     indication = null,
@@ -61,18 +60,17 @@ fun TaskDetailModal(
         )
     }
 
-
-    // Bottom sheet with slide-up/slide-down animation (Requirement 4.2)
+    // Bottom sheet with M3 motion - slide-up/slide-down animation
     AnimatedVisibility(
         visible = isVisible && task != null,
         enter = slideInVertically(
             initialOffsetY = { it },
-            animationSpec = tween(300, easing = FastOutSlowInEasing)
-        ) + fadeIn(animationSpec = tween(200)),
+            animationSpec = KlarityMotion.emphasizedEnter()
+        ) + fadeIn(animationSpec = KlarityMotion.emphasizedEnter()),
         exit = slideOutVertically(
             targetOffsetY = { it },
-            animationSpec = tween(250, easing = FastOutSlowInEasing)
-        ) + fadeOut(animationSpec = tween(150)),
+            animationSpec = KlarityMotion.emphasizedExit()
+        ) + fadeOut(animationSpec = KlarityMotion.emphasizedExit()),
         modifier = modifier.fillMaxSize()
     ) {
         Box(
@@ -80,22 +78,38 @@ fun TaskDetailModal(
             contentAlignment = Alignment.BottomCenter
         ) {
             task?.let { currentTask ->
-                TaskDetailContent(
-                    task = currentTask,
-                    onClose = onClose,
-                    onTaskUpdate = onTaskUpdate,
-                    onAddTag = onAddTag,
+                Surface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .fillMaxHeight(0.85f)
-                        .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
-                        .background(KlarityColors.BgSecondary)
-                        .clickable(
-                            onClick = { /* Prevent click propagation to backdrop */ },
-                            indication = null,
-                            interactionSource = remember { MutableInteractionSource() }
+                        .fillMaxHeight(0.9f),
+                    shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerLow,
+                    tonalElevation = 1.dp
+                ) {
+                    Column {
+                        // M3 Drag Handle
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Surface(
+                                modifier = Modifier.size(width = 32.dp, height = 4.dp),
+                                shape = RoundedCornerShape(2.dp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                            ) {}
+                        }
+
+                        TaskDetailContent(
+                            task = currentTask,
+                            onClose = onClose,
+                            onTaskUpdate = onTaskUpdate,
+                            onAddTag = onAddTag,
+                            modifier = Modifier.fillMaxSize()
                         )
-                )
+                    }
+                }
             }
         }
     }
@@ -104,7 +118,7 @@ fun TaskDetailModal(
 /**
  * Main content of the task detail modal.
  * 
- * **Requirement 4.1**: Display task ID, title, description, subtasks, activity log, and properties
+ * Uses M3 component styling for consistent look.
  */
 @Composable
 private fun TaskDetailContent(
@@ -115,9 +129,7 @@ private fun TaskDetailContent(
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
-        // Drag handle bar at top (Requirement 10.2)
-        DragHandle()
-        
+
         // Header with task ID badge, title, and close button
         ModalHeader(
             task = task,
@@ -185,30 +197,10 @@ private fun TaskDetailContent(
 
 
 /**
- * Drag handle bar at the top of the modal.
- */
-@Composable
-private fun DragHandle(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = 12.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Box(
-            modifier = Modifier
-                .width(40.dp)
-                .height(4.dp)
-                .clip(RoundedCornerShape(2.dp))
-                .background(KlarityColors.TextTertiary.copy(alpha = 0.5f))
-        )
-    }
-}
-
-/**
  * Modal header with task ID badge, title, and close button.
  * 
  * **Requirement 4.1**: Display task ID badge and title in header
+ * Uses M3 colorScheme tokens for proper theming support.
  */
 @Composable
 private fun ModalHeader(
@@ -236,38 +228,34 @@ private fun ModalHeader(
                 text = task.title,
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.SemiBold,
-                color = KlarityColors.TextPrimary,
+                color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
         }
         
-        // Close button (X icon)
-        IconButton(
+        // Close button with M3 FilledIconButton pattern
+        FilledTonalIconButton(
             onClick = onClose,
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(KlarityColors.BgTertiary)
+            modifier = Modifier.size(40.dp)
         ) {
             Icon(
                 imageVector = Icons.Default.Close,
-                contentDescription = "Close",
-                tint = KlarityColors.TextSecondary,
-                modifier = Modifier.size(20.dp)
+                contentDescription = "Close task details"
             )
         }
     }
     
-    // Divider
+    // Divider using M3 colorScheme
     HorizontalDivider(
-        color = KlarityColors.BorderPrimary,
+        color = MaterialTheme.colorScheme.outlineVariant,
         thickness = 1.dp
     )
 }
 
 /**
  * Task ID badge component.
+ * Uses M3 primary color token for consistent theming.
  */
 @Composable
 private fun TaskIdBadge(
@@ -277,17 +265,17 @@ private fun TaskIdBadge(
     // Extract short ID (last 6 characters or full ID if shorter)
     val shortId = if (taskId.length > 6) taskId.takeLast(6) else taskId
     
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(6.dp))
-            .background(KlarityColors.AccentPrimary.copy(alpha = 0.15f))
-            .padding(horizontal = 10.dp, vertical = 6.dp)
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(6.dp),
+        color = MaterialTheme.colorScheme.primaryContainer
     ) {
         Text(
             text = "#$shortId",
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Medium,
-            color = KlarityColors.AccentPrimary
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
         )
     }
 }
@@ -311,7 +299,7 @@ private fun DescriptionSection(
             text = "Description",
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold,
-            color = KlarityColors.TextPrimary
+            color = MaterialTheme.colorScheme.onSurface
         )
         
         Box(
@@ -320,24 +308,24 @@ private fun DescriptionSection(
                 .clip(RoundedCornerShape(8.dp))
                 .border(
                     width = 1.dp,
-                    color = KlarityColors.BorderPrimary,
+                    color = MaterialTheme.colorScheme.outlineVariant,
                     shape = RoundedCornerShape(8.dp)
                 )
-                .background(KlarityColors.BgTertiary)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
                 .padding(16.dp)
         ) {
             if (description.isNotEmpty()) {
                 Text(
                     text = description,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = KlarityColors.TextSecondary,
+                    color = MaterialTheme.colorScheme.onSurface,
                     lineHeight = 24.sp
                 )
             } else {
                 Text(
                     text = "No description provided",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = KlarityColors.TextTertiary,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
                 )
             }
@@ -368,7 +356,7 @@ private fun SubtasksSection(
                 text = "Subtasks",
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
-                color = KlarityColors.TextPrimary
+                color = MaterialTheme.colorScheme.onSurface
             )
             
             // Progress indicator
@@ -376,7 +364,7 @@ private fun SubtasksSection(
             Text(
                 text = "$completedCount/${subtasks.size}",
                 style = MaterialTheme.typography.labelSmall,
-                color = KlarityColors.TextTertiary
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
         }
         
@@ -386,10 +374,10 @@ private fun SubtasksSection(
                 .clip(RoundedCornerShape(8.dp))
                 .border(
                     width = 1.dp,
-                    color = KlarityColors.BorderPrimary,
+                    color = MaterialTheme.colorScheme.outlineVariant,
                     shape = RoundedCornerShape(8.dp)
                 )
-                .background(KlarityColors.BgTertiary),
+                .background(MaterialTheme.colorScheme.surfaceVariant),
             verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
             subtasks.forEachIndexed { index, subtask ->
@@ -397,10 +385,10 @@ private fun SubtasksSection(
                     subtask = subtask,
                     onToggle = { onSubtaskToggle(subtask.id) }
                 )
-                
+
                 if (index < subtasks.lastIndex) {
                     HorizontalDivider(
-                        color = KlarityColors.BorderPrimary,
+                        color = MaterialTheme.colorScheme.outlineVariant,
                         thickness = 1.dp,
                         modifier = Modifier.padding(horizontal = 16.dp)
                     )
@@ -434,11 +422,11 @@ private fun SubtaskItem(
                 .clip(RoundedCornerShape(4.dp))
                 .border(
                     width = 1.5.dp,
-                    color = if (subtask.isCompleted) KlarityColors.AccentPrimary else KlarityColors.BorderSecondary,
+                    color = if (subtask.isCompleted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
                     shape = RoundedCornerShape(4.dp)
                 )
                 .background(
-                    if (subtask.isCompleted) KlarityColors.AccentPrimary.copy(alpha = 0.2f)
+                    if (subtask.isCompleted) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
                     else Color.Transparent
                 ),
             contentAlignment = Alignment.Center
@@ -447,17 +435,17 @@ private fun SubtaskItem(
                 Icon(
                     imageVector = Icons.Default.Check,
                     contentDescription = "Completed",
-                    tint = KlarityColors.AccentPrimary,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(14.dp)
                 )
             }
         }
-        
+
         // Subtask title
         Text(
             text = subtask.title,
             style = MaterialTheme.typography.bodyMedium,
-            color = if (subtask.isCompleted) KlarityColors.TextTertiary else KlarityColors.TextPrimary,
+            color = if (subtask.isCompleted) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurface,
             textDecoration = if (subtask.isCompleted) TextDecoration.LineThrough else null,
             modifier = Modifier.weight(1f)
         )
@@ -483,7 +471,7 @@ private fun ActivitySection(
             text = "Activity",
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold,
-            color = KlarityColors.TextPrimary
+            color = MaterialTheme.colorScheme.onSurface
         )
         
         Column(
@@ -492,10 +480,10 @@ private fun ActivitySection(
                 .clip(RoundedCornerShape(8.dp))
                 .border(
                     width = 1.dp,
-                    color = KlarityColors.BorderPrimary,
+                    color = MaterialTheme.colorScheme.outlineVariant,
                     shape = RoundedCornerShape(8.dp)
                 )
-                .background(KlarityColors.BgTertiary)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -505,7 +493,7 @@ private fun ActivitySection(
                 action = "created this task",
                 timestamp = formatActivityTimestamp(task.createdAt)
             )
-            
+
             // Updated activity (if different from created)
             if (task.updatedAt != task.createdAt) {
                 ActivityItem(
@@ -514,7 +502,7 @@ private fun ActivitySection(
                     timestamp = formatActivityTimestamp(task.updatedAt)
                 )
             }
-            
+
             // Completed activity
             task.completedAt?.let { completedAt ->
                 ActivityItem(
@@ -547,14 +535,14 @@ private fun ActivityItem(
             modifier = Modifier
                 .size(32.dp)
                 .clip(CircleShape)
-                .background(KlarityColors.AccentPrimary.copy(alpha = 0.2f)),
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = avatar,
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
-                color = KlarityColors.AccentPrimary
+                color = MaterialTheme.colorScheme.primary
             )
         }
         
@@ -563,12 +551,12 @@ private fun ActivityItem(
             Text(
                 text = action,
                 style = MaterialTheme.typography.bodyMedium,
-                color = KlarityColors.TextSecondary
+                color = MaterialTheme.colorScheme.onSurface
             )
             Text(
                 text = timestamp,
                 style = MaterialTheme.typography.labelSmall,
-                color = KlarityColors.TextTertiary
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
         }
     }
@@ -590,7 +578,7 @@ private fun PropertiesSidebar(
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
-            .background(KlarityColors.BgTertiary)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
             .padding(20.dp)
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(20.dp)
@@ -599,9 +587,9 @@ private fun PropertiesSidebar(
             text = "Properties",
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold,
-            color = KlarityColors.TextPrimary
+            color = MaterialTheme.colorScheme.onSurface
         )
-        
+
         // Status badge
         PropertyRow(
             label = "Status",
@@ -609,7 +597,7 @@ private fun PropertiesSidebar(
                 StatusBadge(status = task.status)
             }
         )
-        
+
         // Priority with colored dot and label
         PropertyRow(
             label = "Priority",
@@ -617,7 +605,7 @@ private fun PropertiesSidebar(
                 PriorityDisplay(priority = task.priority)
             }
         )
-        
+
         // Story points with eco icon
         PropertyRow(
             label = "Points",
@@ -625,7 +613,7 @@ private fun PropertiesSidebar(
                 PointsDisplay(points = task.points)
             }
         )
-        
+
         // Assignee
         task.assignee?.let { assignee ->
             PropertyRow(
@@ -635,7 +623,7 @@ private fun PropertiesSidebar(
                 }
             )
         }
-        
+
         // Due date
         task.dueDate?.let { dueDate ->
             PropertyRow(
@@ -645,7 +633,7 @@ private fun PropertiesSidebar(
                 }
             )
         }
-        
+
         // Tags section with "Add" button (Requirement 7.3)
         TagsSection(
             tags = task.tags,
@@ -670,7 +658,7 @@ private fun PropertyRow(
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            color = KlarityColors.TextTertiary,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
             fontWeight = FontWeight.Medium
         )
         content()
@@ -688,7 +676,7 @@ private fun StatusBadge(
     Row(
         modifier = modifier
             .clip(RoundedCornerShape(6.dp))
-            .background(KlarityColors.AccentPrimary.copy(alpha = 0.15f))
+            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
             .padding(horizontal = 10.dp, vertical = 6.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -701,7 +689,7 @@ private fun StatusBadge(
             text = status.label,
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Medium,
-            color = KlarityColors.AccentPrimary
+            color = MaterialTheme.colorScheme.primary
         )
     }
 }
@@ -731,7 +719,7 @@ private fun PriorityDisplay(
         Text(
             text = priority.label,
             style = MaterialTheme.typography.bodyMedium,
-            color = KlarityColors.TextPrimary
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }
@@ -756,7 +744,7 @@ private fun PointsDisplay(
         Text(
             text = points?.toString() ?: "—",
             style = MaterialTheme.typography.bodyMedium,
-            color = if (points != null) KlarityColors.TextPrimary else KlarityColors.TextTertiary
+            color = if (points != null) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
         )
     }
 }
@@ -778,20 +766,20 @@ private fun AssigneeDisplay(
             modifier = Modifier
                 .size(24.dp)
                 .clip(CircleShape)
-                .background(KlarityColors.AccentPrimary.copy(alpha = 0.2f)),
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = name.take(1).uppercase(),
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
-                color = KlarityColors.AccentPrimary
+                color = MaterialTheme.colorScheme.primary
             )
         }
         Text(
             text = name,
             style = MaterialTheme.typography.bodyMedium,
-            color = KlarityColors.TextPrimary
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }
@@ -805,8 +793,8 @@ private fun DueDateDisplay(
     isOverdue: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val color = if (isOverdue) KlarityColors.Error else KlarityColors.TextPrimary
-    
+    val color = if (isOverdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -845,7 +833,7 @@ private fun TagsSection(
         Text(
             text = "Tags",
             style = MaterialTheme.typography.labelSmall,
-            color = KlarityColors.TextTertiary,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontWeight = FontWeight.Medium
         )
         
@@ -866,37 +854,37 @@ private fun TagsSection(
 }
 
 /**
- * Add tag button component.
+ * Add tag button component with proper touch target (48dp minimum).
  */
 @Composable
 private fun AddTagButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Row(
-        modifier = modifier
-            .clip(RoundedCornerShape(4.dp))
-            .border(
-                width = 1.dp,
-                color = KlarityColors.BorderSecondary,
-                shape = RoundedCornerShape(4.dp)
-            )
-            .clickable(onClick = onClick)
-            .padding(horizontal = 8.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        verticalAlignment = Alignment.CenterVertically
+    Surface(
+        onClick = onClick,
+        modifier = modifier.semantics { contentDescription = "Add new tag" },
+        shape = RoundedCornerShape(4.dp),
+        color = Color.Transparent,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
     ) {
-        Icon(
-            imageVector = Icons.Default.Add,
-            contentDescription = "Add tag",
-            tint = KlarityColors.TextTertiary,
-            modifier = Modifier.size(12.dp)
-        )
-        Text(
-            text = "Add",
-            style = MaterialTheme.typography.labelSmall,
-            color = KlarityColors.TextTertiary
-        )
+        Row(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(12.dp)
+            )
+            Text(
+                text = "Add",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
 

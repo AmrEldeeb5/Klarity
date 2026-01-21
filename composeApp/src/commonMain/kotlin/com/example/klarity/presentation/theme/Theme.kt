@@ -1,13 +1,153 @@
 package com.example.klarity.presentation.theme
 
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
+// ══════════════════════════════════════════════════════════════════════════════
+// MATERIAL 3 MOTION TOKENS
+// ══════════════════════════════════════════════════════════════════════════════
+
 /**
- * Klarity Dark Color Scheme
- * Beautiful dark teal/green theme matching the UI mockups.
+ * Material 3 Motion Easing curves for consistent animations
+ */
+object KlarityMotion {
+    // Standard easing - used for most animations
+    val EasingStandard = CubicBezierEasing(0.2f, 0f, 0f, 1f)
+
+    // Emphasized easing - used for hero/focal animations
+    val EasingEmphasized = CubicBezierEasing(0.2f, 0f, 0f, 1f)
+    val EasingEmphasizedDecelerate = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1f)
+    val EasingEmphasizedAccelerate = CubicBezierEasing(0.3f, 0f, 0.8f, 0.15f)
+
+    // Duration tokens (in milliseconds)
+    object Duration {
+        const val Short1 = 50
+        const val Short2 = 100
+        const val Short3 = 150
+        const val Short4 = 200
+        const val Medium1 = 250
+        const val Medium2 = 300
+        const val Medium3 = 350
+        const val Medium4 = 400
+        const val Long1 = 450
+        const val Long2 = 500
+        const val Long3 = 550
+        const val Long4 = 600
+        const val ExtraLong1 = 700
+        const val ExtraLong2 = 800
+        const val ExtraLong3 = 900
+        const val ExtraLong4 = 1000
+    }
+
+    // Pre-built animation specs
+    fun <T> emphasizedEnter() = tween<T>(
+        durationMillis = Duration.Medium3,
+        easing = EasingEmphasizedDecelerate
+    )
+
+    fun <T> emphasizedExit() = tween<T>(
+        durationMillis = Duration.Medium1,
+        easing = EasingEmphasizedAccelerate
+    )
+
+    fun <T> standardEnter() = tween<T>(
+        durationMillis = Duration.Medium2,
+        easing = EasingStandard
+    )
+
+    fun <T> standardExit() = tween<T>(
+        durationMillis = Duration.Short4,
+        easing = EasingStandard
+    )
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// EXTENDED COLOR SYSTEM
+// ══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Extended colors beyond Material 3's standard ColorScheme.
+ * Provides semantic colors specific to Klarity's design system.
+ */
+@Immutable
+data class ExtendedColors(
+    val success: Color,
+    val onSuccess: Color,
+    val successContainer: Color,
+    val onSuccessContainer: Color,
+    val warning: Color,
+    val onWarning: Color,
+    val warningContainer: Color,
+    val onWarningContainer: Color,
+    val info: Color,
+    val onInfo: Color,
+    val accentAI: Color,
+    val onAccentAI: Color,
+    val accentAIContainer: Color,
+    val surfaceGlow: Color,
+    val borderSelected: Color,
+    val textTertiary: Color,
+    val textMuted: Color
+)
+
+private val KlarityExtendedColors = ExtendedColors(
+    success = KlarityColors.Success,
+    onSuccess = KlarityColors.BgPrimary,
+    successContainer = KlarityColors.Success.copy(alpha = 0.2f),
+    onSuccessContainer = KlarityColors.Success,
+    warning = KlarityColors.Warning,
+    onWarning = KlarityColors.BgPrimary,
+    warningContainer = KlarityColors.Warning.copy(alpha = 0.2f),
+    onWarningContainer = KlarityColors.Warning,
+    info = KlarityColors.Info,
+    onInfo = KlarityColors.BgPrimary,
+    accentAI = KlarityColors.AccentAI,
+    onAccentAI = KlarityColors.BgPrimary,
+    accentAIContainer = KlarityColors.AccentAI.copy(alpha = 0.2f),
+    surfaceGlow = KlarityColors.GlowColor,
+    borderSelected = KlarityColors.BorderSelected,
+    textTertiary = KlarityColors.TextTertiary,
+    textMuted = KlarityColors.TextMuted
+)
+
+val LocalExtendedColors = staticCompositionLocalOf { KlarityExtendedColors }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SPACING SYSTEM
+// ══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Material 3 aligned spacing tokens (4dp base unit)
+ */
+@Immutable
+data class Spacing(
+    val none: Dp = 0.dp,
+    val extraSmall: Dp = 4.dp,
+    val small: Dp = 8.dp,
+    val medium: Dp = 16.dp,
+    val large: Dp = 24.dp,
+    val extraLarge: Dp = 32.dp,
+    val huge: Dp = 48.dp,
+    val massive: Dp = 64.dp
+)
+
+val LocalSpacing = staticCompositionLocalOf { Spacing() }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// DARK COLOR SCHEME
+// ══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Klarity Dark Color Scheme - Enhanced with M3 surface tint and dim/bright tokens
  */
 private val DarkColorScheme = darkColorScheme(
     // Primary: Bright Teal - buttons, links, active states
@@ -25,22 +165,33 @@ private val DarkColorScheme = darkColorScheme(
     // Tertiary: Info color
     tertiary = KlarityColors.Info,
     onTertiary = KlarityColors.BgPrimary,
+    tertiaryContainer = KlarityColors.Info.copy(alpha = 0.2f),
+    onTertiaryContainer = KlarityColors.TextPrimary,
 
     // Error
     error = KlarityColors.Error,
     onError = KlarityColors.TextPrimary,
+    errorContainer = KlarityColors.Error.copy(alpha = 0.2f),
+    onErrorContainer = KlarityColors.Error,
 
     // Background: Dark teal - main app background
     background = KlarityColors.BgPrimary,
     onBackground = KlarityColors.TextPrimary,
 
-    // Surface: Card backgrounds
+    // Surface: Card backgrounds with tint support
     surface = KlarityColors.BgSecondary,
     onSurface = KlarityColors.TextPrimary,
     surfaceVariant = KlarityColors.BgTertiary,
     onSurfaceVariant = KlarityColors.TextSecondary,
 
-    // Surface containers for different elevations
+    // NEW M3: Surface tint for elevation overlay
+    surfaceTint = KlarityColors.AccentPrimary,
+
+    // NEW M3: Surface brightness variants
+    surfaceBright = KlarityColors.BgElevated,
+    surfaceDim = KlarityColors.BgPrimary,
+
+    // Surface containers for different elevations (M3 tonal system)
     surfaceContainerLowest = KlarityColors.BgPrimary,
     surfaceContainerLow = KlarityColors.BgSecondary,
     surfaceContainer = KlarityColors.BgTertiary,
@@ -54,59 +205,93 @@ private val DarkColorScheme = darkColorScheme(
     // Inverse colors
     inverseSurface = KlarityColors.TextPrimary,
     inverseOnSurface = KlarityColors.BgPrimary,
-    inversePrimary = KlarityColors.AccentTertiary
+    inversePrimary = KlarityColors.AccentTertiary,
+
+    // Scrim for modal overlays
+    scrim = KlarityColors.ModalOverlay
 )
 
+// ══════════════════════════════════════════════════════════════════════════════
+// SHAPES
+// ══════════════════════════════════════════════════════════════════════════════
+
 /**
- * Klarity Shapes - Rounded corners for modern look
+ * Klarity Shapes - Rounded corners following M3 shape scale
  */
 private val Shapes = Shapes(
     extraSmall = RoundedCornerShape(4.dp),
     small = RoundedCornerShape(8.dp),
     medium = RoundedCornerShape(12.dp),
     large = RoundedCornerShape(16.dp),
-    extraLarge = RoundedCornerShape(24.dp)
+    extraLarge = RoundedCornerShape(28.dp) // M3 uses 28dp for extra large
 )
 
+// ══════════════════════════════════════════════════════════════════════════════
+// THEME COMPOSABLE
+// ══════════════════════════════════════════════════════════════════════════════
+
 /**
- * Klarity app theme - Dark teal theme for developers.
+ * Klarity app theme - Dark teal theme with M3 features.
+ * Provides extended colors, spacing, and motion tokens.
  */
 @Composable
 fun KlarityTheme(
     content: @Composable () -> Unit
 ) {
-    MaterialTheme(
-        colorScheme = DarkColorScheme,
-        typography = KlarityTypography,
-        shapes = Shapes,
-        content = content
-    )
+    CompositionLocalProvider(
+        LocalExtendedColors provides KlarityExtendedColors,
+        LocalSpacing provides Spacing()
+    ) {
+        MaterialTheme(
+            colorScheme = DarkColorScheme,
+            typography = KlarityTypography,
+            shapes = Shapes,
+            content = content
+        )
+    }
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+// THEME ACCESSORS
+// ══════════════════════════════════════════════════════════════════════════════
+
 /**
- * Extension properties to access custom Klarity colors from MaterialTheme
+ * Access extended colors from composition
  */
-val ColorScheme.bgSelected: androidx.compose.ui.graphics.Color
+object KlarityTheme {
+    val extendedColors: ExtendedColors
+        @Composable
+        get() = LocalExtendedColors.current
+
+    val spacing: Spacing
+        @Composable
+        get() = LocalSpacing.current
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// COLOR SCHEME EXTENSIONS (Backward Compatibility)
+// ══════════════════════════════════════════════════════════════════════════════
+
+val ColorScheme.bgSelected: Color
     get() = KlarityColors.BgSelected
 
-val ColorScheme.borderSelected: androidx.compose.ui.graphics.Color
+val ColorScheme.borderSelected: Color
     get() = KlarityColors.BorderSelected
 
-val ColorScheme.cardBg: androidx.compose.ui.graphics.Color
+val ColorScheme.cardBg: Color
     get() = KlarityColors.BgCard
 
-val ColorScheme.borderPrimary: androidx.compose.ui.graphics.Color
+val ColorScheme.borderPrimary: Color
     get() = KlarityColors.BorderPrimary
 
-val ColorScheme.textTertiary: androidx.compose.ui.graphics.Color
+val ColorScheme.textTertiary: Color
     get() = KlarityColors.TextTertiary
 
-val ColorScheme.accentAI: androidx.compose.ui.graphics.Color
+val ColorScheme.accentAI: Color
     get() = KlarityColors.AccentAI
 
-val ColorScheme.success: androidx.compose.ui.graphics.Color
+val ColorScheme.success: Color
     get() = KlarityColors.Success
 
-val ColorScheme.warning: androidx.compose.ui.graphics.Color
+val ColorScheme.warning: Color
     get() = KlarityColors.Warning
-

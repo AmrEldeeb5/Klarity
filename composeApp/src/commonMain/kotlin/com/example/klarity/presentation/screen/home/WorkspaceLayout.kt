@@ -441,9 +441,11 @@ fun WorkspaceTopBar(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(
-                    text = currentDestination.icon,
-                    fontSize = 20.sp
+                Icon(
+                    imageVector = currentDestination.selectedIcon,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = KlarityColors.AccentPrimary
                 )
                 Text(
                     text = currentDestination.label,
