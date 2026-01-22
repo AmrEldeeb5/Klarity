@@ -18,7 +18,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.klarity.presentation.state.TasksUiEffect
 import com.example.klarity.presentation.state.TasksUiEvent
 import com.example.klarity.presentation.state.TasksUiState
-import com.example.klarity.presentation.theme.KlarityColors
 import com.example.klarity.presentation.viewmodel.TasksViewModel
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
@@ -114,7 +113,7 @@ private fun TasksLoadingScreen() {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(KlarityColors.BgPrimary),
+            .background(MaterialTheme.colorScheme.background),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -122,13 +121,13 @@ private fun TasksLoadingScreen() {
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             CircularProgressIndicator(
-                color = KlarityColors.AccentPrimary,
+                color = MaterialTheme.colorScheme.primary,
                 strokeWidth = 3.dp
             )
             Text(
                 text = "Loading tasks...",
                 style = MaterialTheme.typography.bodyMedium,
-                color = KlarityColors.TextSecondary
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -145,7 +144,7 @@ private fun TasksErrorScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(KlarityColors.BgPrimary),
+            .background(MaterialTheme.colorScheme.background),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -160,18 +159,18 @@ private fun TasksErrorScreen(
             Text(
                 text = "Failed to load tasks",
                 style = MaterialTheme.typography.titleLarge,
-                color = KlarityColors.TextPrimary
+                color = MaterialTheme.colorScheme.onSurface
             )
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyMedium,
-                color = KlarityColors.TextSecondary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
             TextButton(onClick = onRetry) {
                 Text(
                     text = "Try Again",
-                    color = KlarityColors.AccentPrimary
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         }
@@ -198,7 +197,7 @@ private fun TasksScreenContent(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(KlarityColors.BgPrimary)
+                .background(MaterialTheme.colorScheme.background)
         ) {
             // Header with view mode tabs (Requirement 10.1, 10.2)
             TasksHeader(
@@ -270,10 +269,8 @@ private fun TasksScreenContent(
                     }
                     
                     TaskViewMode.TIMELINE -> {
-                        TaskTimeline(
+                        TaskTimelineView(
                             tasks = allTasks,
-                            scale = TimelineScale.WEEK,
-                            onScaleChange = { /* TODO */ },
                             onTaskClick = { task ->
                                 onEvent(TasksUiEvent.TaskClicked(task))
                             },
@@ -305,7 +302,7 @@ private fun TasksScreenContent(
                             Text(
                                 text = "🗓️ Calendar View Coming Soon",
                                 style = MaterialTheme.typography.titleMedium,
-                                color = KlarityColors.TextSecondary
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -336,7 +333,7 @@ private fun FilterPanel(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .background(KlarityColors.BgTertiary)
+            .background(MaterialTheme.colorScheme.surface)
             .padding(16.dp),
         horizontalArrangement = Arrangement.spacedBy(24.dp)
     ) {
@@ -345,7 +342,7 @@ private fun FilterPanel(
             Text(
                 text = "Status",
                 style = MaterialTheme.typography.labelMedium,
-                color = KlarityColors.TextSecondary
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -371,7 +368,7 @@ private fun FilterPanel(
             Text(
                 text = "Priority",
                 style = MaterialTheme.typography.labelMedium,
-                color = KlarityColors.TextSecondary
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -397,7 +394,7 @@ private fun FilterPanel(
             Text(
                 text = "Show",
                 style = MaterialTheme.typography.labelMedium,
-                color = KlarityColors.TextSecondary
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(8.dp))
             FilterChip(
@@ -413,7 +410,7 @@ private fun FilterPanel(
         TextButton(
             onClick = { onFilterChange(TaskFilter()) }
         ) {
-            Text("Clear Filters", color = KlarityColors.AccentPrimary)
+            Text("Clear Filters", color = MaterialTheme.colorScheme.primary)
         }
     }
 }
@@ -469,7 +466,7 @@ private fun TaskListItem(
             .fillMaxWidth()
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(containerColor = KlarityColors.BgSecondary)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Row(
             modifier = Modifier
@@ -483,8 +480,8 @@ private fun TaskListItem(
                 checked = task.status == TaskStatus.DONE,
                 onCheckedChange = { onToggleComplete() },
                 colors = CheckboxDefaults.colors(
-                    checkedColor = KlarityColors.AccentSecondary,
-                    uncheckedColor = KlarityColors.TextTertiary
+                    checkedColor = MaterialTheme.colorScheme.secondary,
+                    uncheckedColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                 )
             )
             
@@ -497,13 +494,13 @@ private fun TaskListItem(
                     text = task.title,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
-                    color = KlarityColors.TextPrimary
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 if (task.description.isNotEmpty()) {
                     Text(
                         text = task.description,
                         style = MaterialTheme.typography.bodySmall,
-                        color = KlarityColors.TextSecondary,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1
                     )
                 }
@@ -517,8 +514,8 @@ private fun TaskListItem(
                 Text(
                     text = "📅",
                     style = MaterialTheme.typography.labelSmall,
-                    color = if (task.isOverdue) androidx.compose.ui.graphics.Color(0xFFFF5252) 
-                           else KlarityColors.TextSecondary
+                    color = if (task.isOverdue) MaterialTheme.colorScheme.error
+                           else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }

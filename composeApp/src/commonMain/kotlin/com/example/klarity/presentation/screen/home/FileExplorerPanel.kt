@@ -243,8 +243,8 @@ fun FolderTreeItem(
 
     val bgColor by animateColorAsState(
         targetValue = when {
-            isDropTarget -> KlarityColors.AccentAI.copy(alpha = 0.2f)
-            isHovered -> KlarityColors.BgElevated.copy(alpha = 0.6f)
+            isDropTarget -> MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f)
+            isHovered -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
             else -> Color.Transparent
         },
         animationSpec = tween(150)
@@ -260,7 +260,7 @@ fun FolderTreeItem(
                     .hoverable(interactionSource),
                 shape = RoundedCornerShape(6.dp),
                 color = bgColor,
-                border = if (isDropTarget) BorderStroke(1.dp, KlarityColors.AccentAI) else null
+                border = if (isDropTarget) BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary) else null
             ) {
                 Row(
                     modifier = Modifier
@@ -273,7 +273,7 @@ fun FolderTreeItem(
                     Text(
                         if (isExpanded) "▼" else "▶",
                         fontSize = 8.sp,
-                        color = KlarityColors.TextTertiary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     )
                     // Folder icon
                     Text(
@@ -284,7 +284,7 @@ fun FolderTreeItem(
                     Text(
                         folder.name,
                         fontSize = 13.sp,
-                        color = if (isHovered || isDropTarget) Color.White else KlarityColors.TextSecondary,
+                        color = if (isHovered || isDropTarget) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f)
@@ -294,7 +294,7 @@ fun FolderTreeItem(
                         Text(
                             "⋯",
                             fontSize = 12.sp,
-                            color = KlarityColors.TextTertiary,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                             modifier = Modifier.clickable { showContextMenu = true }
                         )
                     }
@@ -381,8 +381,8 @@ fun DraggableNoteItem(
 
     val bgColor by animateColorAsState(
         targetValue = when {
-            isSelected -> KlarityColors.BgSelected.copy(alpha = 0.8f)
-            isHovered -> KlarityColors.BgElevated.copy(alpha = 0.6f)
+            isSelected -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f)
+            isHovered -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
             else -> Color.Transparent
         },
         animationSpec = tween(150)
@@ -407,7 +407,7 @@ fun DraggableNoteItem(
                 Text(
                     "📄",
                     fontSize = 14.sp,
-                    color = if (isSelected) KlarityColors.AccentAI else KlarityColors.TextTertiary
+                    color = if (isSelected) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                 )
                 Text(
                     note.title.ifBlank { "Untitled" },
@@ -415,7 +415,7 @@ fun DraggableNoteItem(
                     color = when {
                         isSelected -> Color.White
                         isHovered -> Color.White
-                        else -> KlarityColors.TextSecondary
+                        else -> MaterialTheme.colorScheme.onSurfaceVariant
                     },
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -426,7 +426,7 @@ fun DraggableNoteItem(
                     Text(
                         "📁",
                         fontSize = 12.sp,
-                        color = KlarityColors.TextTertiary,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                         modifier = Modifier.clickable { showMoveMenu = true }
                     )
                 }
@@ -531,19 +531,19 @@ fun DropZone(
             .padding(vertical = 4.dp)
             .hoverable(interactionSource),
         shape = RoundedCornerShape(6.dp),
-        color = if (isActive) KlarityColors.AccentAI.copy(alpha = 0.1f) else Color.Transparent,
-        border = if (isActive) BorderStroke(1.dp, KlarityColors.AccentAI.copy(alpha = 0.5f)) else null
+        color = if (isActive) MaterialTheme.colorScheme.tertiary.copy(alpha = 0.1f) else Color.Transparent,
+        border = if (isActive) BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.5f)) else null
     ) {
         Row(
             modifier = Modifier.padding(8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Text("📂", fontSize = 12.sp, color = KlarityColors.TextTertiary)
+            Text("📂", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
             Text(
                 label,
                 fontSize = 11.sp,
-                color = if (isActive) KlarityColors.AccentAI else KlarityColors.TextTertiary
+                color = if (isActive) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
             )
         }
     }
@@ -560,8 +560,8 @@ fun CreateFolderDialog(
     Dialog(onDismissRequest = onDismiss) {
         Surface(
             shape = RoundedCornerShape(12.dp),
-            color = KlarityColors.BgSecondary,
-            border = BorderStroke(1.dp, KlarityColors.BorderPrimary)
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
         ) {
             Column(
                 modifier = Modifier.padding(24.dp).width(300.dp),
@@ -577,8 +577,8 @@ fun CreateFolderDialog(
                 Surface(
                     modifier = Modifier.fillMaxWidth().height(44.dp),
                     shape = RoundedCornerShape(8.dp),
-                    color = KlarityColors.BgElevated,
-                    border = BorderStroke(1.dp, KlarityColors.BorderPrimary)
+                    color = MaterialTheme.colorScheme.surface,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
                 ) {
                     BasicTextField(
                         value = folderName,
@@ -586,10 +586,10 @@ fun CreateFolderDialog(
                         modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 10.dp),
                         singleLine = true,
                         textStyle = TextStyle(color = Color.White, fontSize = 14.sp),
-                        cursorBrush = SolidColor(KlarityColors.AccentAI),
+                        cursorBrush = SolidColor(MaterialTheme.colorScheme.tertiary),
                         decorationBox = { innerTextField ->
                             if (folderName.isEmpty()) {
-                                Text("Folder name...", color = KlarityColors.TextTertiary, fontSize = 14.sp)
+                                Text("Folder name...", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f), fontSize = 14.sp)
                             }
                             innerTextField()
                         }
@@ -602,18 +602,18 @@ fun CreateFolderDialog(
                 ) {
                     Button(
                         onClick = onDismiss,
-                        colors = ButtonDefaults.buttonColors(containerColor = KlarityColors.BgElevated),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface),
                         shape = RoundedCornerShape(8.dp)
                     ) {
-                        Text("Cancel", color = KlarityColors.TextSecondary)
+                        Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Button(
                         onClick = { if (folderName.isNotBlank()) onCreate(folderName) },
-                        colors = ButtonDefaults.buttonColors(containerColor = KlarityColors.AccentAI),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary),
                         shape = RoundedCornerShape(8.dp),
                         enabled = folderName.isNotBlank()
                     ) {
-                        Text("Create", color = KlarityColors.BgSecondary)
+                        Text("Create", color = MaterialTheme.colorScheme.surfaceVariant)
                     }
                 }
             }
@@ -632,8 +632,8 @@ fun RenameFolderDialog(
     Dialog(onDismissRequest = onDismiss) {
         Surface(
             shape = RoundedCornerShape(12.dp),
-            color = KlarityColors.BgSecondary,
-            border = BorderStroke(1.dp, KlarityColors.BorderPrimary)
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
         ) {
             Column(
                 modifier = Modifier.padding(24.dp).width(300.dp),
@@ -649,8 +649,8 @@ fun RenameFolderDialog(
                 Surface(
                     modifier = Modifier.fillMaxWidth().height(44.dp),
                     shape = RoundedCornerShape(8.dp),
-                    color = KlarityColors.BgElevated,
-                    border = BorderStroke(1.dp, KlarityColors.BorderPrimary)
+                    color = MaterialTheme.colorScheme.surface,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
                 ) {
                     BasicTextField(
                         value = folderName,
@@ -658,7 +658,7 @@ fun RenameFolderDialog(
                         modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 10.dp),
                         singleLine = true,
                         textStyle = TextStyle(color = Color.White, fontSize = 14.sp),
-                        cursorBrush = SolidColor(KlarityColors.AccentAI)
+                        cursorBrush = SolidColor(MaterialTheme.colorScheme.tertiary)
                     )
                 }
 
@@ -668,18 +668,18 @@ fun RenameFolderDialog(
                 ) {
                     Button(
                         onClick = onDismiss,
-                        colors = ButtonDefaults.buttonColors(containerColor = KlarityColors.BgElevated),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface),
                         shape = RoundedCornerShape(8.dp)
                     ) {
-                        Text("Cancel", color = KlarityColors.TextSecondary)
+                        Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Button(
                         onClick = { if (folderName.isNotBlank()) onRename(folderName) },
-                        colors = ButtonDefaults.buttonColors(containerColor = KlarityColors.AccentAI),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary),
                         shape = RoundedCornerShape(8.dp),
                         enabled = folderName.isNotBlank()
                     ) {
-                        Text("Rename", color = KlarityColors.BgSecondary)
+                        Text("Rename", color = MaterialTheme.colorScheme.surfaceVariant)
                     }
                 }
             }
@@ -696,8 +696,8 @@ fun DeleteFolderDialog(
     Dialog(onDismissRequest = onDismiss) {
         Surface(
             shape = RoundedCornerShape(12.dp),
-            color = KlarityColors.BgSecondary,
-            border = BorderStroke(1.dp, KlarityColors.BorderPrimary)
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
         ) {
             Column(
                 modifier = Modifier.padding(24.dp).width(300.dp),
@@ -713,7 +713,7 @@ fun DeleteFolderDialog(
                 Text(
                     "Are you sure you want to delete \"${folder.name}\"? Notes inside will be moved to Uncategorized.",
                     fontSize = 14.sp,
-                    color = KlarityColors.TextSecondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     lineHeight = 20.sp
                 )
 
@@ -723,14 +723,14 @@ fun DeleteFolderDialog(
                 ) {
                     Button(
                         onClick = onDismiss,
-                        colors = ButtonDefaults.buttonColors(containerColor = KlarityColors.BgElevated),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface),
                         shape = RoundedCornerShape(8.dp)
                     ) {
-                        Text("Cancel", color = KlarityColors.TextSecondary)
+                        Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Button(
                         onClick = onConfirm,
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF43F5E)),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Text("Delete", color = Color.White)

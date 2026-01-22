@@ -46,7 +46,6 @@ import com.example.klarity.domain.models.Note
 import com.example.klarity.presentation.state.EditorUiEvent
 import com.example.klarity.presentation.state.EditorUiState
 import com.example.klarity.presentation.state.EditorViewMode
-import com.example.klarity.presentation.theme.KlarityColors
 import com.example.klarity.presentation.theme.LocalExtendedColors
 import com.example.klarity.presentation.viewmodel.EditorViewModel
 import org.koin.compose.viewmodel.koinViewModel

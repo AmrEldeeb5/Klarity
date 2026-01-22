@@ -25,7 +25,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.klarity.domain.models.Note
-import com.example.klarity.presentation.theme.KlarityColors
 import kotlin.math.*
 
 /**
@@ -59,8 +58,8 @@ fun GraphScreen(
     modifier: Modifier = Modifier
 ) {
     // Use centralized colors from theme
-    val luminousTeal = KlarityColors.LuminousTeal
-    val electricMint = KlarityColors.ElectricMint
+    val luminousTeal = MaterialTheme.colorScheme.primary
+    val electricMint = MaterialTheme.colorScheme.tertiary
 
     // Parse wiki links from notes to build graph
     val (nodes, edges) = remember(notes) {
@@ -96,10 +95,15 @@ fun GraphScreen(
         }
     }
 
+    // Extract colors for use in Canvas
+    val backgroundColor = MaterialTheme.colorScheme.background
+    val outlineColor = MaterialTheme.colorScheme.outline
+    val onSurfaceVariantColor = MaterialTheme.colorScheme.onSurfaceVariant
+
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(KlarityColors.BgPrimary)
+            .background(backgroundColor)
     ) {
         // Graph Canvas
         Canvas(
@@ -149,7 +153,7 @@ fun GraphScreen(
                     val edgeColor = if (isHighlighted) {
                         luminousTeal.copy(alpha = 0.8f)
                     } else {
-                        KlarityColors.BorderPrimary.copy(alpha = 0.3f)
+                        outlineColor.copy(alpha = 0.3f)
                     }
 
                     drawLine(
@@ -176,7 +180,7 @@ fun GraphScreen(
                     isSelected -> luminousTeal
                     isHovered -> electricMint
                     node.isPinned -> Color(0xFFFFA500)
-                    else -> KlarityColors.TextSecondary
+                    else -> onSurfaceVariantColor
                 }
 
                 // Glow effect for selected/hovered
@@ -197,7 +201,7 @@ fun GraphScreen(
 
                 // Inner circle
                 drawCircle(
-                    color = KlarityColors.BgPrimary,
+                    color = backgroundColor,
                     radius = radius * 0.6f,
                     center = Offset(centerX + pos.x, centerY + pos.y)
                 )
@@ -220,12 +224,12 @@ fun GraphScreen(
                         )
                 ) {
                     Surface(
-                        color = KlarityColors.BgElevated.copy(alpha = 0.9f),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f),
                         shape = RoundedCornerShape(4.dp)
                     ) {
                         Text(
                             text = node.title.take(20),
-                            color = if (isSelected) luminousTeal else KlarityColors.TextPrimary,
+                            color = if (isSelected) luminousTeal else MaterialTheme.colorScheme.onSurface,
                             fontSize = 10.sp,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                             maxLines = 1,
@@ -274,13 +278,13 @@ fun GraphScreen(
                     )
                     Text(
                         text = "No connections yet",
-                        color = KlarityColors.TextSecondary,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Medium
                     )
                     Text(
                         text = "Link notes using [[note-name]] syntax",
-                        color = KlarityColors.TextTertiary,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                         fontSize = 14.sp
                     )
                 }
@@ -308,7 +312,7 @@ private fun GraphControls(
     ) {
         // Stats
         Surface(
-            color = KlarityColors.BgSecondary.copy(alpha = 0.9f),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f),
             shape = RoundedCornerShape(8.dp)
         ) {
             Column(
@@ -317,18 +321,18 @@ private fun GraphControls(
             ) {
                 Text(
                     text = "Knowledge Graph",
-                    color = KlarityColors.TextPrimary,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
                     text = "$nodeCount notes • $edgeCount links",
-                    color = KlarityColors.TextTertiary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                     fontSize = 11.sp
                 )
                 Text(
                     text = "Zoom: ${(scale * 100).toInt()}%",
-                    color = KlarityColors.TextTertiary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                     fontSize = 11.sp
                 )
             }
@@ -336,7 +340,7 @@ private fun GraphControls(
 
         // Zoom controls
         Surface(
-            color = KlarityColors.BgSecondary.copy(alpha = 0.9f),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f),
             shape = RoundedCornerShape(8.dp)
         ) {
             Column(
@@ -347,7 +351,7 @@ private fun GraphControls(
                     Icon(
                         Icons.Default.Add,
                         contentDescription = "Zoom in",
-                        tint = KlarityColors.TextSecondary,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(18.dp)
                     )
                 }
@@ -355,7 +359,7 @@ private fun GraphControls(
                     Icon(
                         Icons.Default.Close,
                         contentDescription = "Zoom out",
-                        tint = KlarityColors.TextSecondary,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(18.dp)
                     )
                 }
@@ -363,7 +367,7 @@ private fun GraphControls(
                     Icon(
                         Icons.Default.Refresh,
                         contentDescription = "Reset view",
-                        tint = KlarityColors.TextSecondary,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(18.dp)
                     )
                 }
@@ -371,7 +375,7 @@ private fun GraphControls(
                     Icon(
                         if (isSimulating) Icons.Default.Clear else Icons.Default.PlayArrow,
                         contentDescription = if (isSimulating) "Pause" else "Play",
-                        tint = if (isSimulating) Color(0xFF1FDBC8) else KlarityColors.TextSecondary,
+                        tint = if (isSimulating) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(18.dp)
                     )
                 }
@@ -384,7 +388,7 @@ private fun GraphControls(
 @Composable
 private fun GraphLegend(modifier: Modifier = Modifier) {
     Surface(
-        color = KlarityColors.BgSecondary.copy(alpha = 0.9f),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f),
         shape = RoundedCornerShape(8.dp),
         modifier = modifier
     ) {
@@ -394,14 +398,14 @@ private fun GraphLegend(modifier: Modifier = Modifier) {
         ) {
             Text(
                 text = "Legend",
-                color = KlarityColors.TextTertiary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 fontSize = 10.sp,
                 fontWeight = FontWeight.SemiBold
             )
             LegendItem(color = Color(0xFF1FDBC8), label = "Selected")
             LegendItem(color = Color(0xFF3DD68C), label = "Hovered")
             LegendItem(color = Color(0xFFFFA500), label = "Pinned")
-            LegendItem(color = KlarityColors.TextSecondary, label = "Note")
+            LegendItem(color = MaterialTheme.colorScheme.onSurfaceVariant, label = "Note")
         }
     }
 }
@@ -419,7 +423,7 @@ private fun LegendItem(color: Color, label: String) {
         ) {}
         Text(
             text = label,
-            color = KlarityColors.TextTertiary,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
             fontSize = 10.sp
         )
     }

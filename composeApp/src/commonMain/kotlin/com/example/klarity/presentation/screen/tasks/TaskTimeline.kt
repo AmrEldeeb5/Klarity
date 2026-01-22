@@ -19,7 +19,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.klarity.presentation.theme.KlarityColors
 import kotlinx.datetime.*
 
 /**
@@ -40,26 +39,25 @@ enum class TimelineScale(val label: String, val daysPerUnit: Int) {
 }
 
 @Composable
-fun TaskTimeline(
+fun TaskTimelineView(
     tasks: List<Task>,
-    scale: TimelineScale = TimelineScale.WEEK,
-    onScaleChange: (TimelineScale) -> Unit,
     onTaskClick: (Task) -> Unit,
-    onTaskMove: (Task, newStartDate: Instant, newDueDate: Instant) -> Unit,
+    onTaskMove: (Task, LocalDate?, LocalDate?) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var scale by remember { mutableStateOf(TimelineScale.WEEK) }
     val today = remember { Clock.System.now() }
     val scrollState = rememberScrollState()
     
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(KlarityColors.BgPrimary)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         // Timeline Header with scale selector
         TimelineHeader(
             scale = scale,
-            onScaleChange = onScaleChange
+            onScaleChange = { scale = it }
         )
         
         Row(
@@ -76,7 +74,7 @@ fun TaskTimeline(
             
             // Divider
             VerticalDivider(
-                color = KlarityColors.TextTertiary.copy(alpha = 0.2f),
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f),
                 modifier = Modifier.fillMaxHeight()
             )
             
@@ -90,8 +88,7 @@ fun TaskTimeline(
                     tasks = tasks,
                     scale = scale,
                     today = today,
-                    onTaskClick = onTaskClick,
-                    onTaskMove = onTaskMove
+                    onTaskClick = onTaskClick
                 )
             }
         }
@@ -107,7 +104,7 @@ private fun TimelineHeader(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .background(KlarityColors.BgSecondary)
+            .background(MaterialTheme.colorScheme.surface)
             .padding(16.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
@@ -116,7 +113,7 @@ private fun TimelineHeader(
             text = "📅 Timeline",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
-            color = KlarityColors.TextPrimary
+            color = MaterialTheme.colorScheme.onSurface
         )
         
         // Scale selector
@@ -134,8 +131,8 @@ private fun TimelineHeader(
                         )
                     },
                     colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = KlarityColors.AccentPrimary.copy(alpha = 0.2f),
-                        selectedLabelColor = KlarityColors.AccentPrimary
+                        selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                        selectedLabelColor = MaterialTheme.colorScheme.primary
                     )
                 )
             }
@@ -152,27 +149,27 @@ private fun TaskListSidebar(
     Column(
         modifier = modifier
             .fillMaxHeight()
-            .background(KlarityColors.BgSecondary)
+            .background(MaterialTheme.colorScheme.surface)
     ) {
         // Header
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp)
-                .background(KlarityColors.BgTertiary)
+                .background(MaterialTheme.colorScheme.secondary)
                 .padding(horizontal = 16.dp),
             contentAlignment = Alignment.CenterStart
         ) {
             Text(
                 text = "Tasks",
                 style = MaterialTheme.typography.labelLarge,
-                color = KlarityColors.TextSecondary,
+                color = MaterialTheme.colorScheme.onSecondary,
                 fontWeight = FontWeight.Medium
             )
         }
         
-        HorizontalDivider(color = KlarityColors.TextTertiary.copy(alpha = 0.2f))
-        
+        HorizontalDivider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f))
+
         // Task list
         LazyColumn(
             modifier = Modifier.fillMaxSize()
@@ -183,7 +180,7 @@ private fun TaskListSidebar(
                     onClick = { onTaskClick(task) }
                 )
                 HorizontalDivider(
-                    color = KlarityColors.TextTertiary.copy(alpha = 0.1f)
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f)
                 )
             }
         }
@@ -217,7 +214,7 @@ private fun TimelineTaskRow(
         Text(
             text = task.title,
             style = MaterialTheme.typography.bodyMedium,
-            color = KlarityColors.TextPrimary,
+            color = MaterialTheme.colorScheme.onBackground,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f)
@@ -237,7 +234,6 @@ private fun TimelineGrid(
     scale: TimelineScale,
     today: Instant,
     onTaskClick: (Task) -> Unit,
-    onTaskMove: (Task, Instant, Instant) -> Unit,
     modifier: Modifier = Modifier
 ) {
     // Calculate date range
@@ -254,7 +250,7 @@ private fun TimelineGrid(
         Row(
             modifier = Modifier
                 .height(48.dp)
-                .background(KlarityColors.BgTertiary)
+                .background(MaterialTheme.colorScheme.secondary)
         ) {
             dateRange.forEach { date ->
                 Box(
@@ -263,22 +259,22 @@ private fun TimelineGrid(
                         .fillMaxHeight()
                         .border(
                             width = 0.5.dp,
-                            color = KlarityColors.TextTertiary.copy(alpha = 0.2f)
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f)
                         ),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = formatDateHeader(date, scale),
                         style = MaterialTheme.typography.labelSmall,
-                        color = if (isToday(date, today)) KlarityColors.AccentPrimary 
-                               else KlarityColors.TextSecondary
+                        color = if (isToday(date, today)) MaterialTheme.colorScheme.primary
+                               else MaterialTheme.colorScheme.onBackground
                     )
                 }
             }
         }
         
-        HorizontalDivider(color = KlarityColors.TextTertiary.copy(alpha = 0.2f))
-        
+        HorizontalDivider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f))
+
         // Task bars
         LazyColumn {
             items(tasks, key = { it.id }) { task ->
@@ -290,7 +286,7 @@ private fun TimelineGrid(
                     onClick = { onTaskClick(task) }
                 )
                 HorizontalDivider(
-                    color = KlarityColors.TextTertiary.copy(alpha = 0.1f)
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f)
                 )
             }
         }
@@ -332,7 +328,7 @@ private fun TimelineTaskBar(
                     .offset(x = (todayIndex * columnWidth.value + columnWidth.value / 2).dp)
                     .width(2.dp)
                     .fillMaxHeight()
-                    .background(KlarityColors.AccentPrimary.copy(alpha = 0.5f))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
             )
         }
         
@@ -346,16 +342,16 @@ private fun TimelineTaskBar(
                     .clip(RoundedCornerShape(4.dp))
                     .background(
                         when (task.status) {
-                            TaskStatus.DONE -> KlarityColors.AccentSecondary.copy(alpha = 0.3f)
-                            TaskStatus.IN_PROGRESS -> KlarityColors.AccentPrimary.copy(alpha = 0.5f)
+                            TaskStatus.DONE -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f)
+                            TaskStatus.IN_PROGRESS -> MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
                             else -> Color(task.priority.color).copy(alpha = 0.3f)
                         }
                     )
                     .border(
                         width = 1.dp,
                         color = when (task.status) {
-                            TaskStatus.DONE -> KlarityColors.AccentSecondary
-                            TaskStatus.IN_PROGRESS -> KlarityColors.AccentPrimary
+                            TaskStatus.DONE -> MaterialTheme.colorScheme.secondary
+                            TaskStatus.IN_PROGRESS -> MaterialTheme.colorScheme.primary
                             else -> Color(task.priority.color)
                         },
                         shape = RoundedCornerShape(4.dp)
@@ -373,8 +369,8 @@ private fun TimelineTaskBar(
                             .clip(RoundedCornerShape(4.dp))
                             .background(
                                 when (task.status) {
-                                    TaskStatus.DONE -> KlarityColors.AccentSecondary
-                                    TaskStatus.IN_PROGRESS -> KlarityColors.AccentPrimary
+                                    TaskStatus.DONE -> MaterialTheme.colorScheme.secondary
+                                    TaskStatus.IN_PROGRESS -> MaterialTheme.colorScheme.primary
                                     else -> Color(task.priority.color)
                                 }.copy(alpha = 0.3f)
                             )
