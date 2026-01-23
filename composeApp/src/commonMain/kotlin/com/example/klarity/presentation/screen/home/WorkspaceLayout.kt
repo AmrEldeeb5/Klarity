@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.klarity.presentation.navigation.NavDestination
+import com.example.klarity.presentation.theme.KlarityMotion
 
 /**
  * Workspace layout modes
@@ -110,13 +111,13 @@ fun AdaptiveWorkspace(
 ) {
     val leftWidth by animateDpAsState(
         targetValue = if (config.leftPane != null) config.leftPaneWidth else 0.dp,
-        animationSpec = tween(200),
+        animationSpec = KlarityMotion.standardEnter(),
         label = "leftWidth"
     )
     
     val rightWidth by animateDpAsState(
         targetValue = if (config.rightPane != null) config.rightPaneWidth else 0.dp,
-        animationSpec = tween(200),
+        animationSpec = KlarityMotion.standardEnter(),
         label = "rightWidth"
     )
 
@@ -256,20 +257,20 @@ private fun LayoutModeButton(
     val bgColor by animateColorAsState(
         targetValue = when {
             isSelected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-            isHovered -> MaterialTheme.colorScheme.surfaceVariant
+            isHovered -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
             else -> Color.Transparent
         },
-        animationSpec = tween(100),
+        animationSpec = KlarityMotion.quickExit(),
         label = "bgColor"
     )
     
     val contentColor by animateColorAsState(
         targetValue = when {
             isSelected -> MaterialTheme.colorScheme.primary
-            isHovered -> MaterialTheme.colorScheme.onSurface
-            else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+            isHovered -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+            else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f) // Ghost buttons - much quieter
         },
-        animationSpec = tween(100),
+        animationSpec = KlarityMotion.quickExit(),
         label = "contentColor"
     )
     
@@ -384,7 +385,7 @@ fun PaneResizer(
     
     val width by animateDpAsState(
         targetValue = if (isDragging || isHovered) 6.dp else 2.dp,
-        animationSpec = tween(100),
+        animationSpec = KlarityMotion.quickExit(),
         label = "resizerWidth"
     )
     
@@ -394,7 +395,7 @@ fun PaneResizer(
             isHovered -> MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
             else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
         },
-        animationSpec = tween(100),
+        animationSpec = KlarityMotion.quickExit(),
         label = "resizerColor"
     )
     

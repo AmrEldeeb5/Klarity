@@ -8,6 +8,7 @@ import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import com.example.klarity.presentation.theme.KlarityMotion
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -210,41 +211,30 @@ private fun NotesListHeader(
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Title
-            Text(
-                text = "Notes",
-                color = MaterialTheme.colorScheme.onSurface,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-            
-            // Create button
-            Surface(
+            // Create button - now the clear primary action
+            Button(
                 onClick = onCreateNote,
-                color = luminousTeal.copy(alpha = 0.15f),
-                shape = RoundedCornerShape(8.dp)
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = luminousTeal,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ),
+                shape = RoundedCornerShape(8.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
             ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        Icons.Default.Add,
-                        contentDescription = null,
-                        tint = luminousTeal,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Text(
-                        text = "New",
-                        color = luminousTeal,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
+                Icon(
+                    Icons.Default.Add,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text = "New",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
             }
         }
         
@@ -463,7 +453,7 @@ private fun ToolbarButton(
     
     val bgColor by animateColorAsState(
         targetValue = if (isHovered) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
-        animationSpec = tween(100),
+        animationSpec = KlarityMotion.quickExit(),
         label = "toolbarBtnBg"
     )
     
@@ -596,22 +586,14 @@ private fun NoteListItem(
     
     val bgColor by animateColorAsState(
         targetValue = when {
-            isSelected -> luminousTeal.copy(alpha = 0.15f)
+            isSelected -> luminousTeal.copy(alpha = 0.10f)  // Reduced - accent bar now provides emphasis
             isMultiSelected -> luminousTeal.copy(alpha = 0.08f)
-            isHovered -> MaterialTheme.colorScheme.surfaceVariant
+            isHovered -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            note.isPinned -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
             else -> Color.Transparent
         },
-        animationSpec = tween(100),
+        animationSpec = KlarityMotion.quickExit(),
         label = "bgColor"
-    )
-    
-    val borderColor by animateColorAsState(
-        targetValue = when {
-            isSelected -> luminousTeal.copy(alpha = 0.4f)
-            else -> Color.Transparent
-        },
-        animationSpec = tween(100),
-        label = "borderColor"
     )
     
     Surface(
@@ -621,16 +603,27 @@ private fun NoteListItem(
         modifier = Modifier
             .fillMaxWidth()
             .hoverable(interactionSource)
-            .border(
-                width = 1.dp,
-                color = borderColor,
-                shape = RoundedCornerShape(8.dp)
-            )
     ) {
+        // Left accent bar for selected state
+        if (isSelected) {
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .width(3.dp)
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                luminousTeal.copy(alpha = 0.8f),
+                                luminousTeal
+                            )
+                        )
+                    )
+            )
+        }
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp), // Increased padding for breathing room
+                .padding(16.dp), // Increased from 14dp for more breathing room
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.Top
         ) {
@@ -654,7 +647,7 @@ private fun NoteListItem(
             // Note content
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                verticalArrangement = Arrangement.spacedBy(6.dp)  // Increased from 4dp
             ) {
                 // Title row
                 Row(
@@ -677,22 +670,34 @@ private fun NoteListItem(
                     Text(
                         text = displayTitle,
                         color = if (isSelected) luminousTeal else MaterialTheme.colorScheme.onSurface,
-                        fontSize = 14.sp,
-                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                        fontSize = 15.sp,  // Increased from 14sp
+                        fontWeight = if (isSelected || note.isPinned) FontWeight.SemiBold else FontWeight.Medium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
                 
-                // Preview
+                // Preview - Make it more prominent and informative
                 if (note.content.isNotEmpty()) {
                     Text(
-                        text = note.content.take(80).replace("\n", " "),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 11.sp,
+                        text = note.content.take(100).replace("\n", " "),
+                        color = if (isSelected) 
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        else 
+                            MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 12.sp,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
-                        lineHeight = 16.sp
+                        lineHeight = 17.sp,
+                        fontWeight = FontWeight.Normal
+                    )
+                } else {
+                    // Empty note indicator - warm, inviting tone
+                    Text(
+                        text = "Start writing…",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                        fontSize = 12.sp,
+                        fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
                     )
                 }
                 
@@ -724,9 +729,9 @@ private fun NoteListItem(
                 }
             }
             
-            // Quick actions (visible on hover)
+            // Quick actions (progressive disclosure: visible on hover or selection)
             AnimatedVisibility(
-                visible = isHovered,
+                visible = isHovered || isSelected,
                 enter = fadeIn() + expandHorizontally(),
                 exit = fadeOut() + shrinkHorizontally()
             ) {

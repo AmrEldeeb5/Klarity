@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import com.example.klarity.presentation.theme.KlarityMotion
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -323,7 +324,7 @@ fun TreeNoteCard(
             isHovered -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
             else -> Color.Transparent
         },
-        animationSpec = tween(150)
+        animationSpec = KlarityMotion.standardExit()
     )
 
     Surface(

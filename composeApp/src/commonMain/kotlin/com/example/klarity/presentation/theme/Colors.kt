@@ -257,6 +257,28 @@ object KlarityColors {
     val ScrollbarTrack = Color.Transparent
     val ScrollbarThumb = Color(0xFF2A4F45)
     val ScrollbarThumbHover = Color(0xFF3D5A50)
+
+    // ══════════════════════════════════════════════════════════════
+    // NOTE STATUS COLORS
+    // ══════════════════════════════════════════════════════════════
+    
+    /** In Progress status - blue */
+    val StatusInProgress = Color(0xFF38BDF8)
+    
+    /** Completed status - green */
+    val StatusCompleted = Color(0xFF34D399)
+    
+    /** On Hold status - yellow/amber */
+    val StatusOnHold = Color(0xFFFBBF24)
+    
+    /** Archived status - gray */
+    val StatusArchived = Color(0xFF9CA3AF)
+    
+    /** Delete/Danger action - red */
+    val Danger = Color(0xFFF43F5E)
+    
+    /** Syncing status - orange */
+    val StatusSyncing = Color(0xFFFFA500)
 }
 
 /**

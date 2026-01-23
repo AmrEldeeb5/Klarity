@@ -68,6 +68,11 @@ object KlarityMotion {
         durationMillis = Duration.Short4,
         easing = EasingStandard
     )
+
+    fun <T> quickExit() = tween<T>(
+        durationMillis = Duration.Short2,
+        easing = EasingStandard
+    )
 }
 
 // ══════════════════════════════════════════════════════════════════════════════

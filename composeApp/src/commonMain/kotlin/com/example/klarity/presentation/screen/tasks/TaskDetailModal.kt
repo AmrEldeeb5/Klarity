@@ -15,7 +15,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
@@ -23,6 +25,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.klarity.presentation.theme.KlarityMotion
+import com.example.klarity.presentation.theme.KlarityShapes
 
 /**
  * TaskDetailModal - Material 3 styled Bottom Sheet modal for viewing and editing task details.
@@ -96,7 +99,7 @@ fun TaskDetailModal(
                         ) {
                             Surface(
                                 modifier = Modifier.size(width = 32.dp, height = 4.dp),
-                                shape = RoundedCornerShape(2.dp),
+                                shape = KlarityShapes.ExtraSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
                             ) {}
                         }
@@ -234,14 +237,19 @@ private fun ModalHeader(
             )
         }
         
-        // Close button with M3 FilledIconButton pattern
+        // Close button with M3 FilledIconButton pattern - accessible 48dp touch target
         FilledTonalIconButton(
             onClick = onClose,
-            modifier = Modifier.size(40.dp)
+            modifier = Modifier
+                .size(48.dp)
+                .semantics {
+                    contentDescription = "Close task details modal"
+                    role = Role.Button
+                }
         ) {
             Icon(
                 imageVector = Icons.Default.Close,
-                contentDescription = "Close task details"
+                contentDescription = null
             )
         }
     }
@@ -267,7 +275,7 @@ private fun TaskIdBadge(
     
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(6.dp),
+        shape = KlarityShapes.ExtraSmall,
         color = MaterialTheme.colorScheme.primaryContainer
     ) {
         Text(

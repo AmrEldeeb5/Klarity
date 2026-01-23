@@ -64,19 +64,19 @@ val KlarityTypography = Typography(
     bodyLarge = TextStyle(
         fontWeight = FontWeight.Normal,
         fontSize = 16.sp,
-        lineHeight = 28.sp,
+        lineHeight = 28.sp,  // 1.75x ratio for optimal readability
         letterSpacing = 0.5.sp
     ),
     bodyMedium = TextStyle(
         fontWeight = FontWeight.Normal,
         fontSize = 14.sp,
-        lineHeight = 24.sp,
+        lineHeight = 24.sp,  // 1.71x ratio (close to 1.75x)
         letterSpacing = 0.25.sp
     ),
     bodySmall = TextStyle(
         fontWeight = FontWeight.Normal,
         fontSize = 12.sp,
-        lineHeight = 18.sp,
+        lineHeight = 20.sp,  // Improved from 18sp to 20sp (1.67x ratio)
         letterSpacing = 0.4.sp
     ),
     labelLarge = TextStyle(

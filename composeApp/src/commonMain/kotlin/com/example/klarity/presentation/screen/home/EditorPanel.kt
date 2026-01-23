@@ -20,6 +20,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconToggleButton
+import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.VerticalDivider
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,6 +46,7 @@ import androidx.compose.ui.unit.sp
 import com.example.klarity.domain.models.Folder
 import com.example.klarity.domain.models.Note
 import com.example.klarity.domain.models.NoteStatus
+import com.example.klarity.presentation.theme.KlarityColors
 
 /**
  * Editor Panel - Main content area for editing notes
@@ -61,6 +67,7 @@ fun EditorPanel(
     onContentChange: (String) -> Unit,
     onTogglePin: () -> Unit,
     onDelete: () -> Unit,
+    onCreateNote: () -> Unit = {},
     onStatusChange: (NoteStatus) -> Unit = {},
     onWikiLinkClick: (noteName: String) -> Unit = {},
     modifier: Modifier = Modifier
@@ -159,10 +166,9 @@ fun EditorPanel(
                         )
                     }
                 } else {
-                    // Enhanced Empty State with Quick Actions
-                    EmptyEditorState(
-                        onCreateNote = { /* Trigger create note */ },
-                        onOpenSearch = { onToggleSlashMenu() }
+                    // Instant Editor - Click anywhere to start writing
+                    InstantEditorState(
+                        onCreateNote = onCreateNote
                     )
                 }
             }
@@ -200,52 +206,81 @@ fun EditorToolbar(
     onSlashMenu: () -> Unit = {}
 ) {
     var showStatusMenu by remember { mutableStateOf(false) }
-    Surface(
+    
+    // Material 3 Toolbar with IconButtons
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 16.dp),
-        shape = RoundedCornerShape(8.dp),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Row(
-            modifier = Modifier.padding(6.dp).fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            // Left: Formatting buttons
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                ToolbarButton("B", isBold = true, onClick = onBold, tooltip = "Bold (Ctrl+B)")
-                ToolbarButton("I", isItalic = true, onClick = onItalic, tooltip = "Italic (Ctrl+I)")
-                ToolbarButton("</>", onClick = onCode, tooltip = "Code (Ctrl+E)")
-                ToolbarButton("🔗", onClick = onLink, tooltip = "Link (Ctrl+K)")
+            // Left: Formatting buttons (Material 3 IconButtons)
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onBold) {
+                    Text(
+                        "B",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                IconButton(onClick = onItalic) {
+                    Text(
+                        "I",
+                        fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                IconButton(onClick = onCode) {
+                    Text(
+                        "</>",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                IconButton(onClick = onLink) {
+                    Text(
+                        "🔗",
+                        fontSize = 14.sp
+                    )
+                }
 
-                // Divider
-                Box(
-                    modifier = Modifier
-                        .width(1.dp)
-                        .height(16.dp)
-                        .background(MaterialTheme.colorScheme.outline)
+                // Vertical divider
+                androidx.compose.material3.VerticalDivider(
+                    modifier = Modifier.height(24.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant
                 )
 
-                ToolbarButton("✨", isActive = true, isPrimary = true, onClick = onSlashMenu, tooltip = "Commands (Ctrl+/)")
+                FilledTonalIconButton(
+                    onClick = onSlashMenu,
+                    colors = androidx.compose.material3.IconButtonDefaults.filledTonalIconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer
+                    )
+                ) {
+                    Text("✨", fontSize = 14.sp)
+                }
                 
-                // Divider
-                Box(
-                    modifier = Modifier
-                        .width(1.dp)
-                        .height(16.dp)
-                        .background(MaterialTheme.colorScheme.outline)
+                // Vertical divider
+                androidx.compose.material3.VerticalDivider(
+                    modifier = Modifier.height(24.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant
                 )
                 
                 // Preview toggle
-                ToolbarButton(
-                    text = if (isPreviewMode) "✏️" else "👁",
-                    isActive = isPreviewMode,
-                    onClick = onTogglePreview,
-                    tooltip = if (isPreviewMode) "Edit Mode" else "Preview Mode"
-                )
-                ToolbarButton("⋯")
+                IconToggleButton(
+                    checked = isPreviewMode,
+                    onCheckedChange = { onTogglePreview() }
+                ) {
+                    Text(
+                        if (isPreviewMode) "✏️" else "👁",
+                        fontSize = 14.sp
+                    )
+                }
+                IconButton(onClick = {}) {
+                    Text("⋯", fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
 
             // Right: Status, Pin, Delete, Settings
@@ -281,92 +316,23 @@ fun EditorToolbar(
                         }
                     }
 
-                    ToolbarButton(
-                        text = if (isPinned) "📌" else "📍",
-                        isActive = isPinned,
-                        onClick = onTogglePin,
-                        tooltip = "Pin note"
-                    )
-                    ToolbarButton(
-                        text = "🗑",
-                        onClick = onDelete,
-                        tooltip = "Delete note"
-                    )
-                }
-                ToolbarButton("⚙", tooltip = "Settings")
-            }
-        }
-    }
-}
-
-@Composable
-fun ToolbarButton(
-    text: String,
-    isBold: Boolean = false,
-    isItalic: Boolean = false,
-    isActive: Boolean = false,
-    isPrimary: Boolean = false,
-    onClick: () -> Unit = {},
-    tooltip: String = ""
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isHovered by interactionSource.collectIsHoveredAsState()
-
-    // 48dp touch target for accessibility, visual element inside
-    Box(
-        modifier = Modifier
-            .size(48.dp)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = onClick,
-                onClickLabel = tooltip.ifEmpty { text }
-            )
-            .hoverable(interactionSource)
-            .semantics {
-                contentDescription = tooltip.ifEmpty { text }
-            },
-        contentAlignment = Alignment.Center
-    ) {
-        Surface(
-            modifier = Modifier.size(32.dp),
-            shape = RoundedCornerShape(6.dp),
-            color = if (isActive || isHovered) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else Color.Transparent
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Text(
-                    text,
-                    fontSize = 14.sp,
-                    fontWeight = if (isBold) FontWeight.Bold else FontWeight.Normal,
-                    color = when {
-                        isPrimary -> MaterialTheme.colorScheme.tertiary
-                        isActive -> MaterialTheme.colorScheme.onSurface
-                        else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    IconToggleButton(
+                        checked = isPinned,
+                        onCheckedChange = { onTogglePin() }
+                    ) {
+                        Text(
+                            if (isPinned) "📌" else "📍",
+                            fontSize = 14.sp
+                        )
                     }
-                )
+                    IconButton(onClick = onDelete) {
+                        Text("🗑", fontSize = 14.sp)
+                    }
+                }
+                IconButton(onClick = {}) {
+                    Text("⚙", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
-        }
-    }
-    
-    // Tooltip in popup layer - doesn't affect layout
-    if (isHovered && tooltip.isNotEmpty()) {
-        androidx.compose.ui.window.Popup(
-            alignment = Alignment.TopCenter,
-            offset = androidx.compose.ui.unit.IntOffset(0, 36)
-        ) {
-            Surface(
-                shape = RoundedCornerShape(4.dp),
-                color = Color(0xFF1A1A1A),
-                shadowElevation = 8.dp
-            ) {
-                Text(
-                    tooltip,
-                    fontSize = 11.sp,
-                    color = Color.White,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                )
-            }
-        }
     }
 }
 
@@ -390,10 +356,10 @@ fun getStatusLabel(status: NoteStatus): String = when (status) {
 @Composable
 fun getStatusColor(status: NoteStatus): Color = when (status) {
     NoteStatus.NONE -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-    NoteStatus.IN_PROGRESS -> Color(0xFF38BDF8)
-    NoteStatus.COMPLETED -> Color(0xFF34D399)
-    NoteStatus.ON_HOLD -> Color(0xFFFBBF24)
-    NoteStatus.ARCHIVED -> Color(0xFF9CA3AF)
+    NoteStatus.IN_PROGRESS -> KlarityColors.StatusInProgress
+    NoteStatus.COMPLETED -> KlarityColors.StatusCompleted
+    NoteStatus.ON_HOLD -> KlarityColors.StatusOnHold
+    NoteStatus.ARCHIVED -> KlarityColors.StatusArchived
 }
 
 @Composable
@@ -663,7 +629,7 @@ fun EditorFooter(wordCount: Int) {
                     Box(
                         modifier = Modifier
                             .size(8.dp)
-                            .background(Color(0xFF10B981), androidx.compose.foundation.shape.CircleShape)
+                            .background(KlarityColors.Success, androidx.compose.foundation.shape.CircleShape)
                     )
                     Text("Saved", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
                 }
@@ -673,96 +639,100 @@ fun EditorFooter(wordCount: Int) {
 }
 
 /**
- * Enhanced Empty State with Quick Actions and Keyboard Shortcuts
+ * Instant Editor State - Click anywhere to start writing
+ * Auto-creates a note on first interaction
  */
 @Composable
-private fun EmptyEditorState(
-    onCreateNote: () -> Unit,
-    onOpenSearch: () -> Unit
+private fun InstantEditorState(
+    onCreateNote: () -> Unit
 ) {
-    val luminousTeal = Color(0xFF1FDBC8)
+    val luminousTeal = KlarityColors.LuminousTeal
+    var isHovered by remember { mutableStateOf(false) }
+    val interactionSource = remember { MutableInteractionSource() }
     
     Box(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null
+            ) { onCreateNote() }
+            .hoverable(interactionSource)
+            .semantics { contentDescription = "Click to start writing" },
         contentAlignment = Alignment.Center
     ) {
+        // Track hover state
+        LaunchedEffect(interactionSource) {
+            interactionSource.interactions.collect { interaction ->
+                when (interaction) {
+                    is androidx.compose.foundation.interaction.HoverInteraction.Enter -> isHovered = true
+                    is androidx.compose.foundation.interaction.HoverInteraction.Exit -> isHovered = false
+                }
+            }
+        }
+        
+        // Subtle background glow on hover
+        if (isHovered) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        androidx.compose.ui.graphics.Brush.radialGradient(
+                            colors = listOf(
+                                luminousTeal.copy(alpha = 0.03f),
+                                Color.Transparent
+                            ),
+                            radius = 800f
+                        )
+                    )
+            )
+        }
+        
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+            verticalArrangement = Arrangement.spacedBy(32.dp),
+            modifier = Modifier.padding(48.dp)
         ) {
-            // Icon
+            // Large, inviting icon
             Text(
                 text = "📝",
-                fontSize = 72.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f)
+                fontSize = 96.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                    alpha = if (isHovered) 0.4f else 0.2f
+                ),
+                modifier = Modifier.padding(bottom = 8.dp)
             )
             
-            // Main message
+            // Primary message - Direct call to action
             Text(
-                text = "Ready to capture your thoughts",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Medium
+                text = "Start typing your thought…",
+                color = if (isHovered) 
+                    luminousTeal.copy(alpha = 0.9f) 
+                else 
+                    MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 28.sp,
+                fontWeight = FontWeight.SemiBold
             )
             
+            // Secondary message
             Text(
-                text = "Select a note from the list or create a new one",
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                fontSize = 14.sp
+                text = "Click anywhere to begin",
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                    alpha = if (isHovered) 0.8f else 0.5f
+                ),
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Normal
             )
             
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(16.dp))
             
-            // Quick Actions
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+            // Keyboard Shortcuts - Minimal and subtle
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(24.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                QuickActionButton(
-                    icon = "✨",
-                    label = "Create New Note",
-                    shortcut = "Ctrl+N",
-                    onClick = onCreateNote,
-                    isPrimary = true,
-                    accentColor = luminousTeal
-                )
-                
-                QuickActionButton(
-                    icon = "🔍",
-                    label = "Search Notes",
-                    shortcut = "Ctrl+K",
-                    onClick = onOpenSearch,
-                    accentColor = luminousTeal
-                )
-            }
-            
-            Spacer(Modifier.height(24.dp))
-            
-            // Keyboard Shortcuts Hint
-            Surface(
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = "Quick Shortcuts",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                    
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        ShortcutHint("Ctrl+/", "Commands")
-                        ShortcutHint("Ctrl+B", "Bold")
-                        ShortcutHint("Ctrl+I", "Italic")
-                    }
-                }
+                ShortcutHint("Ctrl+N", "New note")
+                ShortcutHint("Ctrl+K", "Command palette")
             }
         }
     }

@@ -8,6 +8,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import com.example.klarity.presentation.theme.KlarityShapes
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.selection.LocalTextSelectionColors
@@ -240,7 +241,7 @@ private fun EditorHeader(
                     Box(
                         modifier = Modifier
                             .size(24.dp)
-                            .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(6.dp)),
+                            .background(MaterialTheme.colorScheme.primary, KlarityShapes.ExtraSmall),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
@@ -262,7 +263,7 @@ private fun EditorHeader(
             // Center - View mode toggles
             Row(
                 modifier = Modifier
-                    .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant, KlarityShapes.Small)
                     .padding(4.dp),
                 horizontalArrangement = Arrangement.spacedBy(2.dp)
             ) {
@@ -341,7 +342,7 @@ private fun EditorHeader(
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary
                     ),
-                    shape = RoundedCornerShape(8.dp),
+                    shape = KlarityShapes.Small,
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
                 ) {
                     Icon(
@@ -370,7 +371,7 @@ private fun ViewModeButton(
     Surface(
         onClick = onClick,
         color = bgColor,
-        shape = RoundedCornerShape(6.dp),
+        shape = KlarityShapes.ExtraSmall,
         modifier = Modifier.height(32.dp)
     ) {
         Row(
@@ -623,7 +624,7 @@ private fun EditorPane(
                                 Text(
                                     "Untitled",
                                     style = MaterialTheme.typography.headlineLarge.copy(
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,  // Full color for better contrast
                                         fontWeight = FontWeight.Bold,
                                         fontSize = if (isZenMode) 36.sp else 32.sp
                                     )
@@ -653,7 +654,7 @@ private fun EditorPane(
                                 Text(
                                     "Start writing your thoughts...",
                                     style = MaterialTheme.typography.bodyLarge.copy(
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,  // Full color for better contrast
                                         lineHeight = 28.sp,
                                         fontSize = if (isZenMode) 18.sp else 16.sp
                                     )
@@ -738,7 +739,7 @@ private fun EditorToolbar(
             Surface(
                 onClick = { /* AI Actions */ },
                 color = extendedColors.accentAIContainer,
-                shape = RoundedCornerShape(6.dp)
+                shape = KlarityShapes.ExtraSmall
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
@@ -775,7 +776,7 @@ private fun TextToolbarButton(
     Surface(
         onClick = onClick,
         color = if (isHovered) MaterialTheme.colorScheme.surfaceVariant else Color.Transparent,
-        shape = RoundedCornerShape(6.dp),
+        shape = KlarityShapes.ExtraSmall,
         interactionSource = interactionSource,
         modifier = Modifier.hoverable(interactionSource)
     ) {
@@ -808,7 +809,7 @@ private fun ToolbarButton(
     Surface(
         onClick = onClick,
         color = if (isHovered) MaterialTheme.colorScheme.surfaceVariant else Color.Transparent,
-        shape = RoundedCornerShape(6.dp),
+        shape = KlarityShapes.ExtraSmall,
         interactionSource = interactionSource,
         modifier = Modifier.hoverable(interactionSource)
     ) {
@@ -871,7 +872,7 @@ private fun BreadcrumbItem(
 ) {
     Text(
         text = text,
-        color = if (isCurrent) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+        color = if (isCurrent) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,  // Full color for contrast
         fontSize = 13.sp,
         fontWeight = if (isCurrent) FontWeight.Medium else FontWeight.Normal,
         maxLines = 1,
@@ -884,7 +885,7 @@ private fun BreadcrumbItem(
 private fun BreadcrumbSeparator() {
     Text(
         text = "/",
-        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f),
+        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),  // Improved contrast for WCAG AA
         fontSize = 13.sp
     )
 }
@@ -900,7 +901,7 @@ private fun AISuggestionCard(
     val extendedColors = LocalExtendedColors.current
     Surface(
         color = extendedColors.accentAIContainer.copy(alpha = 0.5f),
-        shape = RoundedCornerShape(12.dp),
+        shape = KlarityShapes.Medium,
         border = BorderStroke(1.dp, extendedColors.accentAI.copy(alpha = 0.3f))
     ) {
         Row(
@@ -993,7 +994,7 @@ private fun EditorFooter(
                 )
                 Text(
                     text = "•",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),  // Improved contrast
                     fontSize = 12.sp
                 )
                 Text(
@@ -1003,7 +1004,7 @@ private fun EditorFooter(
                 )
                 Text(
                     text = "•",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),  // Improved contrast
                     fontSize = 12.sp
                 )
                 Text(
@@ -1139,7 +1140,7 @@ private fun RightSidebar(
             // Search Bar
             Surface(
                 color = MaterialTheme.colorScheme.surfaceVariant,
-                shape = RoundedCornerShape(8.dp)
+                shape = KlarityShapes.Small
             ) {
                 Row(
                     modifier = Modifier
@@ -1266,7 +1267,7 @@ private fun SidebarNoteCard(
     Surface(
         onClick = onClick,
         color = if (isHovered) MaterialTheme.colorScheme.surfaceVariant else Color.Transparent,
-        shape = RoundedCornerShape(8.dp),
+        shape = KlarityShapes.Small,
         interactionSource = interactionSource,
         modifier = Modifier
             .fillMaxWidth()
@@ -1300,7 +1301,7 @@ private fun SidebarNoteCard(
                 Surface(
                     onClick = { onTogglePin() },
                     color = Color.Transparent,
-                    shape = RoundedCornerShape(4.dp),
+                    shape = KlarityShapes.ExtraSmall,
                     modifier = Modifier.size(24.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {

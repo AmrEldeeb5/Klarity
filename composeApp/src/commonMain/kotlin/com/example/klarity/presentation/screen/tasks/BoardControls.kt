@@ -19,9 +19,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.klarity.presentation.theme.KlarityMotion
+import com.example.klarity.presentation.theme.KlarityShapes
 
 /**
  * BoardControls - Header component for the Kanban board
@@ -123,12 +124,12 @@ private fun AiSuggestionBanner(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(KlarityShapes.Medium)
             .background(MaterialTheme.colorScheme.tertiaryContainer)
             .border(
                 width = 1.dp,
                 color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f),
-                shape = RoundedCornerShape(12.dp)
+                shape = KlarityShapes.Medium
             )
             .padding(16.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -170,7 +171,7 @@ private fun AiSuggestionBanner(
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.tertiary
             ),
-            shape = RoundedCornerShape(8.dp),
+            shape = KlarityShapes.Small,
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
         ) {
             Row(
@@ -208,7 +209,7 @@ private fun AddColumnButton(
     
     Row(
         modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
+            .clip(KlarityShapes.Small)
             .background(
                 if (isHovered) MaterialTheme.colorScheme.primaryContainer
                 else MaterialTheme.colorScheme.surfaceVariant
@@ -310,7 +311,7 @@ private fun FilterDropdownChip(
             isHovered -> MaterialTheme.colorScheme.surfaceVariant
             else -> MaterialTheme.colorScheme.surface
         },
-        animationSpec = tween(150)
+        animationSpec = KlarityMotion.standardExit()
     )
     
     val contentColor by animateColorAsState(
@@ -319,7 +320,7 @@ private fun FilterDropdownChip(
             isHovered -> MaterialTheme.colorScheme.onSurface
             else -> MaterialTheme.colorScheme.onSurfaceVariant
         },
-        animationSpec = tween(150)
+        animationSpec = KlarityMotion.standardExit()
     )
     
     Row(

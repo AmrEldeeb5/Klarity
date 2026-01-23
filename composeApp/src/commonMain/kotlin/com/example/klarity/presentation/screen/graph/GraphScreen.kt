@@ -25,6 +25,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.klarity.domain.models.Note
+import com.example.klarity.presentation.theme.KlarityShapes
 import kotlin.math.*
 
 /**
@@ -225,7 +226,7 @@ fun GraphScreen(
                 ) {
                     Surface(
                         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f),
-                        shape = RoundedCornerShape(4.dp)
+                        shape = KlarityShapes.ExtraSmall
                     ) {
                         Text(
                             text = node.title.take(20),
@@ -313,7 +314,7 @@ private fun GraphControls(
         // Stats
         Surface(
             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f),
-            shape = RoundedCornerShape(8.dp)
+            shape = KlarityShapes.Small
         ) {
             Column(
                 modifier = Modifier.padding(12.dp),
@@ -341,7 +342,7 @@ private fun GraphControls(
         // Zoom controls
         Surface(
             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f),
-            shape = RoundedCornerShape(8.dp)
+            shape = KlarityShapes.Small
         ) {
             Column(
                 modifier = Modifier.padding(4.dp),
@@ -389,7 +390,7 @@ private fun GraphControls(
 private fun GraphLegend(modifier: Modifier = Modifier) {
     Surface(
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f),
-        shape = RoundedCornerShape(8.dp),
+        shape = KlarityShapes.Small,
         modifier = modifier
     ) {
         Column(

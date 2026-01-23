@@ -8,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import com.example.klarity.presentation.theme.KlarityMotion
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -247,7 +248,7 @@ fun FolderTreeItem(
             isHovered -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
             else -> Color.Transparent
         },
-        animationSpec = tween(150)
+        animationSpec = KlarityMotion.standardExit()
     )
 
     Column {
@@ -385,7 +386,7 @@ fun DraggableNoteItem(
             isHovered -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
             else -> Color.Transparent
         },
-        animationSpec = tween(150)
+        animationSpec = KlarityMotion.standardExit()
     )
 
     Box {

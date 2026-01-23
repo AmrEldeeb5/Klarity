@@ -278,7 +278,7 @@ private fun HomeScreenContent(
 
             // Main Workspace Area
             Column(modifier = Modifier.fillMaxSize().weight(1f)) {
-                // Top Command Bar - connected to ViewModel search
+                // Top Command Bar - contextual and state-aware
                 TopCommandBar(
                     currentPath = breadcrumbPath,
                     searchQuery = searchQuery,
@@ -294,14 +294,24 @@ private fun HomeScreenContent(
                     currentTheme = currentTheme,
                     onThemeChange = { currentTheme = it },
                     aiModelName = "GPT-4",
-                    aiTemperature = 0.7f
+                    aiTemperature = 0.7f,
+                    // Contextual state
+                    hasNotes = notes.isNotEmpty(),
+                    isEditingNote = selectedNote != null,
+                    noteCount = notes.size
                 )
                 
-                // Workspace Top Bar with layout controls
-                WorkspaceTopBar(
-                    currentMode = workspaceConfig.mode,
-                    currentDestination = currentNavDestination,
-                    onLayoutModeChange = { mode ->
+                // Workspace Top Bar - contextual (only show when relevant)
+                // Show layout controls when: editing a note OR in multi-pane mode
+                val showLayoutControls = selectedNote != null || 
+                    workspaceConfig.mode != WorkspaceLayoutMode.SINGLE_PANE ||
+                    currentNavDestination != NavDestination.HOME
+                
+                if (showLayoutControls) {
+                    WorkspaceTopBar(
+                        currentMode = workspaceConfig.mode,
+                        currentDestination = currentNavDestination,
+                        onLayoutModeChange = { mode ->
                         workspaceConfig = when (mode) {
                             WorkspaceLayoutMode.SINGLE_PANE -> workspaceConfig.copy(
                                 mode = mode,
@@ -336,6 +346,7 @@ private fun HomeScreenContent(
                         }
                     }
                 )
+                }
 
                 // Main content area
                 Row(modifier = Modifier.weight(1f)) {
@@ -403,6 +414,7 @@ private fun HomeScreenContent(
                                         folders = folders,
                                         showSlashMenu = showSlashMenu,
                                         onToggleSlashMenu = { showSlashMenu = !showSlashMenu },
+                                        onCreateNote = { viewModel.onEvent(HomeUiEvent.CreateNote) },
                                         onTitleChange = { title ->
                                             selectedNote?.let { viewModel.onEvent(HomeUiEvent.UpdateNoteTitle(it.id, title)) }
                                         },

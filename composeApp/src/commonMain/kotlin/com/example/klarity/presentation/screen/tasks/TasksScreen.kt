@@ -15,6 +15,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.klarity.presentation.components.KanbanColumnSkeleton
 import com.example.klarity.presentation.state.TasksUiEffect
 import com.example.klarity.presentation.state.TasksUiEvent
 import com.example.klarity.presentation.state.TasksUiState
@@ -106,29 +107,27 @@ fun TasksScreen(
 }
 
 /**
- * Loading screen for Tasks
+ * Loading screen for Tasks with skeleton preview
+ * Shows approximate layout while data loads for better UX
  */
 @Composable
 private fun TasksLoadingScreen() {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
-        contentAlignment = Alignment.Center
+            .background(MaterialTheme.colorScheme.background)
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            CircularProgressIndicator(
-                color = MaterialTheme.colorScheme.primary,
-                strokeWidth = 3.dp
-            )
-            Text(
-                text = "Loading tasks...",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            // Show 3 skeleton columns to simulate Kanban board
+            repeat(3) {
+                KanbanColumnSkeleton()
+            }
         }
     }
 }

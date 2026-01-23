@@ -5,6 +5,7 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.CircleShape
@@ -23,6 +24,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
@@ -30,6 +32,12 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import com.example.klarity.presentation.theme.KlarityMotion
 import kotlinx.datetime.*
 import kotlin.math.roundToInt
 
@@ -58,58 +66,68 @@ fun KanbanBoard(
 ) {
     var dragState by remember { mutableStateOf(DragState()) }
     
-    Row(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .horizontalScroll(rememberScrollState())
-            .padding(16.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        columns.forEach { column ->
-            KanbanColumnView(
-                column = column,
-                dragState = dragState,
-                onDragStart = { task ->
-                    dragState = DragState(
-                        isDragging = true,
-                        draggedTaskId = task.id,
-                        sourceColumn = column.status
-                    )
-                },
-                onDragEnd = {
-                    if (dragState.targetColumn != null && dragState.targetColumn != dragState.sourceColumn) {
-                        dragState.draggedTaskId?.let { taskId ->
-                            onTaskMove(
-                                taskId,
-                                dragState.sourceColumn!!,
-                                dragState.targetColumn!!,
-                                dragState.targetIndex ?: 0
-                            )
-                        }
-                    }
-                    dragState = DragState()
-                },
-                onDragCancel = {
-                    dragState = DragState()
-                },
-                onDropTargetEnter = { status, index ->
-                    dragState = dragState.copy(targetColumn = status, targetIndex = index)
-                },
-                onTaskClick = onTaskClick,
-                onTaskCreate = { onTaskCreate(column.status) },
-                onTaskDelete = onTaskDelete,
-                onTaskToggleComplete = onTaskToggleComplete,
-                onColumnCollapse = { collapsed -> onColumnCollapse(column.status, collapsed) },
-                isHighlighted = column.status in highlightedColumns,
-                modifier = Modifier.width(320.dp)
-            )
+    // Responsive column widths based on screen size
+    BoxWithConstraints {
+        val columnWidth = when {
+            this.maxWidth < 600.dp -> 280.dp  // Phone portrait
+            this.maxWidth < 900.dp -> 300.dp  // Phone landscape / small tablet
+            this.maxWidth < 1200.dp -> 320.dp // Tablet
+            else -> 340.dp                     // Desktop / large tablet
         }
         
-        // Add Column Button
-        AddColumnButton(
-            onClick = { /* TODO: Add custom column */ }
-        )
+        Row(
+            modifier = modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .horizontalScroll(rememberScrollState())
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            columns.forEach { column ->
+                KanbanColumnView(
+                    column = column,
+                    dragState = dragState,
+                    onDragStart = { task ->
+                        dragState = DragState(
+                            isDragging = true,
+                            draggedTaskId = task.id,
+                            sourceColumn = column.status
+                        )
+                    },
+                    onDragEnd = {
+                        if (dragState.targetColumn != null && dragState.targetColumn != dragState.sourceColumn) {
+                            dragState.draggedTaskId?.let { taskId ->
+                                onTaskMove(
+                                    taskId,
+                                    dragState.sourceColumn!!,
+                                    dragState.targetColumn!!,
+                                    dragState.targetIndex ?: 0
+                                )
+                            }
+                        }
+                        dragState = DragState()
+                    },
+                    onDragCancel = {
+                        dragState = DragState()
+                    },
+                    onDropTargetEnter = { status, index ->
+                        dragState = dragState.copy(targetColumn = status, targetIndex = index)
+                    },
+                    onTaskClick = onTaskClick,
+                    onTaskCreate = { onTaskCreate(column.status) },
+                    onTaskDelete = onTaskDelete,
+                    onTaskToggleComplete = onTaskToggleComplete,
+                    onColumnCollapse = { collapsed -> onColumnCollapse(column.status, collapsed) },
+                    isHighlighted = column.status in highlightedColumns,
+                    modifier = Modifier.width(columnWidth)
+                )
+            }
+            
+            // Add Column Button
+            AddColumnButton(
+                onClick = { /* TODO: Add custom column */ }
+            )
+        }
     }
 }
 
@@ -136,7 +154,8 @@ private fun KanbanColumnView(
             isHighlighted -> MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
             else -> Color.Transparent
         },
-        animationSpec = tween(150)
+        animationSpec = KlarityMotion.standardEnter(),
+        label = "columnBorderColor"
     )
     
     // Apply dashed border for highlighted columns (like AI suggestion grouping)
@@ -186,12 +205,16 @@ private fun KanbanColumnView(
             ) {
                 // Empty column placeholder (Requirement 2.2)
                 if (column.tasks.isEmpty()) {
-                    item {
+                    item(key = "empty_${column.status.label}") {
                         EmptyColumnPlaceholder(onClick = onTaskCreate)
                     }
                 }
                 
-                itemsIndexed(column.tasks) { index, task ->
+                // Use key parameter for efficient recomposition - only affected items recompose
+                itemsIndexed(
+                    items = column.tasks,
+                    key = { _, task -> task.id }
+                ) { index, task ->
                     // Drop zone indicator before each task
                     if (dragState.isDragging && 
                         dragState.targetColumn == column.status &&
@@ -280,7 +303,7 @@ private fun ColumnHeader(
                 modifier = Modifier
                     .clip(RoundedCornerShape(8.dp))
                     .background(
-                        if (wipLimitExceeded) Color(0xFFFF5252).copy(alpha = 0.2f)
+                        if (wipLimitExceeded) MaterialTheme.colorScheme.error.copy(alpha = 0.2f)
                         else MaterialTheme.colorScheme.secondary
                     )
                     .padding(horizontal = 8.dp, vertical = 2.dp)
@@ -288,7 +311,7 @@ private fun ColumnHeader(
                 Text(
                     text = if (column.wipLimit != null) "$taskCount/${column.wipLimit}" else "$taskCount",
                     style = MaterialTheme.typography.labelSmall,
-                    color = if (wipLimitExceeded) Color(0xFFFF5252) else MaterialTheme.colorScheme.onSurface
+                    color = if (wipLimitExceeded) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
                 )
             }
         }
@@ -297,16 +320,16 @@ private fun ColumnHeader(
             horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Add task button
+            // Add task button - Material 3 minimum 48dp touch target
             IconButton(
                 onClick = onAddTask,
-                modifier = Modifier.size(28.dp)
+                modifier = Modifier.size(48.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
-                    contentDescription = "Add task",
+                    contentDescription = "Add task to ${column.status.label} column",
                     tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.size(16.dp)
+                    modifier = Modifier.size(20.dp)
                 )
             }
             
@@ -340,12 +363,12 @@ private fun TaskCard(
     
     val elevation by animateFloatAsState(
         targetValue = if (isDragging) 8f else if (isHovered) 4f else 0f,
-        animationSpec = tween(150)
+        animationSpec = KlarityMotion.standardExit()
     )
     
     val scale by animateFloatAsState(
         targetValue = if (isDragging) 1.05f else 1f,
-        animationSpec = tween(150)
+        animationSpec = KlarityMotion.standardExit()
     )
     
     // Pulsing glow animation for active timer (Property 6.3)
@@ -362,9 +385,19 @@ private fun TaskCard(
     // Apply opacity when task is completed (Requirement 3.3)
     val cardAlpha = if (task.completed) 0.6f else 1f
     
+    // Build accessibility description
+    val statusText = if (task.completed || task.status == TaskStatus.DONE) "completed" else task.status.label
+    val priorityText = task.priority.label
+    val dueDateText = task.dueDate?.let { if (task.isOverdue) "overdue" else "has due date" } ?: ""
+    val accessibilityDescription = "${task.title}, $priorityText priority, $statusText $dueDateText".trim()
+    
     Card(
         modifier = modifier
             .fillMaxWidth()
+            .semantics {
+                contentDescription = accessibilityDescription
+                role = Role.Button
+            }
             .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
             .graphicsLayer {
                 scaleX = scale
@@ -524,32 +557,45 @@ private fun TaskCard(
                         }
                     }
                     
-                    // Quick actions (visible on hover)
+                    // Quick actions (visible on hover) - Material 3 minimum 48dp touch targets
                     AnimatedVisibility(visible = isHovered || isDragging) {
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             IconButton(
                                 onClick = onToggleComplete,
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .semantics {
+                                        contentDescription = if (task.completed || task.status == TaskStatus.DONE)
+                                            "Mark task ${task.title} as incomplete"
+                                        else
+                                            "Mark task ${task.title} as complete"
+                                        role = Role.Button
+                                    }
                             ) {
                                 Icon(
                                     imageVector = if (task.completed || task.status == TaskStatus.DONE) 
                                         Icons.Default.Refresh else Icons.Default.Check,
-                                    contentDescription = "Toggle complete",
+                                    contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(14.dp)
+                                    modifier = Modifier.size(20.dp)
                                 )
                             }
                             IconButton(
                                 onClick = onDelete,
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .semantics {
+                                        contentDescription = "Delete task ${task.title}"
+                                        role = Role.Button
+                                    }
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Delete,
-                                    contentDescription = "Delete",
-                                    tint = Color(0xFFFF5252),
-                                    modifier = Modifier.size(14.dp)
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.size(20.dp)
                                 )
                             }
                         }
@@ -580,13 +626,20 @@ private fun CompletionCheckbox(
     onToggle: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val stateText = if (isCompleted) "Completed" else "Not completed"
+    
+    val interactionSource = remember { MutableInteractionSource() }
+    val isFocused by interactionSource.collectIsFocusedAsState()
+    
     Box(
         modifier = modifier
-            .size(20.dp)
+            .size(32.dp)  // Larger touch target for accessibility
             .clip(RoundedCornerShape(4.dp))
             .border(
-                width = 1.5.dp,
-                color = if (isCompleted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                width = if (isFocused) 2.dp else 1.5.dp,
+                color = if (isFocused) MaterialTheme.colorScheme.primary
+                       else if (isCompleted) MaterialTheme.colorScheme.primary
+                       else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 shape = RoundedCornerShape(4.dp)
             )
             .background(
@@ -596,8 +649,14 @@ private fun CompletionCheckbox(
             .clickable(
                 onClick = onToggle,
                 indication = null,
-                interactionSource = remember { MutableInteractionSource() }
-            ),
+                interactionSource = interactionSource
+            )
+            .focusable(interactionSource = interactionSource)
+            .semantics {
+                role = Role.Checkbox
+                stateDescription = stateText
+                contentDescription = "Toggle task completion"
+            },
         contentAlignment = Alignment.Center
     ) {
         if (isCompleted) {
@@ -722,7 +781,7 @@ private fun DueDateBadge(
     isOverdue: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val color = if (isOverdue) Color(0xFFFF5252) else MaterialTheme.colorScheme.onSurface
+    val color = if (isOverdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
 
     Row(
         modifier = modifier

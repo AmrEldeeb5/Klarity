@@ -8,6 +8,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import com.example.klarity.presentation.theme.KlarityMotion
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -31,6 +32,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.klarity.presentation.theme.KlarityColors
 
 /**
  * Sync status indicator
@@ -70,6 +72,10 @@ fun TopCommandBar(
     onThemeChange: (ThemeMode) -> Unit = {},
     aiModelName: String = "GPT-4",
     aiTemperature: Float = 0.7f,
+    // Contextual state
+    hasNotes: Boolean = false,
+    isEditingNote: Boolean = false,
+    noteCount: Int = 0,
     modifier: Modifier = Modifier
 ) {
     // Use centralized theme colors instead of hardcoded values
@@ -99,7 +105,8 @@ fun TopCommandBar(
                 searchQuery = searchQuery,
                 onSearchQueryChange = onSearchQueryChange,
                 onCommandPaletteOpen = onCommandPaletteOpen,
-                luminousTeal = luminousTeal
+                luminousTeal = luminousTeal,
+                hasNotes = hasNotes
             )
             
             // Right Section - Status indicators + Controls
@@ -196,14 +203,16 @@ private fun CenterSection(
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
     onCommandPaletteOpen: () -> Unit,
-    luminousTeal: Color
+    luminousTeal: Color,
+    hasNotes: Boolean = false
 ) {
     // Consolidated Omnibar - Single search/command input
     OmniBar(
         query = searchQuery,
         onQueryChange = onSearchQueryChange,
         onCommandPaletteOpen = onCommandPaletteOpen,
-        luminousTeal = luminousTeal
+        luminousTeal = luminousTeal,
+        hasNotes = hasNotes
     )
 }
 
@@ -212,7 +221,8 @@ private fun OmniBar(
     query: String,
     onQueryChange: (String) -> Unit,
     onCommandPaletteOpen: () -> Unit,
-    luminousTeal: Color
+    luminousTeal: Color,
+    hasNotes: Boolean = false
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isHovered by interactionSource.collectIsHoveredAsState()
@@ -224,7 +234,7 @@ private fun OmniBar(
             isHovered -> MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
             else -> MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
         },
-        animationSpec = tween(150),
+        animationSpec = KlarityMotion.standardExit(),
         label = "bgColor"
     )
     
@@ -234,7 +244,7 @@ private fun OmniBar(
             isHovered -> MaterialTheme.colorScheme.outline
             else -> Color.Transparent
         },
-        animationSpec = tween(150),
+        animationSpec = KlarityMotion.standardExit(),
         label = "borderColor"
     )
     
@@ -270,6 +280,15 @@ private fun OmniBar(
                 tint = if (isFocused) luminousTeal else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 modifier = Modifier.size(18.dp)
             )
+            
+            // Dynamic placeholder based on context and focus
+            val placeholderText = remember(isFocused, hasNotes) {
+                when {
+                    isFocused && hasNotes -> "Try: \"Find Kotlin\", \"Create note\", \"Focus mode\""
+                    isFocused -> "Try: \"Create note\", \"Focus mode\", \"Switch theme\""
+                    else -> "Search or type a command…"
+                }
+            }
             
             BasicTextField(
                 value = query,
@@ -411,7 +430,7 @@ private fun SyncStatusIndicator(
 ) {
     val statusColor = when (status) {
         SyncStatus.SYNCED -> luminousTeal
-        SyncStatus.SYNCING -> Color(0xFFFFA500) // Orange
+        SyncStatus.SYNCING -> KlarityColors.StatusSyncing
         SyncStatus.OFFLINE -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
         SyncStatus.ERROR -> MaterialTheme.colorScheme.error
     }
@@ -425,7 +444,7 @@ private fun SyncStatusIndicator(
     
     val scale by animateFloatAsState(
         targetValue = if (status == SyncStatus.SYNCING) 1.1f else 1f,
-        animationSpec = tween(300),
+        animationSpec = KlarityMotion.standardEnter(),
         label = "syncScale"
     )
     
@@ -546,12 +565,12 @@ fun CommandPalette(
     onCommandSelected: (CommandItem) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val luminousTeal = Color(0xFF1FDBC8)
+    val luminousTeal = KlarityColors.LuminousTeal
     
     AnimatedVisibility(
         visible = isOpen,
-        enter = fadeIn(tween(100)) + scaleIn(initialScale = 0.95f, animationSpec = tween(100)),
-        exit = fadeOut(tween(100)) + scaleOut(targetScale = 0.95f, animationSpec = tween(100))
+        enter = fadeIn(KlarityMotion.quickExit()) + scaleIn(initialScale = 0.95f, animationSpec = KlarityMotion.quickExit()),
+        exit = fadeOut(KlarityMotion.quickExit()) + scaleOut(targetScale = 0.95f, animationSpec = KlarityMotion.quickExit())
     ) {
         Box(
             modifier = Modifier
@@ -748,7 +767,7 @@ private fun CommandItemRow(
             isHovered -> MaterialTheme.colorScheme.surfaceVariant
             else -> Color.Transparent
         },
-        animationSpec = tween(100),
+        animationSpec = KlarityMotion.quickExit(),
         label = "bgColor"
     )
     
