@@ -19,9 +19,35 @@ actual fun platformModule(): Module = module {
         
         val driver = JdbcSqliteDriver("jdbc:sqlite:$databasePath")
         
-        // Only create schema if database is new
         if (!databaseExists) {
             KlarityDatabase.Schema.create(driver)
+            driver.execute(null, "PRAGMA user_version = ${KlarityDatabase.Schema.version}", 0)
+        } else {
+            // Check current version
+            // Check current version
+            val currentVersion = driver.executeQuery(
+                identifier = null, 
+                sql = "PRAGMA user_version;", 
+                mapper = { cursor ->
+                    if (cursor.next().value) {
+                        app.cash.sqldelight.db.QueryResult.Value(cursor.getLong(0) ?: 0L)
+                    } else {
+                        app.cash.sqldelight.db.QueryResult.Value(0L)
+                    }
+                },
+                parameters = 0
+            ).value
+            
+            val schemaVersion = KlarityDatabase.Schema.version
+            
+            // If version is 0 but file exists, it's likely version 1 (pre-migration tracking)
+            val effectiveVersion = if (currentVersion == 0L) 1L else currentVersion
+            
+            if (effectiveVersion < schemaVersion) {
+                // Apply migrations
+                KlarityDatabase.Schema.migrate(driver, effectiveVersion, schemaVersion)
+                driver.execute(null, "PRAGMA user_version = $schemaVersion", 0)
+            }
         }
         
         driver

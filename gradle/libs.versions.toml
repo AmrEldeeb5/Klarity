@@ -1,6 +1,6 @@
 [versions]
 # AGP 8.7.3 is latest stable in 8.x line
-agp = "8.13.2"
+agp = "9.0.0"
 # Kotest for property-based testing
 kotest = "5.9.1"
 # Android SDK versions
@@ -19,7 +19,7 @@ composeHotReload = "1.0.0-dev-18"
 composeMultiplatform = "1.7.3"
 junit = "4.13.2"
 # Kotlin - stable 2.0.x line
-kotlin = "2.0.21"
+kotlin = "2.2.10"
 kotlinLoggingJvm = "7.0.3"
 # Coroutines
 kotlinx-coroutines = "1.9.0"
