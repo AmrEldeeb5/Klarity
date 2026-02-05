@@ -32,18 +32,3 @@ actual fun shouldReduceMotion(): Boolean {
         false // Default to allowing animations if we can't read settings
     }
 }
-                )
-            }
-        }
-    }
-}
-
-/**
- * Android-specific composable to get context for motion preferences
- */
-@Composable
-actual fun shouldReduceMotion(): Boolean {
-    val context = LocalContext.current
-    val preferences = MotionPreferences(context)
-    return preferences.prefersReducedMotion()
-}
