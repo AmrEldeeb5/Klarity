@@ -82,6 +82,7 @@ class TasksViewModel(
             is TasksUiEvent.TaskToggleComplete -> handleTaskToggleComplete(event.taskId)
             is TasksUiEvent.TaskMoved -> handleTaskMoved(event.taskId, event.toColumn, event.index)
             is TasksUiEvent.TaskCreated -> handleTaskCreated(event.status)
+            is TasksUiEvent.QuickTaskCreated -> handleQuickTaskCreated(event.title, event.status)
             is TasksUiEvent.TaskDeleted -> handleTaskDeleted(event.task)
             is TasksUiEvent.TaskUpdated -> handleTaskUpdated(event.task)
             
@@ -200,6 +201,30 @@ class TasksViewModel(
                         )
                     }
                     _effects.send(TasksUiEffect.ShowSnackbar("Task created"))
+                }
+                .onFailure { error ->
+                    _effects.send(TasksUiEffect.ShowError("Failed to create task: ${error.message}"))
+                }
+        }
+    }
+    
+    private fun handleQuickTaskCreated(title: String, status: TaskStatus) {
+        viewModelScope.launch {
+            val currentState = _uiState.value as? TasksUiState.Success ?: return@launch
+            val columnTasks = currentState.columns.find { it.status == status }?.tasks ?: emptyList()
+            
+            val newTask = Task(
+                id = "task-${Clock.System.now().toEpochMilliseconds()}",
+                title = title,
+                status = status,
+                order = columnTasks.size,
+                createdAt = Clock.System.now(),
+                updatedAt = Clock.System.now()
+            )
+            
+            taskRepository.createTask(newTask)
+                .onSuccess { task ->
+                    _effects.send(TasksUiEffect.ShowSnackbar("Task created: $title"))
                 }
                 .onFailure { error ->
                     _effects.send(TasksUiEffect.ShowError("Failed to create task: ${error.message}"))
