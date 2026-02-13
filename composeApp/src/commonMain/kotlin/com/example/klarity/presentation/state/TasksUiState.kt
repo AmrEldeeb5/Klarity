@@ -69,6 +69,7 @@ sealed interface TasksUiEvent {
     data class TaskToggleComplete(val taskId: String) : TasksUiEvent
     data class TaskMoved(val taskId: String, val toColumn: TaskStatus, val index: Int) : TasksUiEvent
     data class TaskCreated(val status: TaskStatus) : TasksUiEvent
+    data class QuickTaskCreated(val title: String, val status: TaskStatus) : TasksUiEvent
     data class TaskDeleted(val task: Task) : TasksUiEvent
     data class TaskUpdated(val task: Task) : TasksUiEvent
     

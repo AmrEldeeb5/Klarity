@@ -58,6 +58,7 @@ fun KanbanBoard(
     onTaskMove: (taskId: String, fromStatus: TaskStatus, toStatus: TaskStatus, newIndex: Int) -> Unit,
     onTaskClick: (Task) -> Unit,
     onTaskCreate: (TaskStatus) -> Unit,
+    onQuickTaskCreate: ((String, TaskStatus) -> Unit)? = null,
     onTaskDelete: (Task) -> Unit,
     onTaskToggleComplete: (Task) -> Unit,
     onColumnCollapse: (TaskStatus, Boolean) -> Unit,
@@ -115,6 +116,9 @@ fun KanbanBoard(
                     },
                     onTaskClick = onTaskClick,
                     onTaskCreate = { onTaskCreate(column.status) },
+                    onQuickTaskCreate = if (onQuickTaskCreate != null) {
+                        { title -> onQuickTaskCreate(title, column.status) }
+                    } else null,
                     onTaskDelete = onTaskDelete,
                     onTaskToggleComplete = onTaskToggleComplete,
                     onColumnCollapse = { collapsed -> onColumnCollapse(column.status, collapsed) },
@@ -141,6 +145,7 @@ private fun KanbanColumnView(
     onDropTargetEnter: (TaskStatus, Int) -> Unit,
     onTaskClick: (Task) -> Unit,
     onTaskCreate: () -> Unit,
+    onQuickTaskCreate: ((String) -> Unit)? = null,
     onTaskDelete: (Task) -> Unit,
     onTaskToggleComplete: (Task) -> Unit,
     onColumnCollapse: (Boolean) -> Unit,
@@ -203,6 +208,21 @@ private fun KanbanColumnView(
                     .padding(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                // Inline Quick Add at top of column
+                item(key = "quick_add_${column.status.label}") {
+                    InlineQuickAdd(
+                        columnStatus = column.status,
+                        onTaskCreate = { title, status ->
+                            if (onQuickTaskCreate != null) {
+                                onQuickTaskCreate(title)
+                            } else {
+                                // Fallback to regular task create
+                                onTaskCreate()
+                            }
+                        }
+                    )
+                }
+                
                 // Empty column placeholder (Requirement 2.2)
                 if (column.tasks.isEmpty()) {
                     item(key = "empty_${column.status.label}") {

@@ -255,6 +255,9 @@ private fun TasksScreenContent(
                             onTaskCreate = { status ->
                                 onEvent(TasksUiEvent.TaskCreated(status))
                             },
+                            onQuickTaskCreate = { title, status ->
+                                onEvent(TasksUiEvent.QuickTaskCreated(title, status))
+                            },
                             onTaskDelete = { task ->
                                 onEvent(TasksUiEvent.TaskDeleted(task))
                             },
