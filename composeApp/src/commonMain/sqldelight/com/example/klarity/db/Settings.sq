@@ -1,0 +1,17 @@
+-- Simple key/value store for local app settings (AI API key, model, …).
+CREATE TABLE AppSetting (
+    key TEXT NOT NULL PRIMARY KEY,
+    value TEXT NOT NULL
+);
+
+selectAll:
+SELECT key, value FROM AppSetting;
+
+selectByKey:
+SELECT value FROM AppSetting WHERE key = :key;
+
+upsert:
+INSERT OR REPLACE INTO AppSetting(key, value) VALUES (:key, :value);
+
+deleteByKey:
+DELETE FROM AppSetting WHERE key = :key;

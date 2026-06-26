@@ -6,8 +6,8 @@ import com.example.klarity.data.mapper.TaskMapper
 import com.example.klarity.data.util.DispatcherProvider
 import com.example.klarity.db.KlarityDatabase
 import com.example.klarity.domain.repositories.TaskRepository
-import com.example.klarity.presentation.screen.tasks.Task
-import com.example.klarity.presentation.screen.tasks.TaskStatus
+import com.example.klarity.domain.models.Task
+import com.example.klarity.domain.models.TaskStatus
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext

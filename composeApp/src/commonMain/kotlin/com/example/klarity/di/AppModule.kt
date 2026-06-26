@@ -1,7 +1,10 @@
 package com.example.klarity.di
 
+import app.cash.sqldelight.db.SqlDriver
+import com.example.klarity.data.ai.AiService
 import com.example.klarity.data.repositories.SqlDelightFolderRepository
 import com.example.klarity.data.repositories.SqlDelightNoteRepository
+import com.example.klarity.data.repositories.SqlDelightSettingsRepository
 import com.example.klarity.data.repositories.SqlDelightTagRepository
 import com.example.klarity.data.repositories.SqlDelightTaskRepository
 import com.example.klarity.data.util.DefaultDispatcherProvider
@@ -9,16 +12,19 @@ import com.example.klarity.data.util.DispatcherProvider
 import com.example.klarity.db.KlarityDatabase
 import com.example.klarity.domain.repositories.FolderRepository
 import com.example.klarity.domain.repositories.NoteRepository
+import com.example.klarity.domain.repositories.SettingsRepository
 import com.example.klarity.domain.repositories.TagRepository
 import com.example.klarity.domain.repositories.TaskRepository
+import io.ktor.client.HttpClient
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.serialization.kotlinx.json.json
+import kotlinx.serialization.json.Json
 import com.example.klarity.domain.usecase.CreateNoteUseCase
 import com.example.klarity.domain.usecase.DeleteNoteUseCase
 import com.example.klarity.domain.usecase.NoteUseCases
 import com.example.klarity.domain.usecase.SearchNotesUseCase
 import com.example.klarity.domain.usecase.UpdateNoteUseCase
-import com.example.klarity.presentation.viewmodel.EditorViewModel
-import com.example.klarity.presentation.viewmodel.HomeViewModel
-import com.example.klarity.presentation.viewmodel.TasksViewModel
+import com.example.klarity.presentation.WorkspaceViewModel
 import org.koin.core.module.dsl.bind
 import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf
@@ -41,7 +47,31 @@ val coreModule = module {
  * Database module - database instance.
  */
 val databaseModule = module {
-    single { KlarityDatabase(driver = get()) }
+    single {
+        val driver = get<SqlDriver>()
+        // Ensure the key/value settings table exists even on databases created before it was added
+        // to the schema (this project ships no .sqm migrations, so Schema.migrate is a no-op).
+        driver.execute(
+            identifier = null,
+            sql = "CREATE TABLE IF NOT EXISTS AppSetting(key TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL);",
+            parameters = 0,
+        )
+        KlarityDatabase(driver = driver)
+    }
+}
+
+/**
+ * Network module - HTTP client and AI service.
+ */
+val networkModule = module {
+    single {
+        HttpClient {
+            install(ContentNegotiation) {
+                json(Json { ignoreUnknownKeys = true; isLenient = true })
+            }
+        }
+    }
+    single { AiService(get()) }
 }
 
 /**
@@ -53,6 +83,7 @@ val repositoryModule = module {
     single<FolderRepository> { SqlDelightFolderRepository(get(), get()) }
     single<TagRepository> { SqlDelightTagRepository(get(), get()) }
     single<TaskRepository> { SqlDelightTaskRepository(get(), get()) }
+    single<SettingsRepository> { SqlDelightSettingsRepository(get(), get()) }
 }
 
 /**
@@ -70,12 +101,10 @@ val domainModule = module {
 }
 
 /**
- * ViewModel module - all ViewModels.
+ * ViewModel module — the Devbook screens share a single [WorkspaceViewModel].
  */
 val viewModelModule = module {
-    viewModelOf(::HomeViewModel)
-    viewModelOf(::EditorViewModel)
-    viewModelOf(::TasksViewModel)
+    viewModelOf(::WorkspaceViewModel)
 }
 
 /**
@@ -86,6 +115,7 @@ val appModule = module {
         platformModule(),
         coreModule,
         databaseModule,
+        networkModule,
         repositoryModule,
         domainModule,
         viewModelModule
