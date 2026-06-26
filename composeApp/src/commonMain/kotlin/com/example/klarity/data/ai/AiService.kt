@@ -45,7 +45,8 @@ class AiService(private val http: HttpClient) {
         val base = settings.baseUrl.trim().trimEnd('/').ifBlank { settings.provider.defaultBaseUrl }
         return when (settings.provider) {
             AiProvider.ANTHROPIC -> anthropic(apiKey, settings.model, base, system, messages, maxTokens)
-            AiProvider.OPENAI -> openAi(apiKey, settings.model, base, system, messages, maxTokens)
+            // Groq speaks the OpenAI-compatible Chat Completions API.
+            AiProvider.GROQ, AiProvider.OPENAI -> openAi(apiKey, settings.model, base, system, messages, maxTokens)
         }
     }
 
@@ -57,7 +58,7 @@ class AiService(private val http: HttpClient) {
         val base = baseUrl.trim().trimEnd('/').ifBlank { provider.defaultBaseUrl }
         val url = when (provider) {
             AiProvider.ANTHROPIC -> "$base/v1/models"
-            AiProvider.OPENAI -> "$base/models"
+            AiProvider.GROQ, AiProvider.OPENAI -> "$base/models"
         }
         val response = try {
             http.get(url) {
@@ -66,7 +67,7 @@ class AiService(private val http: HttpClient) {
                         header("x-api-key", apiKey)
                         header("anthropic-version", ANTHROPIC_VERSION)
                     }
-                    AiProvider.OPENAI -> header("Authorization", "Bearer $apiKey")
+                    AiProvider.GROQ, AiProvider.OPENAI -> header("Authorization", "Bearer $apiKey")
                 }
             }
         } catch (e: Exception) {

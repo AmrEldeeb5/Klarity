@@ -3,10 +3,10 @@ package com.example.klarity.domain.repositories
 import kotlinx.coroutines.flow.Flow
 
 /**
- * AI provider the assistant talks to. [ANTHROPIC] uses the native Messages API; [OPENAI] uses the
- * OpenAI-compatible Chat Completions API, which most providers and local servers also speak — so a
- * custom [AiSettings.baseUrl] + free-text model covers OpenAI, OpenRouter, Groq, Ollama, LM Studio,
- * DeepSeek, Together, etc.
+ * AI provider the assistant talks to. [ANTHROPIC] uses the native Messages API; [GROQ] and [OPENAI]
+ * both speak the OpenAI-compatible Chat Completions API. [GROQ] is preconfigured for the Groq cloud
+ * (fixed base URL, curated model list); [OPENAI] keeps a free-text [AiSettings.baseUrl] + model so it
+ * also covers OpenAI, OpenRouter, Ollama, LM Studio, DeepSeek, Together, etc.
  */
 enum class AiProvider(
     val label: String,
@@ -25,6 +25,22 @@ enum class AiProvider(
         keyHint = "sk-ant-…",
         baseUrlHint = "https://api.anthropic.com",
         exampleModels = listOf("claude-haiku-4-5", "claude-sonnet-4-6", "claude-opus-4-8"),
+    ),
+    GROQ(
+        label = "Groq",
+        short = "Groq",
+        defaultBaseUrl = "https://api.groq.com/openai/v1",
+        defaultModel = "llama-3.3-70b-versatile",
+        keyHint = "gsk_…",
+        baseUrlHint = "https://api.groq.com/openai/v1",
+        exampleModels = listOf(
+            "llama-3.3-70b-versatile",
+            "llama-3.1-8b-instant",
+            "openai/gpt-oss-120b",
+            "openai/gpt-oss-20b",
+            "qwen/qwen3-32b",
+            "moonshotai/kimi-k2-instruct-0905",
+        ),
     ),
     OPENAI(
         label = "OpenAI-compatible",
