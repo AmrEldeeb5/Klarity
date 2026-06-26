@@ -58,6 +58,9 @@ import androidx.compose.material.icons.outlined.Today
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.UnfoldMore
 import androidx.compose.material.icons.outlined.ViewKanban
+import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material.icons.outlined.VisibilityOff
+import androidx.compose.material.icons.outlined.VpnKey
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -128,6 +131,9 @@ object DbIcons {
     val summarize = Icons.Outlined.Summarize
     val attachFile = Icons.Outlined.AttachFile
     val arrowUpward = Icons.Outlined.ArrowUpward
+    val visibility = Icons.Outlined.Visibility
+    val visibilityOff = Icons.Outlined.VisibilityOff
+    val vpnKey = Icons.Outlined.VpnKey
 }
 
 /** A material icon rendered at a fixed pixel-faithful [size]. */

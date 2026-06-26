@@ -49,13 +49,15 @@ import com.example.klarity.presentation.components.MsIcon
 import com.example.klarity.presentation.theme.DevbookTheme
 
 @Composable
-fun DevbookAssistantScreen(vm: WorkspaceViewModel, navigate: (DevbookScreen) -> Unit) {
+fun DevbookAssistantScreen(vm: WorkspaceViewModel, navigate: (DevbookScreen) -> Unit, onOpenSettings: () -> Unit) {
     val c = DevbookTheme.colors
     val chat by vm.chat.collectAsState()
+    val thinking by vm.thinking.collectAsState()
+    val settings by vm.settings.collectAsState()
     var input by remember { mutableStateOf("") }
     val scroll = rememberScrollState()
 
-    LaunchedEffect(chat.size) { scroll.animateScrollTo(scroll.maxValue) }
+    LaunchedEffect(chat.size, thinking) { scroll.animateScrollTo(scroll.maxValue) }
 
     val openNote: (Note) -> Unit = { vm.selectNote(it.id); navigate(DevbookScreen.NOTEBOOK) }
     val send: () -> Unit = {
@@ -86,6 +88,13 @@ fun DevbookAssistantScreen(vm: WorkspaceViewModel, navigate: (DevbookScreen) -> 
                 chat.forEach { msg ->
                     if (msg.fromUser) UserMessage(msg.text) else AssistantMessage(msg, openNote)
                 }
+                if (thinking) ThinkingRow()
+            }
+
+            // Prompt to connect a key when AI isn't configured yet.
+            if (!settings.enabled) {
+                ConnectKeyBanner(onOpenSettings)
+                Spacer(Modifier.height(10.dp))
             }
 
             // Suggested prompts
@@ -116,12 +125,12 @@ fun DevbookAssistantScreen(vm: WorkspaceViewModel, navigate: (DevbookScreen) -> 
                     )
                 }
                 Box(
-                    modifier = Modifier.padding(bottom = 5.dp).height(34.dp).clip(RoundedCornerShape(17.dp)).background(c.sHigh).padding(horizontal = 12.dp),
+                    modifier = Modifier.padding(bottom = 5.dp).height(34.dp).clip(RoundedCornerShape(17.dp)).background(c.sHigh).clickable { onOpenSettings() }.padding(horizontal = 12.dp),
                     contentAlignment = Alignment.Center,
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         MsIcon(DbIcons.autoAwesome, 16.dp, c.p)
-                        Text("Local", color = c.onv, fontSize = 12.5.sp)
+                        Text(if (settings.enabled) settings.provider.short else "Local", color = c.onv, fontSize = 12.5.sp)
                     }
                 }
                 Box(
@@ -132,8 +141,43 @@ fun DevbookAssistantScreen(vm: WorkspaceViewModel, navigate: (DevbookScreen) -> 
                 }
             }
             Spacer(Modifier.height(10.dp))
-            Text("Answers are grounded in your own notes & tasks — local search, no external API.", color = c.onv, fontSize = 11.5.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+            Text(
+                if (settings.enabled) "Powered by ${settings.provider.label} (${settings.model}), grounded in your notes & tasks."
+                else "Answers use local search of your notes & tasks. Add an API key in Settings for full AI.",
+                color = c.onv, fontSize = 11.5.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(),
+            )
         }
+    }
+}
+
+@Composable
+private fun ThinkingRow() {
+    val c = DevbookTheme.colors
+    Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+        AiAvatar()
+        Text("Thinking…", color = c.onv, fontSize = 15.sp, modifier = Modifier.padding(top = 5.dp))
+    }
+}
+
+@Composable
+private fun ConnectKeyBanner(onOpenSettings: () -> Unit) {
+    val c = DevbookTheme.colors
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(c.pc)
+            .clickable { onOpenSettings() }
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        MsIcon(DbIcons.vpnKey, 18.dp, c.opc)
+        Text(
+            "Add an Anthropic API key to enable Claude.",
+            color = c.opc, fontSize = 13.sp, modifier = Modifier.weight(1f),
+        )
+        Text("Open Settings", color = c.opc, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
     }
 }
 

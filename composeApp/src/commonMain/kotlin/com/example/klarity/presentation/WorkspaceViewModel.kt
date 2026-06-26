@@ -4,12 +4,18 @@ import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.benasher44.uuid.uuid4
+import com.example.klarity.data.ai.AiException
+import com.example.klarity.data.ai.AiService
+import com.example.klarity.data.ai.AiTurn
 import com.example.klarity.domain.models.Folder
 import com.example.klarity.domain.models.Note
 import com.example.klarity.domain.models.Task
 import com.example.klarity.domain.models.TaskStatus
+import com.example.klarity.domain.repositories.AiProvider
+import com.example.klarity.domain.repositories.AiSettings
 import com.example.klarity.domain.repositories.FolderRepository
 import com.example.klarity.domain.repositories.NoteRepository
+import com.example.klarity.domain.repositories.SettingsRepository
 import com.example.klarity.domain.repositories.TagRepository
 import com.example.klarity.domain.repositories.TaskRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -42,6 +48,8 @@ class WorkspaceViewModel(
     private val folderRepo: FolderRepository,
     private val taskRepo: TaskRepository,
     private val tagRepo: TagRepository,
+    private val settingsRepo: SettingsRepository,
+    private val ai: AiService,
 ) : ViewModel() {
 
     val notes: StateFlow<List<Note>> = noteRepo.getAllNotes()
@@ -63,6 +71,14 @@ class WorkspaceViewModel(
 
     private val _chat = MutableStateFlow<List<ChatMessage>>(emptyList())
     val chat: StateFlow<List<ChatMessage>> = _chat
+
+    /** True while an AI request is in flight (drives the "thinking…" indicator). */
+    private val _thinking = MutableStateFlow(false)
+    val thinking: StateFlow<Boolean> = _thinking
+
+    /** Local AI settings (provider, API key, model, base URL). */
+    val settings: StateFlow<AiSettings> = settingsRepo.settings()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AiSettings())
 
     // Greeting / date computed once at construction (kept simple; not live across midnight).
     val greeting: String
@@ -180,15 +196,77 @@ class WorkspaceViewModel(
 
     private fun plural(count: Int): String = if (count == 1) "" else "s"
 
+    // ── Settings ─────────────────────────────────────────────────────────────
+    fun saveAiSettings(provider: AiProvider, apiKey: String?, model: String, baseUrl: String) {
+        viewModelScope.launch { settingsRepo.save(provider, apiKey, model, baseUrl) }
+    }
+
+    /** Fetches the models the given key/provider can use (for the Settings model picker). */
+    suspend fun listModels(provider: AiProvider, apiKey: String?, baseUrl: String): List<String> {
+        val key = apiKey?.takeIf { it.isNotBlank() } ?: throw AiException("Enter an API key first.")
+        return ai.listModels(provider, key, baseUrl)
+    }
+
+    /**
+     * Answer a question. With an API key set, the configured AI answers — grounded in the user's
+     * notes & tasks (RAG-style). Without a key, falls back to the local search-only answer.
+     */
     fun ask(query: String) {
         val q = query.trim()
-        if (q.isEmpty()) return
+        if (q.isEmpty() || _thinking.value) return
         viewModelScope.launch {
             _chat.update { it + ChatMessage(fromUser = true, text = q) }
             val noteMatches = noteRepo.searchNotes(q).first()
             val taskMatches = taskRepo.searchTasks(q).first()
-            val answer = buildAnswer(q, noteMatches, taskMatches)
-            _chat.update { it + ChatMessage(fromUser = false, text = answer, sources = noteMatches.take(3)) }
+
+            val cfg = settingsRepo.current()
+            if (!cfg.enabled) {
+                val answer = buildAnswer(q, noteMatches, taskMatches) +
+                    "\n\n(Add an API key in Settings for full AI answers.)"
+                _chat.update { it + ChatMessage(fromUser = false, text = answer, sources = noteMatches.take(3)) }
+                return@launch
+            }
+
+            _thinking.value = true
+            try {
+                val system = buildSystemPrompt(noteMatches, taskMatches)
+                val history = _chat.value.map { AiTurn(if (it.fromUser) "user" else "assistant", it.text) }
+                val answer = ai.complete(settings = cfg, system = system, messages = history)
+                _chat.update { it + ChatMessage(fromUser = false, text = answer, sources = noteMatches.take(3)) }
+            } catch (e: AiException) {
+                _chat.update { it + ChatMessage(fromUser = false, text = "⚠️ ${e.message}") }
+            } catch (e: Exception) {
+                _chat.update { it + ChatMessage(fromUser = false, text = "⚠️ Something went wrong contacting the AI service.") }
+            } finally {
+                _thinking.value = false
+            }
+        }
+    }
+
+    /** Builds the grounding system prompt from the notes & tasks most relevant to the query. */
+    private fun buildSystemPrompt(notes: List<Note>, tasks: List<Task>): String = buildString {
+        append("You are Klarity's assistant, embedded in the user's personal notes & tasks app. ")
+        append("Use the workspace context below when it's relevant; if the answer isn't there, say so ")
+        append("and answer briefly from general knowledge. Be concise and friendly. Use plain text.\n\n")
+        if (notes.isEmpty() && tasks.isEmpty()) {
+            append("WORKSPACE CONTEXT: (no notes or tasks matched this query)")
+        } else {
+            append("WORKSPACE CONTEXT:\n")
+            if (notes.isNotEmpty()) {
+                append("Notes:\n")
+                notes.take(5).forEach { n ->
+                    val body = n.content.take(500).ifBlank { "(empty)" }
+                    append("- \"${n.title.ifBlank { "Untitled" }}\": $body\n")
+                }
+            }
+            if (tasks.isNotEmpty()) {
+                append("Tasks:\n")
+                tasks.take(5).forEach { t ->
+                    append("- [${t.status.label}] ${t.title.ifBlank { "Untitled" }}")
+                    if (t.description.isNotBlank()) append(" — ${t.description.take(200)}")
+                    append("\n")
+                }
+            }
         }
     }
 

@@ -57,6 +57,7 @@ fun DevbookSidebar(
     onToggleTheme: () -> Unit,
     accent: Accent,
     onSelectAccent: (Accent) -> Unit,
+    onOpenSettings: () -> Unit,
 ) {
     val c = DevbookTheme.colors
     val notes by vm.notes.collectAsState()
@@ -146,7 +147,7 @@ fun DevbookSidebar(
         }
         Spacer(Modifier.height(2.dp))
 
-        // Footer: profile
+        // Footer: profile + settings
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -161,7 +162,12 @@ fun DevbookSidebar(
                 Text("Workspace", color = c.on, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                 Text("Local · on this device", color = c.onv, fontSize = 11.sp)
             }
-            MsIcon(DbIcons.settings, 20.dp, c.onv)
+            Box(
+                modifier = Modifier.size(34.dp).hoverBg(RoundedCornerShape(10.dp), c.sHighest).clickable { onOpenSettings() },
+                contentAlignment = Alignment.Center,
+            ) {
+                MsIcon(DbIcons.settings, 20.dp, c.onv)
+            }
         }
     }
 }

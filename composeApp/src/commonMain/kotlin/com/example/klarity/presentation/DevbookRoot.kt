@@ -31,6 +31,7 @@ import com.example.klarity.presentation.screen.DevbookAssistantScreen
 import com.example.klarity.presentation.screen.DevbookHomeScreen
 import com.example.klarity.presentation.screen.DevbookNotebookScreen
 import com.example.klarity.presentation.screen.DevbookTasksScreen
+import com.example.klarity.presentation.screen.SettingsDialog
 import com.example.klarity.presentation.theme.Accent
 import com.example.klarity.presentation.theme.DevbookAppTheme
 import com.example.klarity.presentation.theme.DevbookTheme
@@ -66,6 +67,7 @@ fun DevbookRoot() {
     var screen by remember { mutableStateOf(DevbookScreen.HOME) }
     var themeMode by remember { mutableStateOf(ThemeMode.LIGHT) }
     var accent by remember { mutableStateOf(Accent.FERN) }
+    var showSettings by remember { mutableStateOf(false) }
 
     DevbookAppTheme(themeMode = themeMode, accent = accent) {
         DevbookShell(
@@ -76,7 +78,11 @@ fun DevbookRoot() {
             onToggleTheme = { themeMode = if (themeMode == ThemeMode.DARK) ThemeMode.LIGHT else ThemeMode.DARK },
             accent = accent,
             onSelectAccent = { accent = it },
+            onOpenSettings = { showSettings = true },
         )
+        if (showSettings) {
+            SettingsDialog(vm = vm, onDismiss = { showSettings = false })
+        }
     }
 }
 
@@ -93,6 +99,7 @@ private fun DevbookShell(
     onToggleTheme: () -> Unit,
     accent: Accent,
     onSelectAccent: (Accent) -> Unit,
+    onOpenSettings: () -> Unit,
 ) {
     val c = DevbookTheme.colors
     var drawerOpen by remember { mutableStateOf(false) }
@@ -122,6 +129,7 @@ private fun DevbookShell(
                     onToggleTheme = onToggleTheme,
                     accent = accent,
                     onSelectAccent = onSelectAccent,
+                    onOpenSettings = onOpenSettings,
                 )
             }
             Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
@@ -136,7 +144,7 @@ private fun DevbookShell(
                         DevbookScreen.HOME -> DevbookHomeScreen(vm, onSelectScreen)
                         DevbookScreen.NOTEBOOK -> DevbookNotebookScreen(vm)
                         DevbookScreen.TASKS -> DevbookTasksScreen(vm)
-                        DevbookScreen.ASSISTANT -> DevbookAssistantScreen(vm, onSelectScreen)
+                        DevbookScreen.ASSISTANT -> DevbookAssistantScreen(vm, onSelectScreen, onOpenSettings)
                     }
                 }
             }
@@ -168,6 +176,10 @@ private fun DevbookShell(
                     onToggleTheme = onToggleTheme,
                     accent = accent,
                     onSelectAccent = onSelectAccent,
+                    onOpenSettings = {
+                        drawerOpen = false
+                        onOpenSettings()
+                    },
                 )
             }
         }
