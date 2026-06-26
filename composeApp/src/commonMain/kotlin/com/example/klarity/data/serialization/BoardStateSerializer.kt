@@ -1,6 +1,6 @@
 package com.example.klarity.data.serialization
 
-import com.example.klarity.presentation.screen.tasks.*
+import com.example.klarity.domain.models.*
 import kotlinx.datetime.Instant
 import kotlinx.serialization.json.Json
 import kotlin.time.Duration.Companion.milliseconds

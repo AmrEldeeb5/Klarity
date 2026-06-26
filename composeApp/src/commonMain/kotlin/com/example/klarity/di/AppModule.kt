@@ -16,9 +16,7 @@ import com.example.klarity.domain.usecase.DeleteNoteUseCase
 import com.example.klarity.domain.usecase.NoteUseCases
 import com.example.klarity.domain.usecase.SearchNotesUseCase
 import com.example.klarity.domain.usecase.UpdateNoteUseCase
-import com.example.klarity.presentation.viewmodel.EditorViewModel
-import com.example.klarity.presentation.viewmodel.HomeViewModel
-import com.example.klarity.presentation.viewmodel.TasksViewModel
+import com.example.klarity.presentation.WorkspaceViewModel
 import org.koin.core.module.dsl.bind
 import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf
@@ -70,12 +68,10 @@ val domainModule = module {
 }
 
 /**
- * ViewModel module - all ViewModels.
+ * ViewModel module — the Devbook screens share a single [WorkspaceViewModel].
  */
 val viewModelModule = module {
-    viewModelOf(::HomeViewModel)
-    viewModelOf(::EditorViewModel)
-    viewModelOf(::TasksViewModel)
+    viewModelOf(::WorkspaceViewModel)
 }
 
 /**

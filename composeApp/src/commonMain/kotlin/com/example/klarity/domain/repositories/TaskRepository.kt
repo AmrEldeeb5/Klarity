@@ -1,7 +1,7 @@
 package com.example.klarity.domain.repositories
 
-import com.example.klarity.presentation.screen.tasks.Task
-import com.example.klarity.presentation.screen.tasks.TaskStatus
+import com.example.klarity.domain.models.Task
+import com.example.klarity.domain.models.TaskStatus
 import kotlinx.coroutines.flow.Flow
 
 /**

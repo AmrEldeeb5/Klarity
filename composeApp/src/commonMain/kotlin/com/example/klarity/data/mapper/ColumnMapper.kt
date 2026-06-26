@@ -1,9 +1,9 @@
 package com.example.klarity.data.mapper
 
 import com.example.klarity.db.ColumnEntity
-import com.example.klarity.presentation.screen.tasks.KanbanColumn
-import com.example.klarity.presentation.screen.tasks.Task
-import com.example.klarity.presentation.screen.tasks.TaskStatus
+import com.example.klarity.domain.models.KanbanColumn
+import com.example.klarity.domain.models.Task
+import com.example.klarity.domain.models.TaskStatus
 
 /**
  * Mapper for converting between KanbanColumn domain model and ColumnEntity database entity.

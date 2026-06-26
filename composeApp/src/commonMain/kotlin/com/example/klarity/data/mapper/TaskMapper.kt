@@ -3,7 +3,7 @@ package com.example.klarity.data.mapper
 import com.example.klarity.data.serialization.SubtaskState
 import com.example.klarity.data.serialization.TagState
 import com.example.klarity.db.TaskEntity
-import com.example.klarity.presentation.screen.tasks.*
+import com.example.klarity.domain.models.*
 import kotlinx.datetime.Instant
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
