@@ -49,7 +49,7 @@ import kotlinx.datetime.Instant
 @Composable
 fun DevbookHomeScreen(vm: WorkspaceViewModel, navigate: (DevbookScreen) -> Unit) {
     val c = DevbookTheme.colors
-    val notes by vm.notes.collectAsState()
+    val notes by vm.activeNotes.collectAsState()
     val tasks by vm.tasks.collectAsState()
     val chat by vm.chat.collectAsState()
 

@@ -47,9 +47,10 @@ class AiActionsTest {
     }
 
     @Test
-    fun `create_task defaults status and priority when omitted`() {
+    fun `create_task defaults to a visible column and medium priority when omitted`() {
         val action = AiActions.parse(call("create_task", buildJsonObject { put("title", "Untitled") })) as AiAction.CreateTask
-        assertEquals(TaskStatus.TODO, action.status)
+        // BACKLOG, not TODO — TODO renders in no board/list view.
+        assertEquals(TaskStatus.BACKLOG, action.status)
         assertEquals(TaskPriority.MEDIUM, action.priority)
         assertNull(action.dueDate)
         assertEquals(emptyList(), action.tags)
@@ -96,8 +97,8 @@ class AiActionsTest {
     }
 
     @Test
-    fun `delete_task carries the id`() {
+    fun `delete_task maps to a recoverable archive, not a hard delete`() {
         val action = AiActions.parse(call("delete_task", buildJsonObject { put("task_id", "t9") }))
-        assertTrue(action is AiAction.DeleteTask && action.taskId == "t9")
+        assertTrue(action is AiAction.ArchiveTask && action.taskId == "t9")
     }
 }

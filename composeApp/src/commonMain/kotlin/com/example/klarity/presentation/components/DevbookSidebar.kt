@@ -87,7 +87,8 @@ fun DevbookSidebar(
     onOpenSettings: () -> Unit,
 ) {
     val c = DevbookTheme.colors
-    val notes by vm.notes.collectAsState()
+    val notes by vm.activeNotes.collectAsState()
+    val archivedNotes by vm.archivedNotes.collectAsState()
     val folders by vm.folders.collectAsState()
     val tasks by vm.tasks.collectAsState()
     val search by vm.search.collectAsState()
@@ -98,6 +99,7 @@ fun DevbookSidebar(
     // Inline-rename + expand/collapse state for the tree (Notion-style).
     var renamingFolderId by remember { mutableStateOf<String?>(null) }
     var renamingNoteId by remember { mutableStateOf<String?>(null) }
+    var archivedOpen by remember { mutableStateOf(false) }
     val expanded = remember { mutableStateMapOf<String, Boolean>() }
     fun isExpanded(id: String) = expanded[id] ?: true
 
@@ -230,6 +232,32 @@ fun DevbookSidebar(
                         onCancelRename = { renamingNoteId = null },
                         onDelete = { vm.deleteNote(note.id) },
                     )
+                }
+            }
+
+            // Archived notes — soft-deleted, kept out of the tree above but recoverable here.
+            if (archivedNotes.isNotEmpty()) {
+                Spacer(Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth()
+                        .hoverBg(RoundedCornerShape(8.dp), c.sHigh)
+                        .clickable { archivedOpen = !archivedOpen }
+                        .padding(horizontal = 8.dp, vertical = 7.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    MsIcon(if (archivedOpen) DbIcons.expandMore else DbIcons.chevronRight, 18.dp, c.onv)
+                    Text("Archived", color = c.onv, fontSize = 12.5.sp, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
+                    Text("${archivedNotes.size}", color = c.onv, fontSize = 11.sp)
+                }
+                if (archivedOpen) {
+                    archivedNotes.forEach { note ->
+                        ArchivedNoteRow(
+                            note = note,
+                            onOpen = { openNote(note.id) },
+                            onRestore = { vm.restoreNote(note.id) },
+                        )
+                    }
                 }
             }
         }
@@ -468,6 +496,38 @@ private fun FolderRow(
                 }
             }
         }
+    }
+}
+
+/** A row in the sidebar's Archived list — opens the note, or restores it to the active workspace. */
+@Composable
+private fun ArchivedNoteRow(note: Note, onOpen: () -> Unit, onRestore: () -> Unit) {
+    val c = DevbookTheme.colors
+    Row(
+        modifier = Modifier.fillMaxWidth()
+            .hoverBg(RoundedCornerShape(8.dp), c.sHigh)
+            .clickable { onOpen() }
+            .padding(start = 26.dp, top = 5.dp, end = 4.dp, bottom = 5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        MsIcon(DbIcons.description, 16.dp, c.onv)
+        Text(
+            note.title.ifBlank { "Untitled note" },
+            color = c.onv,
+            fontSize = 13.sp,
+            modifier = Modifier.weight(1f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        MsIconButton(
+            DbIcons.refresh,
+            onClick = onRestore,
+            contentDescription = "Restore note",
+            tint = c.p,
+            buttonSize = 28.dp,
+            iconSize = 16.dp,
+        )
     }
 }
 

@@ -19,7 +19,8 @@ import kotlinx.serialization.json.jsonPrimitive
 sealed interface AiAction {
     data class CreateNote(val title: String, val content: String, val tags: List<String>) : AiAction
     data class UpdateNote(val noteId: String, val title: String?, val content: String?, val tags: List<String>?) : AiAction
-    data class DeleteNote(val noteId: String) : AiAction
+    /** "Delete a note" → archive it (recoverable from the sidebar's Archived list), never a hard delete. */
+    data class ArchiveNote(val noteId: String) : AiAction
     data class SetNotePinned(val noteId: String, val pinned: Boolean) : AiAction
 
     data class CreateTask(
@@ -40,12 +41,17 @@ sealed interface AiAction {
     ) : AiAction
     data class SetTaskStatus(val taskId: String, val status: TaskStatus) : AiAction
     data class CompleteTask(val taskId: String) : AiAction
-    data class DeleteTask(val taskId: String) : AiAction
+    /** "Delete a task" → archive it (recoverable from the Archived list), never a hard delete. */
+    data class ArchiveTask(val taskId: String) : AiAction
 }
 
-/** Whether confirming this action destroys data — drives the warning styling on the confirm card. */
-val AiAction.isDestructive: Boolean
-    get() = this is AiAction.DeleteNote || this is AiAction.DeleteTask
+/** Whether this action removes an item but is recoverable (archive) — drives the "Archive" card styling. */
+val AiAction.isArchive: Boolean
+    get() = this is AiAction.ArchiveNote || this is AiAction.ArchiveTask
+
+/** Reads a trimmed, non-empty string argument from a tool call (used for read tools like search). */
+fun ToolCall.stringArg(key: String): String? =
+    (args[key] as? JsonPrimitive)?.takeIf { it.isString }?.content?.trim()?.takeIf { it.isNotEmpty() }
 
 /** Maps a raw [ToolCall] to a typed [AiAction]; returns null if required arguments are missing. */
 object AiActions {
@@ -64,7 +70,7 @@ object AiActions {
                 content = a.str("content"),
                 tags = a.strings("tags"),
             )
-            "delete_note" -> AiAction.DeleteNote(noteId = a.str("note_id") ?: return null)
+            "delete_note" -> AiAction.ArchiveNote(noteId = a.str("note_id") ?: return null)
             "set_note_pinned" -> AiAction.SetNotePinned(
                 noteId = a.str("note_id") ?: return null,
                 pinned = a.bool("pinned") ?: return null,
@@ -72,7 +78,8 @@ object AiActions {
             "create_task" -> AiAction.CreateTask(
                 title = a.str("title") ?: return null,
                 description = a.str("description") ?: "",
-                status = parseStatus(a.str("status")) ?: TaskStatus.TODO,
+                // Default to BACKLOG (a visible board column) — TODO appears in no view.
+                status = parseStatus(a.str("status")) ?: TaskStatus.BACKLOG,
                 priority = parsePriority(a.str("priority")) ?: TaskPriority.MEDIUM,
                 dueDate = parseDueDate(a.str("due_date")),
                 tags = a.strings("tags") ?: emptyList(),
@@ -90,7 +97,7 @@ object AiActions {
                 status = parseStatus(a.str("status")) ?: return null,
             )
             "complete_task" -> AiAction.CompleteTask(taskId = a.str("task_id") ?: return null)
-            "delete_task" -> AiAction.DeleteTask(taskId = a.str("task_id") ?: return null)
+            "delete_task" -> AiAction.ArchiveTask(taskId = a.str("task_id") ?: return null)
             else -> null
         }
     }

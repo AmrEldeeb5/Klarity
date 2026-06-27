@@ -12,9 +12,12 @@ import com.example.klarity.data.ai.AiService
 import com.example.klarity.data.ai.AiTools
 import com.example.klarity.data.ai.AiTurn
 import com.example.klarity.data.ai.ChatHistory
+import com.example.klarity.data.ai.ToolCall
 import com.example.klarity.data.ai.WorkspaceRetrieval
+import com.example.klarity.data.ai.stringArg
 import com.example.klarity.domain.models.Folder
 import com.example.klarity.domain.models.Note
+import com.example.klarity.domain.models.NoteStatus
 import com.example.klarity.domain.models.Task
 import com.example.klarity.domain.models.TaskPriority
 import com.example.klarity.domain.models.TaskStatus
@@ -85,6 +88,10 @@ private const val MAX_HISTORY_MESSAGES = 12
 /** Max model round-trips the agent may take per user question (bounds the act → continue → act loop). */
 private const val MAX_AGENT_STEPS = 4
 
+/** Bounds the search → results → search loop within one model turn, and caps results per search. */
+private const val MAX_SEARCH_ROUNDS = 3
+private const val SEARCH_RESULT_LIMIT = 8
+
 /**
  * Single shared state-holder for the Devbook screens. Exposes the live repository data as
  * [StateFlow]s and provides all note/task mutations. The local Assistant answers by searching the
@@ -100,6 +107,16 @@ class WorkspaceViewModel(
 ) : ViewModel() {
 
     val notes: StateFlow<List<Note>> = noteRepo.getAllNotes()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** Notes shown in the active workspace (archived ones are hidden — see [archivedNotes]). */
+    val activeNotes: StateFlow<List<Note>> = notes
+        .map { list -> list.filter { it.status != NoteStatus.ARCHIVED } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** Archived notes, newest first — surfaced in the sidebar's collapsible Archived list for restore. */
+    val archivedNotes: StateFlow<List<Note>> = notes
+        .map { list -> list.filter { it.status == NoteStatus.ARCHIVED }.sortedByDescending { it.updatedAt } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val folders: StateFlow<List<Folder>> = folderRepo.getAllFolders()
@@ -213,6 +230,21 @@ class WorkspaceViewModel(
         }
     }
 
+    /** Soft-delete: hide a note from the active workspace (recoverable via [restoreNote]). */
+    fun archiveNote(id: String) {
+        val note = notes.value.firstOrNull { it.id == id } ?: return
+        viewModelScope.launch {
+            noteRepo.updateNote(note.copy(status = NoteStatus.ARCHIVED, updatedAt = Clock.System.now()))
+            if (_selectedNoteId.value == id) _selectedNoteId.value = null
+        }
+    }
+
+    /** Brings an archived note back into the active workspace. */
+    fun restoreNote(id: String) {
+        val note = notes.value.firstOrNull { it.id == id } ?: return
+        viewModelScope.launch { noteRepo.updateNote(note.copy(status = NoteStatus.NONE, updatedAt = Clock.System.now())) }
+    }
+
     // ── Folder actions ─────────────────────────────────────────────────────────
     /** Creates a folder and signals the sidebar to open its inline name editor (Notion-style). */
     fun createFolder(name: String = "Untitled", parentId: String? = null) {
@@ -323,7 +355,7 @@ class WorkspaceViewModel(
 
     /** Suggested-prompt: a quick stat overview of the workspace, grounded in current data. */
     fun summarizeWorkspace() {
-        val n = notes.value
+        val n = activeNotes.value
         val t = tasks.value
         appendMessage(ChatMessage(fromUser = true, text = "Summarize my workspace"))
         val answer = if (n.isEmpty() && t.isEmpty()) {
@@ -395,7 +427,8 @@ class WorkspaceViewModel(
                 // Rank the *whole* workspace by keyword relevance rather than calling the repo's
                 // `searchNotes`/`searchTasks` — those substring-match the entire question, which a
                 // natural-language query never matches verbatim. See [WorkspaceRetrieval].
-                val allNotes = noteRepo.getAllNotes().first()
+                // Exclude archived notes from grounding — they're "deleted" from the user's view.
+                val allNotes = noteRepo.getAllNotes().first().filter { it.status != NoteStatus.ARCHIVED }
                 val allTasks = taskRepo.getAllTasks().first()
                 val noteMatches = WorkspaceRetrieval.rankNotes(allNotes, q, NOTE_CONTEXT_LIMIT)
                 val taskMatches = WorkspaceRetrieval.rankTasks(allTasks, q, TASK_CONTEXT_LIMIT)
@@ -468,28 +501,64 @@ class WorkspaceViewModel(
     }
 
     /**
-     * Tool-calling path: asks the model with the workspace tools available. A plain answer is shown
-     * as-is; proposed actions become a chat message carrying [ProposedAction] cards the user must
-     * Approve before anything is written (see [approveAction]). Nothing executes here.
+     * Tool-calling path: asks the model with the workspace tools available. Read-only
+     * `search_workspace` calls are executed immediately and their results fed back so the model can
+     * find ids for items outside the grounding context (bounded by [MAX_SEARCH_ROUNDS]). A plain
+     * answer is shown as-is; mutating tool calls become [ProposedAction] cards the user must Approve
+     * before anything is written (see [approveAction]) — nothing is written here.
      */
     private suspend fun agentAnswer(cfg: AiSettings, system: String, history: List<AiTurn>, sources: List<Note>) {
-        when (val result = ai.completeWithTools(cfg, system, history, AiTools.toolsFor(cfg.provider))) {
-            is AiResult.Text ->
+        var convo = history
+        var searchRounds = 0
+        while (true) {
+            val result = ai.completeWithTools(cfg, system, convo, AiTools.toolsFor(cfg.provider))
+            if (result is AiResult.Text) {
                 appendMessage(ChatMessage(fromUser = false, text = result.text, sources = sources))
+                return
+            }
+            val calls = (result as AiResult.Actions).calls
+            val searches = calls.filter { it.name == AiTools.SEARCH }
+            val actions = calls.filter { it.name != AiTools.SEARCH }
 
-            is AiResult.Actions -> {
-                val proposals = result.calls.mapNotNull { call ->
-                    val action = AiActions.parse(call) ?: return@mapNotNull null
-                    ProposedAction(id = call.id.ifBlank { uuid4().toString() }, action = action, label = describe(action))
-                }
-                if (proposals.isEmpty()) {
-                    // The model "called" tools but nothing parsed — fall back to its text, if any.
-                    appendMessage(ChatMessage(fromUser = false, text = result.text ?: "I couldn't act on that — could you rephrase?", sources = sources))
-                } else {
-                    val intro = result.text?.takeIf { it.isNotBlank() }
-                        ?: if (proposals.size == 1) "I'd like to make this change:" else "I'd like to make these changes:"
-                    appendMessage(ChatMessage(fromUser = false, text = intro, sources = sources, actions = proposals))
-                }
+            // Resolve searches first (read-only) and loop so the model can act on what it found.
+            if (actions.isEmpty() && searches.isNotEmpty() && searchRounds < MAX_SEARCH_ROUNDS) {
+                searchRounds++
+                val found = searches.joinToString("\n\n") { runSearch(it) }
+                convo = convo + AiTurn("user", "[Workspace search results — use the ids below to act, or answer the user.]\n$found")
+                continue
+            }
+
+            val proposals = actions.mapNotNull { call ->
+                val action = AiActions.parse(call) ?: return@mapNotNull null
+                ProposedAction(id = call.id.ifBlank { uuid4().toString() }, action = action, label = describe(action))
+            }
+            if (proposals.isEmpty()) {
+                appendMessage(ChatMessage(fromUser = false, text = result.text ?: "I couldn't act on that — could you rephrase?", sources = sources))
+            } else {
+                val intro = result.text?.takeIf { it.isNotBlank() }
+                    ?: if (proposals.size == 1) "I'd like to make this change:" else "I'd like to make these changes:"
+                appendMessage(ChatMessage(fromUser = false, text = intro, sources = sources, actions = proposals))
+            }
+            return
+        }
+    }
+
+    /** Runs a `search_workspace` tool call over the active workspace and formats matches (with ids) for the model. */
+    private fun runSearch(call: ToolCall): String {
+        val query = call.stringArg("query").orEmpty()
+        if (query.isBlank()) return "search_workspace was called without a query."
+        val noteHits = WorkspaceRetrieval.rankNotes(activeNotes.value, query, SEARCH_RESULT_LIMIT)
+        val taskHits = WorkspaceRetrieval.rankTasks(tasks.value.filter { it.status != TaskStatus.ARCHIVED }, query, SEARCH_RESULT_LIMIT)
+        return buildString {
+            append("search_workspace(\"$query\"):\n")
+            if (noteHits.isEmpty() && taskHits.isEmpty()) append("(no matching notes or tasks)")
+            if (noteHits.isNotEmpty()) {
+                append("Notes:\n")
+                noteHits.forEach { append("- \"${it.title.ifBlank { "Untitled" }}\" (id: ${it.id})\n") }
+            }
+            if (taskHits.isNotEmpty()) {
+                append("Tasks:\n")
+                taskHits.forEach { append("- [${it.status.label}] \"${it.title.ifBlank { "Untitled" }}\" (id: ${it.id})\n") }
             }
         }
     }
@@ -530,7 +599,7 @@ class WorkspaceViewModel(
                 if (!cfg.enabled || !cfg.actionsEnabled) return@launch
                 // Re-ground on the latest question and the now-updated workspace (the writes just landed).
                 val lastQuery = chat.value.lastOrNull { it.fromUser }?.text.orEmpty()
-                val noteMatches = WorkspaceRetrieval.rankNotes(noteRepo.getAllNotes().first(), lastQuery, NOTE_CONTEXT_LIMIT)
+                val noteMatches = WorkspaceRetrieval.rankNotes(noteRepo.getAllNotes().first().filter { it.status != NoteStatus.ARCHIVED }, lastQuery, NOTE_CONTEXT_LIMIT)
                 val taskMatches = WorkspaceRetrieval.rankTasks(taskRepo.getAllTasks().first(), lastQuery, TASK_CONTEXT_LIMIT)
                 val system = buildSystemPrompt(lastQuery, noteMatches, taskMatches, actions = true)
                 val history = ChatHistory.window(
@@ -595,7 +664,11 @@ class WorkspaceViewModel(
                     updatedAt = now,
                 ))
             }
-            is AiAction.DeleteNote -> noteRepo.deleteNote(action.noteId)
+            // "Delete" a note = archive it (recoverable from the sidebar), never a hard delete.
+            is AiAction.ArchiveNote -> {
+                val note = notes.value.firstOrNull { it.id == action.noteId } ?: error("note not found")
+                noteRepo.updateNote(note.copy(status = NoteStatus.ARCHIVED, updatedAt = now))
+            }
             is AiAction.SetNotePinned -> {
                 val note = notes.value.firstOrNull { it.id == action.noteId } ?: error("note not found")
                 noteRepo.updateNote(note.copy(isPinned = action.pinned, updatedAt = now))
@@ -619,7 +692,8 @@ class WorkspaceViewModel(
             }
             is AiAction.SetTaskStatus -> taskRepo.updateTaskStatus(action.taskId, action.status)
             is AiAction.CompleteTask -> taskRepo.updateTaskCompletion(action.taskId, true)
-            is AiAction.DeleteTask -> taskRepo.deleteTask(action.taskId)
+            // "Delete" a task = archive it (recoverable from the Archived list), never a hard delete.
+            is AiAction.ArchiveTask -> taskRepo.updateTaskStatus(action.taskId, TaskStatus.ARCHIVED)
         }
     }
 
@@ -630,7 +704,7 @@ class WorkspaceViewModel(
         return when (action) {
             is AiAction.CreateNote -> "Create note: \"${action.title}\""
             is AiAction.UpdateNote -> "Edit note: \"${noteTitle(action.noteId)}\""
-            is AiAction.DeleteNote -> "Delete note: \"${noteTitle(action.noteId)}\""
+            is AiAction.ArchiveNote -> "Archive note: \"${noteTitle(action.noteId)}\" (recoverable)"
             is AiAction.SetNotePinned -> "${if (action.pinned) "Pin" else "Unpin"} note: \"${noteTitle(action.noteId)}\""
             is AiAction.CreateTask -> buildString {
                 append("Create task: \"${action.title}\" (${action.status.label}, ${action.priority.label}")
@@ -640,7 +714,7 @@ class WorkspaceViewModel(
             is AiAction.UpdateTask -> "Edit task: \"${taskTitle(action.taskId)}\""
             is AiAction.SetTaskStatus -> "Move task \"${taskTitle(action.taskId)}\" → ${action.status.label}"
             is AiAction.CompleteTask -> "Complete task: \"${taskTitle(action.taskId)}\""
-            is AiAction.DeleteTask -> "Delete task: \"${taskTitle(action.taskId)}\""
+            is AiAction.ArchiveTask -> "Archive task: \"${taskTitle(action.taskId)}\" (recoverable)"
         }
     }
 
@@ -666,9 +740,11 @@ class WorkspaceViewModel(
         append("bullet/numbered lists, `code`/fenced blocks — but keep it light for simple answers.\n")
         if (actions) {
             append("- You can change the workspace by calling the provided tools (create/edit/delete/pin notes, ")
-            append("create/update/move/complete/delete tasks). When the user asks you to make, change, complete, ")
+            append("create/update/move/complete tasks, and archive a task via delete_task — task deletion is a ")
+            append("recoverable archive, not permanent). When the user asks you to make, change, complete, ")
             append("move, or remove something, CALL the matching tool instead of only describing it. To act on an ")
-            append("existing item, pass its id from the WORKSPACE CONTEXT. Every action is shown to the user for ")
+            append("existing item, pass its id from the WORKSPACE CONTEXT; if the item isn't listed there, call ")
+            append("search_workspace first to find its id, then act. Every action is shown to the user for ")
             append("confirmation before it runs, so don't ask permission again in your reply.\n")
         }
         append("\n")

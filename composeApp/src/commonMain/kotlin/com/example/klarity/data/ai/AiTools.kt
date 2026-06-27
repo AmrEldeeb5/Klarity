@@ -27,11 +27,22 @@ sealed interface AiResult {
  */
 object AiTools {
 
-    /** Status / priority enum values exposed to the model — must match the labels in [AiActions]. */
-    private val STATUSES = listOf("Backlog", "To Do", "In Progress", "In Review", "Done", "Archived")
+    /**
+     * Status / priority values exposed to the model. Only the four columns the task board actually
+     * renders are offered — "To Do" and "Archived" exist in the enum but appear in no view, so the
+     * model must never strand a task in them.
+     */
+    private val STATUSES = listOf("Backlog", "In Progress", "In Review", "Done")
     private val PRIORITIES = listOf("High", "Medium", "Low", "None")
 
+    /** The read tool that returns matching items + ids — handled by the agent loop, not confirmed. */
+    const val SEARCH = "search_workspace"
+
     private val TOOLS: List<ToolSpec> = listOf(
+        ToolSpec(
+            SEARCH, "Search the user's notes and tasks by keyword to find an item (and its id) that isn't shown in WORKSPACE CONTEXT. Call this first when the user refers to something you can't see, then act on the result.",
+            obj(mapOf("query" to str("Keywords to search for — a title or topic, not a whole sentence.")), required = listOf("query")),
+        ),
         ToolSpec(
             "create_note", "Create a new note in the user's workspace.",
             obj(mapOf(
@@ -50,8 +61,8 @@ object AiTools {
             ), required = listOf("note_id")),
         ),
         ToolSpec(
-            "delete_note", "Delete a note permanently. Use the note's id from context.",
-            obj(mapOf("note_id" to str("Id of the note to delete.")), required = listOf("note_id")),
+            "delete_note", "Remove a note by archiving it (recoverable from the sidebar's Archived list — not a permanent delete). Use the note's id from context.",
+            obj(mapOf("note_id" to str("Id of the note to archive.")), required = listOf("note_id")),
         ),
         ToolSpec(
             "set_note_pinned", "Pin or unpin a note.",
@@ -94,8 +105,8 @@ object AiTools {
             obj(mapOf("task_id" to str("Id of the task to complete.")), required = listOf("task_id")),
         ),
         ToolSpec(
-            "delete_task", "Delete a task permanently. Use the task's id from context.",
-            obj(mapOf("task_id" to str("Id of the task to delete.")), required = listOf("task_id")),
+            "delete_task", "Remove a task from the board by archiving it (recoverable from the Archived list — not a permanent delete). Use the task's id from context.",
+            obj(mapOf("task_id" to str("Id of the task to archive.")), required = listOf("task_id")),
         ),
     )
 
