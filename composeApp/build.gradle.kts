@@ -33,7 +33,9 @@ kotlin {
             // --- UI ---
             implementation(compose.runtime)
             implementation(compose.foundation)
-            implementation(compose.material3)
+            // Material 3 Expressive (alpha track) instead of the stable compose.material3 accessor —
+            // unlocks MaterialExpressiveTheme, expressive motion/shapes and components.
+            implementation(libs.compose.material3)
             implementation(compose.materialIconsExtended)
             implementation(compose.ui)
             implementation(compose.components.resources)
@@ -122,6 +124,15 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+    }
+}
+
+// The expressive material3 alpha transitively requires kotlinx-datetime 0.7.1, which relocates
+// Clock/Instant to kotlin.time (different serializer + opt-in) and would change the persisted format
+// of notes/tasks. The app uses no M3 date/time pickers, so we pin the whole graph to 0.6.1.
+configurations.all {
+    resolutionStrategy {
+        force("org.jetbrains.kotlinx:kotlinx-datetime:${libs.versions.kotlinxDatetime.get()}")
     }
 }
 
