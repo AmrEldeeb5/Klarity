@@ -21,6 +21,9 @@ SELECT * FROM Tag ORDER BY name ASC;
 selectById:
 SELECT * FROM Tag WHERE id = ?;
 
+selectByName:
+SELECT * FROM Tag WHERE name = ?;
+
 selectByNote:
 SELECT Tag.* FROM Tag
 INNER JOIN NoteTag ON Tag.id = NoteTag.tagId

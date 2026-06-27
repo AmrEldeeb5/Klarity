@@ -9,6 +9,7 @@ import com.example.klarity.domain.repositories.TaskRepository
 import com.example.klarity.domain.models.Task
 import com.example.klarity.domain.models.TaskStatus
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
@@ -29,12 +30,14 @@ class SqlDelightTaskRepository(
             .asFlow()
             .mapToList(dispatchers.io)
             .map { entities -> entities.map { TaskMapper.toDomain(it) } }
+            .catch { emit(emptyList()) }
 
     override fun getTasksByStatus(status: TaskStatus): Flow<List<Task>> =
         taskQueries.selectByStatus(status.name)
             .asFlow()
             .mapToList(dispatchers.io)
             .map { entities -> entities.map { TaskMapper.toDomain(it) } }
+            .catch { emit(emptyList()) }
 
     override suspend fun getTaskById(id: String): Task? = withContext(dispatchers.io) {
         taskQueries.selectById(id).executeAsOneOrNull()?.let { TaskMapper.toDomain(it) }
@@ -47,31 +50,36 @@ class SqlDelightTaskRepository(
     override suspend fun createTask(task: Task): Result<Task> = runCatching {
         withContext(dispatchers.io) {
             val values = TaskMapper.toEntityValues(task)
-            taskQueries.insert(
-                id = values.id,
-                title = values.title,
-                description = values.description,
-                status = values.status,
-                priority = values.priority,
-                tags = values.tags,
-                points = values.points,
-                assignee = values.assignee,
-                dueDate = values.dueDate,
-                startDate = values.startDate,
-                estimatedHours = values.estimatedHours,
-                actualHours = values.actualHours,
-                subtasks = values.subtasks,
-                linkedNoteIds = values.linkedNoteIds,
-                timerStartedAt = values.timerStartedAt,
-                timerPausedDuration = values.timerPausedDuration,
-                timerIsPaused = values.timerIsPaused,
-                isActive = values.isActive,
-                completed = values.completed,
-                columnOrder = values.columnOrder,
-                createdAt = values.createdAt,
-                updatedAt = values.updatedAt,
-                completedAt = values.completedAt
-            )
+            taskQueries.transaction {
+                // Append to the end of the column so ordering is stable and collision-free
+                // (every new task previously defaulted to columnOrder = 0).
+                val nextOrder = taskQueries.selectMaxOrder(values.status) { it ?: -1L }.executeAsOne() + 1L
+                taskQueries.insert(
+                    id = values.id,
+                    title = values.title,
+                    description = values.description,
+                    status = values.status,
+                    priority = values.priority,
+                    tags = values.tags,
+                    points = values.points,
+                    assignee = values.assignee,
+                    dueDate = values.dueDate,
+                    startDate = values.startDate,
+                    estimatedHours = values.estimatedHours,
+                    actualHours = values.actualHours,
+                    subtasks = values.subtasks,
+                    linkedNoteIds = values.linkedNoteIds,
+                    timerStartedAt = values.timerStartedAt,
+                    timerPausedDuration = values.timerPausedDuration,
+                    timerIsPaused = values.timerIsPaused,
+                    isActive = values.isActive,
+                    completed = values.completed,
+                    columnOrder = nextOrder,
+                    createdAt = values.createdAt,
+                    updatedAt = values.updatedAt,
+                    completedAt = values.completedAt
+                )
+            }
         }
         task
     }
@@ -115,17 +123,21 @@ class SqlDelightTaskRepository(
 
     override suspend fun updateTaskStatus(
         taskId: String,
-        status: TaskStatus,
-        order: Int
+        status: TaskStatus
     ): Result<Unit> = runCatching {
         withContext(dispatchers.io) {
             val now = Clock.System.now().toEpochMilliseconds()
-            taskQueries.updateStatus(
-                status = status.name,
-                columnOrder = order.toLong(),
-                updatedAt = now,
-                id = taskId
-            )
+            taskQueries.transaction {
+                // Place the moved task at the end of the destination column (previously it kept
+                // its order from the old column, colliding with whatever was already there).
+                val nextOrder = taskQueries.selectMaxOrder(status.name) { it ?: -1L }.executeAsOne() + 1L
+                taskQueries.updateStatus(
+                    status = status.name,
+                    columnOrder = nextOrder,
+                    updatedAt = now,
+                    id = taskId
+                )
+            }
         }
     }
 
@@ -177,6 +189,7 @@ class SqlDelightTaskRepository(
             .asFlow()
             .mapToList(dispatchers.io)
             .map { entities -> entities.map { TaskMapper.toDomain(it) } }
+            .catch { emit(emptyList()) }
 
     override suspend fun getTaskCountsByStatus(): Map<TaskStatus, Int> = 
         withContext(dispatchers.io) {

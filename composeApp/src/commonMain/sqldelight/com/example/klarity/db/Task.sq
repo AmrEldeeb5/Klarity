@@ -55,9 +55,15 @@ SELECT * FROM TaskEntity WHERE id = ?;
 selectByStatus:
 SELECT * FROM TaskEntity WHERE status = ? ORDER BY columnOrder ASC;
 
--- Select active tasks (tasks with active timer)
+-- Highest columnOrder currently used in a column (NULL if the column is empty).
+-- Used to append new/moved tasks to the end of their column deterministically.
+selectMaxOrder:
+SELECT MAX(columnOrder) FROM TaskEntity WHERE status = ?;
+
+-- Select the active task (task with active timer). LIMIT 1 keeps executeAsOneOrNull safe
+-- even if more than one row is somehow flagged active.
 selectActive:
-SELECT * FROM TaskEntity WHERE isActive = 1;
+SELECT * FROM TaskEntity WHERE isActive = 1 LIMIT 1;
 
 -- Select completed tasks
 selectCompleted:

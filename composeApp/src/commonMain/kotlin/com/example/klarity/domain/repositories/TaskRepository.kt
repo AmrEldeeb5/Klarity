@@ -46,9 +46,9 @@ interface TaskRepository {
     suspend fun deleteTask(id: String): Result<Unit>
     
     /**
-     * Update task status (for drag-and-drop).
+     * Move a task to a new status, appending it to the end of the destination column.
      */
-    suspend fun updateTaskStatus(taskId: String, status: TaskStatus, order: Int): Result<Unit>
+    suspend fun updateTaskStatus(taskId: String, status: TaskStatus): Result<Unit>
     
     /**
      * Update task completion status.

@@ -8,6 +8,7 @@ import com.example.klarity.db.KlarityDatabase
 import com.example.klarity.domain.models.Folder
 import com.example.klarity.domain.repositories.FolderRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
@@ -27,18 +28,21 @@ class SqlDelightFolderRepository(
             .asFlow()
             .mapToList(dispatchers.io)
             .map { entities -> entities.map { it.toDomain() } }
+            .catch { emit(emptyList()) }
 
     override fun getRootFolders(): Flow<List<Folder>> =
         queries.selectRoots()
             .asFlow()
             .mapToList(dispatchers.io)
             .map { entities -> entities.map { it.toDomain() } }
+            .catch { emit(emptyList()) }
 
     override fun getSubFolders(parentId: String): Flow<List<Folder>> =
         queries.selectChildren(parentId)
             .asFlow()
             .mapToList(dispatchers.io)
             .map { entities -> entities.map { it.toDomain() } }
+            .catch { emit(emptyList()) }
 
     override suspend fun getFolderById(id: String): Folder? = withContext(dispatchers.io) {
         queries.selectById(id).executeAsOneOrNull()?.toDomain()

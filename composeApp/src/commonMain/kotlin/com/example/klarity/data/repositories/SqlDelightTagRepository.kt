@@ -8,6 +8,7 @@ import com.example.klarity.db.KlarityDatabase
 import com.example.klarity.domain.models.Tag
 import com.example.klarity.domain.repositories.TagRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
@@ -27,6 +28,7 @@ class SqlDelightTagRepository(
             .asFlow()
             .mapToList(dispatchers.io)
             .map { entities -> entities.map { it.toDomain() } }
+            .catch { emit(emptyList()) }
 
     override suspend fun getTagById(id: String): Tag? = withContext(dispatchers.io) {
         queries.selectById(id).executeAsOneOrNull()?.toDomain()

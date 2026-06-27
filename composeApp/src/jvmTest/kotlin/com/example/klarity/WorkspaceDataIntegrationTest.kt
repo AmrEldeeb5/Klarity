@@ -81,7 +81,7 @@ class WorkspaceDataIntegrationTest {
         assertEquals(1, repo.getAllTasks().first().size, "task persisted")
         assertEquals(1, repo.getTasksByStatus(TaskStatus.BACKLOG).first().size)
 
-        repo.updateTaskStatus("t1", TaskStatus.IN_PROGRESS, order = 0).getOrThrow()
+        repo.updateTaskStatus("t1", TaskStatus.IN_PROGRESS).getOrThrow()
         assertEquals(0, repo.getTasksByStatus(TaskStatus.BACKLOG).first().size, "moved out of backlog")
         assertEquals(1, repo.getTasksByStatus(TaskStatus.IN_PROGRESS).first().size, "moved into in-progress")
         assertEquals(1, repo.getTaskCountsByStatus()[TaskStatus.IN_PROGRESS], "counts reflect move")
