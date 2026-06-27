@@ -12,6 +12,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Chat
 import androidx.compose.material.icons.automirrored.outlined.Comment
+import androidx.compose.material.icons.automirrored.outlined.FormatListBulleted
+import androidx.compose.material.icons.outlined.FormatListNumbered
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.outlined.ViewList
@@ -37,6 +39,9 @@ import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.DragIndicator
 import androidx.compose.material.icons.outlined.EditNote
 import androidx.compose.material.icons.outlined.FilterList
+import androidx.compose.material.icons.outlined.FormatQuote
+import androidx.compose.material.icons.outlined.HorizontalRule
+import androidx.compose.material.icons.outlined.Title
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Group
 import androidx.compose.material.icons.outlined.History
@@ -133,6 +138,11 @@ object DbIcons {
     val filterList = Icons.Outlined.FilterList
     val group = Icons.Outlined.Group
     val checklist = Icons.Outlined.Checklist
+    val title = Icons.Outlined.Title
+    val formatBulleted = Icons.AutoMirrored.Outlined.FormatListBulleted
+    val formatNumbered = Icons.Outlined.FormatListNumbered
+    val formatQuote = Icons.Outlined.FormatQuote
+    val horizontalRule = Icons.Outlined.HorizontalRule
     val schedule = Icons.Outlined.Schedule
     val comment = Icons.AutoMirrored.Outlined.Comment
     val thumbUp = Icons.Outlined.ThumbUp

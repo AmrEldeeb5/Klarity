@@ -59,6 +59,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -83,13 +84,13 @@ import kotlinx.datetime.Instant
 
 private data class BoardCol(val status: TaskStatus, val title: String)
 
-/** A selectable view in the tasks toolbar. Timeline (TaskViewMode.TIMELINE) isn't wired yet, so it's
- *  intentionally absent here — the [TaskViewMode] when-branch shows a placeholder if it's ever reached. */
+/** A selectable view in the tasks toolbar — order here is the segmented-control order. */
 private data class ViewTab(val mode: TaskViewMode, val label: String, val icon: ImageVector)
 private val ViewTabs: List<ViewTab> = listOf(
     ViewTab(TaskViewMode.KANBAN, "Board", DbIcons.viewKanban),
     ViewTab(TaskViewMode.LIST, "List", DbIcons.viewList),
     ViewTab(TaskViewMode.CALENDAR, "Calendar", DbIcons.calendar),
+    ViewTab(TaskViewMode.TIMELINE, "Timeline", DbIcons.timeline),
 )
 
 /**
@@ -202,6 +203,7 @@ fun DevbookTasksScreen(vm: WorkspaceViewModel) {
                     onOpen = { editing = it },
                     onToggle = { vm.toggleTaskComplete(it) },
                     onMove = { task, status -> vm.moveTask(task, status) },
+                    onRestore = { vm.moveTask(it, TaskStatus.BACKLOG) },
                 )
             TaskViewMode.CALENDAR ->
                 TaskCalendarView(
@@ -211,7 +213,11 @@ fun DevbookTasksScreen(vm: WorkspaceViewModel) {
                     onAddOnDay = { due -> vm.createTask(dueDate = due) },
                 )
             TaskViewMode.TIMELINE ->
-                Text("Timeline view is coming soon.", color = c.onv, fontSize = 14.sp)
+                TaskTimelineView(
+                    tasks = visible,
+                    compact = compact,
+                    onOpen = { editing = it },
+                )
         }
     }
 
@@ -302,12 +308,16 @@ private fun TaskListView(
     onOpen: (Task) -> Unit,
     onToggle: (Task) -> Unit,
     onMove: (Task, TaskStatus) -> Unit,
+    onRestore: (Task) -> Unit,
 ) {
     val c = DevbookTheme.colors
     if (tasks.isEmpty()) {
         Text("No tasks match this filter.", color = c.onv, fontSize = 14.sp)
         return
     }
+    // Archived tasks render in no column; surface them in a collapsible section so they can be restored.
+    val archived = tasks.filter { it.status == TaskStatus.ARCHIVED }.sortedByDescending { it.updatedAt }
+    var archivedOpen by remember { mutableStateOf(false) }
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(22.dp),
@@ -338,7 +348,58 @@ private fun TaskListView(
                 }
             }
         }
+
+        if (archived.isNotEmpty()) {
+            Column {
+                Row(
+                    modifier = Modifier.clickable { archivedOpen = !archivedOpen }.padding(start = 4.dp, top = 2.dp, bottom = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    MsIcon(DbIcons.expandMore, 18.dp, c.onv, modifier = Modifier.rotate(if (archivedOpen) 0f else -90f))
+                    Text("Archived", color = c.onv, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                    Text("${archived.size}", color = c.onv, fontSize = 12.sp)
+                }
+                if (archivedOpen) {
+                    OutlinedCard(
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = c.sLow),
+                        border = BorderStroke(1.dp, c.outlinev),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        archived.forEachIndexed { i, task ->
+                            ArchivedRow(task = task, onClick = { onOpen(task) }, onRestore = { onRestore(task) })
+                            if (i < archived.lastIndex) HorizontalDivider(color = c.outlinev)
+                        }
+                    }
+                }
+            }
+        }
         Spacer(Modifier.height(40.dp))
+    }
+}
+
+@Composable
+private fun ArchivedRow(task: Task, onClick: () -> Unit, onRestore: () -> Unit) {
+    val c = DevbookTheme.colors
+    Row(
+        modifier = Modifier.fillMaxWidth().clickable { onClick() }.padding(start = 14.dp, top = 8.dp, end = 8.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Text(
+            task.title.ifBlank { "Untitled task" },
+            color = c.onv,
+            fontSize = 14.sp,
+            modifier = Modifier.weight(1f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        TextButton(onClick = onRestore, colors = ButtonDefaults.textButtonColors(contentColor = c.p)) {
+            MsIcon(DbIcons.refresh, 16.dp, c.p)
+            Spacer(Modifier.width(6.dp))
+            Text("Restore", fontSize = 13.sp, fontWeight = FontWeight.Medium)
+        }
     }
 }
 
@@ -414,7 +475,7 @@ private fun BoardColumn(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 private fun BoardCard(task: Task, isDone: Boolean, onClick: () -> Unit, onMove: (TaskStatus) -> Unit) {
     val c = DevbookTheme.colors
@@ -427,10 +488,6 @@ private fun BoardCard(task: Task, isDone: Boolean, onClick: () -> Unit, onMove: 
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
-            if (highlight) {
-                PriorityTag(task.priority)
-                Spacer(Modifier.height(8.dp))
-            }
             Text(
                 task.title.ifBlank { "Untitled task" },
                 color = c.on,
@@ -444,33 +501,34 @@ private fun BoardCard(task: Task, isDone: Boolean, onClick: () -> Unit, onMove: 
                 Text(task.description, color = c.onv, fontSize = 12.5.sp, lineHeight = 17.sp, maxLines = 2)
             }
             Spacer(Modifier.height(12.dp))
-            Row(
+            FlowRow(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 StatusMenuChip(current = task.status, onSelect = onMove)
-                task.dueDate?.let {
-                    Spacer(Modifier.weight(1f))
-                    DueDateLabel(due = it, overdue = task.isOverdue)
-                }
+                if (task.priority != TaskPriority.NONE) PriorityChip(task.priority)
+                task.dueDate?.let { DueDateLabel(due = it, overdue = task.isOverdue) }
             }
         }
     }
 }
 
+/** Priority chip for board cards — a dot + label tinted in the priority's own colour, mirroring the
+ *  status pill so the two read as a matched pair. Callers skip it for [TaskPriority.NONE]. */
 @Composable
-private fun PriorityTag(priority: TaskPriority) {
+private fun PriorityChip(priority: TaskPriority) {
     val c = DevbookTheme.colors
-    val bg = if (priority == TaskPriority.HIGH) c.errc else c.sHigh
-    val fg = if (priority == TaskPriority.HIGH) c.err else c.onv
-    Surface(color = bg, contentColor = fg, shape = RoundedCornerShape(7.dp)) {
-        Text(
-            priority.label.uppercase(),
-            fontSize = 10.5.sp,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
-        )
+    val color = Color(priority.color)
+    Surface(shape = RoundedCornerShape(8.dp), color = color.copy(alpha = 0.14f)) {
+        Row(
+            modifier = Modifier.padding(start = 8.dp, end = 9.dp, top = 4.dp, bottom = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(5.dp),
+        ) {
+            Dot(color, 7.dp)
+            Text(priority.label, fontSize = 11.5.sp, color = c.on, fontWeight = FontWeight.Medium)
+        }
     }
 }
 

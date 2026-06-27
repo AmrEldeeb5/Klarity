@@ -48,6 +48,10 @@ internal fun LocalDate.monthTitle(): String = "${MONTH_FULL[monthNumber - 1]} $y
 
 internal fun LocalDate.firstOfMonth(): LocalDate = LocalDate(year, monthNumber, 1)
 internal fun LocalDate.addMonths(n: Int): LocalDate = firstOfMonth().plus(n, DateTimeUnit.MONTH)
+internal fun LocalDate.plusDays(n: Int): LocalDate = plus(n, DateTimeUnit.DAY)
+
+/** Whole days from [this] (inclusive) to [to]; negative if [to] precedes it. */
+internal fun LocalDate.daysTo(to: LocalDate): Int = daysUntil(to)
 
 internal fun LocalDate.lengthOfMonth(): Int {
     val first = firstOfMonth()

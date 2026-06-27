@@ -2,6 +2,7 @@ package com.example.klarity.presentation.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -59,6 +60,9 @@ fun MarkdownText(
     modifier: Modifier = Modifier,
     fontSize: TextUnit = 15.sp,
     lineHeight: TextUnit = 24.sp,
+    // When non-null, `- [ ]` lines render as tappable checkboxes; the arg is the 0-based index of the
+    // to-do among all to-dos, so the caller can flip the matching line in the source. Null ⇒ read-only.
+    onToggleTodo: ((Int) -> Unit)? = null,
 ) {
     val c = DevbookTheme.colors
     val blocks = remember(markdown) { parseMarkdownBlocks(markdown) }
@@ -88,6 +92,27 @@ fun MarkdownText(
                     Text(
                         buildAnnotatedString { appendInline(block.text, c.p, c.sHigh) },
                         color = color, fontSize = fontSize, lineHeight = lineHeight,
+                    )
+                }
+
+                is MdBlock.Todo -> Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.Top,
+                ) {
+                    val toggle = onToggleTodo
+                    MsIcon(
+                        if (block.checked) DbIcons.checkBox else DbIcons.checkBoxBlank,
+                        20.dp,
+                        if (block.checked) c.p else c.onv,
+                        modifier = if (toggle != null) Modifier.clickable { toggle(block.index) } else Modifier,
+                    )
+                    Text(
+                        buildAnnotatedString { appendInline(block.text, c.p, c.sHigh) },
+                        color = if (block.checked) c.onv else color,
+                        fontSize = fontSize,
+                        lineHeight = lineHeight,
+                        textDecoration = if (block.checked) TextDecoration.LineThrough else null,
                     )
                 }
 
@@ -171,6 +196,7 @@ private sealed interface MdBlock {
     data class Heading(val level: Int, val text: String) : MdBlock
     data class Paragraph(val text: String) : MdBlock
     data class Bullet(val text: String, val indent: Int) : MdBlock
+    data class Todo(val checked: Boolean, val text: String, val index: Int) : MdBlock
     data class Numbered(val number: Int, val text: String, val indent: Int) : MdBlock
     data class Quote(val text: String) : MdBlock
     data class Code(val text: String, val lang: String?) : MdBlock
@@ -178,11 +204,13 @@ private sealed interface MdBlock {
 }
 
 private val OrderedRegex = Regex("""^(\d{1,3})[.)]\s+(.*)$""")
+private val TodoRegex = Regex("""^[-*]\s+\[([ xX])\]\s*(.*)$""")
 
 private fun parseMarkdownBlocks(src: String): List<MdBlock> {
     val out = ArrayList<MdBlock>()
     val lines = src.replace("\r\n", "\n").replace("\r", "\n").split("\n")
     val para = StringBuilder()
+    var todoIdx = 0
 
     fun flush() {
         if (para.isNotBlank()) out.add(MdBlock.Paragraph(para.toString().trim()))
@@ -224,6 +252,13 @@ private fun parseMarkdownBlocks(src: String): List<MdBlock> {
             trimmed == ">" || trimmed.startsWith("> ") -> {
                 flush()
                 out.add(MdBlock.Quote(trimmed.removePrefix(">").trim()))
+            }
+
+            TodoRegex.matches(trimmed) -> {
+                flush()
+                val mm = TodoRegex.find(trimmed)!!
+                out.add(MdBlock.Todo(checked = mm.groupValues[1].isNotBlank(), text = mm.groupValues[2].trim(), index = todoIdx))
+                todoIdx++
             }
 
             isBullet(trimmed) -> {
