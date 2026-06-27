@@ -1,8 +1,8 @@
 package com.example.klarity.presentation.screen
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,7 +20,16 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.LoadingIndicator
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -31,7 +40,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.TextStyle
@@ -45,12 +53,16 @@ import com.example.klarity.presentation.ChatMessage
 import com.example.klarity.presentation.DevbookScreen
 import com.example.klarity.presentation.WorkspaceViewModel
 import com.example.klarity.presentation.components.DbIcons
+import com.example.klarity.presentation.components.MarkdownText
 import com.example.klarity.presentation.components.MsIcon
+import com.example.klarity.presentation.components.MsIconButton
 import com.example.klarity.presentation.theme.DevbookTheme
+import com.example.klarity.presentation.theme.LocalWindowMetrics
 
 @Composable
 fun DevbookAssistantScreen(vm: WorkspaceViewModel, navigate: (DevbookScreen) -> Unit, onOpenSettings: () -> Unit) {
     val c = DevbookTheme.colors
+    val m = LocalWindowMetrics.current
     val chat by vm.chat.collectAsState()
     val thinking by vm.thinking.collectAsState()
     val settings by vm.settings.collectAsState()
@@ -70,7 +82,7 @@ fun DevbookAssistantScreen(vm: WorkspaceViewModel, navigate: (DevbookScreen) -> 
 
     Box(modifier = Modifier.fillMaxSize().background(c.bg)) {
         Column(
-            modifier = Modifier.align(Alignment.TopCenter).widthIn(max = 840.dp).fillMaxSize().padding(start = 40.dp, end = 40.dp, top = 32.dp, bottom = 24.dp),
+            modifier = Modifier.align(Alignment.TopCenter).widthIn(max = 840.dp).fillMaxSize().padding(start = m.screenPaddingH, end = m.screenPaddingH, top = m.screenPaddingTop, bottom = 24.dp),
         ) {
             // Thread
             Column(
@@ -81,7 +93,7 @@ fun DevbookAssistantScreen(vm: WorkspaceViewModel, navigate: (DevbookScreen) -> 
                 Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                     AiAvatar()
                     Text(
-                        "Hi — I can search your notes and tasks. Ask me anything about your workspace.",
+                        "Hi, I'm Lou — I can search your notes and tasks. Ask me anything about your workspace.",
                         color = c.on, fontSize = 15.sp, lineHeight = 26.sp, modifier = Modifier.padding(top = 5.dp),
                     )
                 }
@@ -93,51 +105,69 @@ fun DevbookAssistantScreen(vm: WorkspaceViewModel, navigate: (DevbookScreen) -> 
 
             // Prompt to connect a key when AI isn't configured yet.
             if (!settings.enabled) {
-                ConnectKeyBanner(onOpenSettings)
+                ConnectKeyBanner(providerLabel = settings.provider.label, onOpenSettings = onOpenSettings)
                 Spacer(Modifier.height(10.dp))
             }
 
-            // Suggested prompts
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            // Suggested prompts — scroll horizontally on narrow screens instead of clipping.
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            ) {
                 SuggestChip(DbIcons.summarize, "Summarize my workspace") { vm.summarizeWorkspace() }
                 SuggestChip(DbIcons.checklist, "What's open?") { vm.summarizeOpenTasks() }
             }
             Spacer(Modifier.height(12.dp))
 
-            // Composer
-            Row(
-                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(28.dp)).background(c.sCont).border(1.dp, c.outlinev, RoundedCornerShape(28.dp)).padding(start = 18.dp, top = 8.dp, end = 8.dp, bottom = 8.dp),
-                verticalAlignment = Alignment.Bottom,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            // Composer — keep the borderless multiline BasicTextField; only the shell is now M3.
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(28.dp),
+                color = c.sCont,
+                border = BorderStroke(1.dp, c.outlinev),
             ) {
-                MsIcon(DbIcons.attachFile, 24.dp, c.onv, modifier = Modifier.padding(bottom = 8.dp))
-                Box(modifier = Modifier.weight(1f).padding(vertical = 11.dp), contentAlignment = Alignment.CenterStart) {
-                    if (input.isEmpty()) Text("Ask about your workspace…", color = c.onv, fontSize = 15.sp)
-                    BasicTextField(
-                        value = input,
-                        onValueChange = { input = it },
-                        textStyle = TextStyle(color = c.on, fontSize = 15.sp),
-                        cursorBrush = SolidColor(c.p),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                        keyboardActions = KeyboardActions(onSend = { send() }),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-                Box(
-                    modifier = Modifier.padding(bottom = 5.dp).height(34.dp).clip(RoundedCornerShape(17.dp)).background(c.sHigh).clickable { onOpenSettings() }.padding(horizontal = 12.dp),
-                    contentAlignment = Alignment.Center,
+                Row(
+                    modifier = Modifier.padding(start = 12.dp, top = 8.dp, end = 8.dp, bottom = 8.dp),
+                    verticalAlignment = Alignment.Bottom,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        MsIcon(DbIcons.autoAwesome, 16.dp, c.p)
-                        Text(if (settings.enabled) settings.provider.short else "Local", color = c.onv, fontSize = 12.5.sp)
+                    // Decorative (attach isn't wired yet) — a plain icon, not an actionable button,
+                    // so screen readers don't announce a control that does nothing.
+                    MsIcon(DbIcons.attachFile, 24.dp, c.onv, modifier = Modifier.padding(bottom = 8.dp))
+                    Box(modifier = Modifier.weight(1f).padding(vertical = 11.dp), contentAlignment = Alignment.CenterStart) {
+                        if (input.isEmpty()) Text("Ask about your workspace…", color = c.onv, fontSize = 15.sp)
+                        BasicTextField(
+                            value = input,
+                            onValueChange = { input = it },
+                            textStyle = TextStyle(color = c.on, fontSize = 15.sp),
+                            cursorBrush = SolidColor(c.p),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                            keyboardActions = KeyboardActions(onSend = { send() }),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
                     }
-                }
-                Box(
-                    modifier = Modifier.size(48.dp).clip(RoundedCornerShape(16.dp)).background(c.p).clickable { send() },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    MsIcon(DbIcons.arrowUpward, 24.dp, c.op)
+                    AssistChip(
+                        onClick = onOpenSettings,
+                        modifier = Modifier.padding(bottom = 5.dp),
+                        shape = RoundedCornerShape(17.dp),
+                        label = { Text(if (settings.enabled) settings.provider.short else "Local", fontSize = 12.5.sp) },
+                        leadingIcon = { MsIcon(DbIcons.autoAwesome, 16.dp, c.p) },
+                        border = null,
+                        colors = AssistChipDefaults.assistChipColors(
+                            containerColor = c.sHigh,
+                            labelColor = c.onv,
+                            leadingIconContentColor = c.p,
+                        ),
+                    )
+                    FilledIconButton(
+                        onClick = send,
+                        modifier = Modifier.size(48.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = IconButtonDefaults.filledIconButtonColors(containerColor = c.p, contentColor = c.op),
+                    ) {
+                        MsIcon(DbIcons.arrowUpward, 24.dp, c.op, contentDescription = "Send message")
+                    }
                 }
             }
             Spacer(Modifier.height(10.dp))
@@ -150,34 +180,47 @@ fun DevbookAssistantScreen(vm: WorkspaceViewModel, navigate: (DevbookScreen) -> 
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun ThinkingRow() {
     val c = DevbookTheme.colors
     Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
         AiAvatar()
-        Text("Thinking…", color = c.onv, fontSize = 15.sp, modifier = Modifier.padding(top = 5.dp))
+        Row(
+            modifier = Modifier.padding(top = 5.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text("Thinking…", color = c.onv, fontSize = 15.sp)
+            LoadingIndicator(modifier = Modifier.size(22.dp), color = c.p)
+        }
     }
 }
 
 @Composable
-private fun ConnectKeyBanner(onOpenSettings: () -> Unit) {
+private fun ConnectKeyBanner(providerLabel: String, onOpenSettings: () -> Unit) {
     val c = DevbookTheme.colors
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background(c.pc)
-            .clickable { onOpenSettings() }
-            .padding(horizontal = 14.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    Surface(
+        onClick = onOpenSettings,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        color = c.pc,
+        contentColor = c.opc,
     ) {
-        MsIcon(DbIcons.vpnKey, 18.dp, c.opc)
-        Text(
-            "Add an Anthropic API key to enable Claude.",
-            color = c.opc, fontSize = 13.sp, modifier = Modifier.weight(1f),
-        )
-        Text("Open Settings", color = c.opc, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+        Row(
+            modifier = Modifier.padding(start = 14.dp, top = 4.dp, end = 6.dp, bottom = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            MsIcon(DbIcons.vpnKey, 18.dp, c.opc)
+            Text(
+                "Add a $providerLabel API key for full AI answers.",
+                color = c.opc, fontSize = 13.sp, modifier = Modifier.weight(1f),
+            )
+            TextButton(onClick = onOpenSettings, colors = ButtonDefaults.textButtonColors(contentColor = c.opc)) {
+                Text("Open Settings", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+            }
+        }
     }
 }
 
@@ -185,10 +228,13 @@ private fun ConnectKeyBanner(onOpenSettings: () -> Unit) {
 private fun UserMessage(text: String) {
     val c = DevbookTheme.colors
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-        Box(
-            modifier = Modifier.widthIn(max = 520.dp).clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp, bottomEnd = 6.dp, bottomStart = 20.dp)).background(c.secc).padding(horizontal = 18.dp, vertical = 13.dp),
+        Surface(
+            modifier = Modifier.widthIn(max = 520.dp),
+            color = c.secc,
+            contentColor = c.onsecc,
+            shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp, bottomEnd = 6.dp, bottomStart = 20.dp),
         ) {
-            Text(text, color = c.onsecc, fontSize = 15.sp, lineHeight = 24.sp)
+            Text(text, color = c.onsecc, fontSize = 15.sp, lineHeight = 24.sp, modifier = Modifier.padding(horizontal = 18.dp, vertical = 13.dp))
         }
     }
 }
@@ -199,7 +245,7 @@ private fun AssistantMessage(msg: ChatMessage, openNote: (Note) -> Unit) {
     Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
         AiAvatar()
         Column {
-            Text(msg.text, color = c.on, fontSize = 15.sp, lineHeight = 26.sp)
+            MarkdownText(msg.text, color = c.on, fontSize = 15.sp, lineHeight = 26.sp)
             if (msg.sources.isNotEmpty()) {
                 Spacer(Modifier.height(12.dp))
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -224,25 +270,32 @@ private fun AiAvatar() {
 @Composable
 private fun SourceChip(label: String, onClick: () -> Unit) {
     val c = DevbookTheme.colors
-    Row(
-        modifier = Modifier.height(28.dp).clip(RoundedCornerShape(8.dp)).background(c.pc).clickable { onClick() }.padding(horizontal = 11.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        MsIcon(DbIcons.description, 15.dp, c.opc)
-        Text(label, color = c.opc, fontSize = 12.sp, fontWeight = FontWeight.Medium)
-    }
+    AssistChip(
+        onClick = onClick,
+        label = { Text(label, fontSize = 12.sp, fontWeight = FontWeight.Medium) },
+        leadingIcon = { MsIcon(DbIcons.description, 15.dp, c.opc) },
+        border = null,
+        colors = AssistChipDefaults.assistChipColors(
+            containerColor = c.pc,
+            labelColor = c.opc,
+            leadingIconContentColor = c.opc,
+        ),
+    )
 }
 
 @Composable
 private fun SuggestChip(icon: ImageVector, label: String, onClick: () -> Unit) {
     val c = DevbookTheme.colors
-    Row(
-        modifier = Modifier.height(34.dp).clip(RoundedCornerShape(18.dp)).background(c.sLow).border(1.dp, c.outline, RoundedCornerShape(18.dp)).clickable { onClick() }.padding(horizontal = 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(7.dp),
-    ) {
-        MsIcon(icon, 17.dp, c.p)
-        Text(label, color = c.p, fontSize = 13.sp)
-    }
+    AssistChip(
+        onClick = onClick,
+        shape = RoundedCornerShape(18.dp),
+        label = { Text(label, fontSize = 13.sp) },
+        leadingIcon = { MsIcon(icon, 17.dp, c.p) },
+        border = BorderStroke(1.dp, c.outline),
+        colors = AssistChipDefaults.assistChipColors(
+            containerColor = c.sLow,
+            labelColor = c.p,
+            leadingIconContentColor = c.p,
+        ),
+    )
 }

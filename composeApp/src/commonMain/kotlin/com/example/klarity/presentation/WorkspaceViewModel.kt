@@ -7,6 +7,7 @@ import com.benasher44.uuid.uuid4
 import com.example.klarity.data.ai.AiException
 import com.example.klarity.data.ai.AiService
 import com.example.klarity.data.ai.AiTurn
+import com.example.klarity.data.ai.WorkspaceRetrieval
 import com.example.klarity.domain.models.Folder
 import com.example.klarity.domain.models.Note
 import com.example.klarity.domain.models.Task
@@ -23,10 +24,12 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
@@ -37,6 +40,21 @@ data class ChatMessage(
     val text: String,
     val sources: List<Note> = emptyList(),
 )
+
+/** One assistant conversation — a titled thread of [ChatMessage]s, like a Notion AI chat. */
+@Immutable
+data class Conversation(
+    val id: String,
+    val title: String,
+    val messages: List<ChatMessage> = emptyList(),
+    val updatedAt: Instant,
+)
+
+private const val NEW_CHAT_TITLE = "New AI chat"
+
+/** How many ranked notes / tasks to feed the model as grounding context per question. */
+private const val NOTE_CONTEXT_LIMIT = 6
+private const val TASK_CONTEXT_LIMIT = 6
 
 /**
  * Single shared state-holder for the Devbook screens. Exposes the live repository data as
@@ -66,11 +84,39 @@ class WorkspaceViewModel(
         combine(notes, _selectedNoteId) { list, id -> list.firstOrNull { it.id == id } }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
+    // ── Notion-style create UX ──────────────────────────────────────────────────
+    // A freshly created note opens with its title focused; a freshly created folder opens straight
+    // into the sidebar's inline name editor. These one-shot signals carry the new item's id to the
+    // UI, which consumes them once the focus / rename has been handed over.
+    private val _pendingNoteFocus = MutableStateFlow<String?>(null)
+    val pendingNoteFocus: StateFlow<String?> = _pendingNoteFocus
+    fun consumeNoteFocus() { _pendingNoteFocus.value = null }
+
+    private val _pendingFolderRename = MutableStateFlow<String?>(null)
+    val pendingFolderRename: StateFlow<String?> = _pendingFolderRename
+    fun consumeFolderRename() { _pendingFolderRename.value = null }
+
     private val _search = MutableStateFlow("")
     val search: StateFlow<String> = _search
 
-    private val _chat = MutableStateFlow<List<ChatMessage>>(emptyList())
-    val chat: StateFlow<List<ChatMessage>> = _chat
+    // The assistant keeps every chat from this session as a separate thread (Notion-style), so the
+    // side panel can list a history and start fresh chats without losing the old ones. There is
+    // always exactly one active conversation; [chat] is just its messages.
+    private val _conversations = MutableStateFlow(listOf(freshConversation()))
+    private val _activeId = MutableStateFlow(_conversations.value.first().id)
+
+    /** Id of the conversation currently shown — drives the history highlight. */
+    val activeConversationId: StateFlow<String> = _activeId
+
+    /** Previous, non-empty conversations, newest first (for the history dropdown). */
+    val conversations: StateFlow<List<Conversation>> = _conversations
+        .map { list -> list.filter { it.messages.isNotEmpty() }.sortedByDescending { it.updatedAt } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** Messages of the active conversation — what both the panel and full screen render. */
+    val chat: StateFlow<List<ChatMessage>> = combine(_conversations, _activeId) { list, id ->
+        list.firstOrNull { it.id == id }?.messages ?: emptyList()
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     /** True while an AI request is in flight (drives the "thinking…" indicator). */
     private val _thinking = MutableStateFlow(false)
@@ -99,11 +145,21 @@ class WorkspaceViewModel(
     fun setSearch(query: String) { _search.value = query }
 
     // ── Note actions ───────────────────────────────────────────────────────────
-    fun createNote(title: String = "Untitled note", folderId: String? = null) {
+    /** Creates a note and, like Notion, opens it with an empty title ready to type into. */
+    fun createNote(title: String = "", folderId: String? = null) {
         viewModelScope.launch {
             val note = Note(title = title, content = "", folderId = folderId)
-            noteRepo.createNote(note).onSuccess { _selectedNoteId.value = it.id }
+            noteRepo.createNote(note).onSuccess {
+                _selectedNoteId.value = it.id
+                _pendingNoteFocus.value = it.id
+            }
         }
+    }
+
+    /** Inline rename from the sidebar tree (title may be blank — it shows as "Untitled note"). */
+    fun renameNote(id: String, title: String) {
+        val note = notes.value.firstOrNull { it.id == id } ?: return
+        viewModelScope.launch { noteRepo.updateNote(note.copy(title = title.trim(), updatedAt = Clock.System.now())) }
     }
 
     fun updateNote(note: Note) {
@@ -120,11 +176,29 @@ class WorkspaceViewModel(
     }
 
     // ── Folder actions ─────────────────────────────────────────────────────────
-    fun createFolder(name: String = "New folder", parentId: String? = null) {
+    /** Creates a folder and signals the sidebar to open its inline name editor (Notion-style). */
+    fun createFolder(name: String = "Untitled", parentId: String? = null) {
         viewModelScope.launch {
+            val id = uuid4().toString()
             folderRepo.createFolder(
-                Folder(id = uuid4().toString(), name = name, parentId = parentId, createdAt = Clock.System.now()),
-            )
+                Folder(id = id, name = name, parentId = parentId, createdAt = Clock.System.now()),
+            ).onSuccess { _pendingFolderRename.value = id }
+        }
+    }
+
+    fun renameFolder(id: String, name: String) {
+        val folder = folders.value.firstOrNull { it.id == id } ?: return
+        viewModelScope.launch { folderRepo.updateFolder(folder.copy(name = name.trim().ifBlank { "Untitled" })) }
+    }
+
+    /** Deletes a folder, re-homing its notes to the root so nothing is lost with it. */
+    fun deleteFolder(id: String) {
+        viewModelScope.launch {
+            val now = Clock.System.now()
+            notes.value.filter { it.folderId == id }.forEach {
+                noteRepo.updateNote(it.copy(folderId = null, updatedAt = now))
+            }
+            folderRepo.deleteFolder(id)
         }
     }
 
@@ -139,7 +213,7 @@ class WorkspaceViewModel(
     }
 
     fun moveTask(task: Task, status: TaskStatus) {
-        viewModelScope.launch { taskRepo.updateTaskStatus(task.id, status, task.order) }
+        viewModelScope.launch { taskRepo.updateTaskStatus(task.id, status) }
     }
 
     fun updateTask(task: Task) {
@@ -154,14 +228,53 @@ class WorkspaceViewModel(
         viewModelScope.launch { taskRepo.deleteTask(id) }
     }
 
+    // ── Conversations ───────────────────────────────────────────────────────────
+    private fun freshConversation(): Conversation =
+        Conversation(id = uuid4().toString(), title = NEW_CHAT_TITLE, updatedAt = Clock.System.now())
+
+    /** Appends a turn to the active conversation, titling a fresh chat from its first question. */
+    private fun appendMessage(message: ChatMessage) {
+        val now = Clock.System.now()
+        _conversations.update { list ->
+            list.map { conv ->
+                if (conv.id != _activeId.value) conv
+                else conv.copy(
+                    messages = conv.messages + message,
+                    updatedAt = now,
+                    title = if (conv.title == NEW_CHAT_TITLE && message.fromUser) titleFrom(message.text) else conv.title,
+                )
+            }
+        }
+    }
+
+    private fun titleFrom(text: String): String {
+        val one = text.trim().replace(Regex("\\s+"), " ")
+        return if (one.length <= 42) one else one.take(42).trimEnd() + "…"
+    }
+
+    /** Starts a new chat. Reuses the current one when it's still empty (avoids stacking blanks). */
+    fun newChat() {
+        val active = _conversations.value.firstOrNull { it.id == _activeId.value }
+        if (active != null && active.messages.isEmpty()) return
+        val fresh = freshConversation()
+        _conversations.update { listOf(fresh) + it }
+        _activeId.value = fresh.id
+    }
+
+    /** Switches the active conversation (e.g. from the history list). */
+    fun selectConversation(id: String) {
+        if (_conversations.value.any { it.id == id }) _activeId.value = id
+    }
+
     // ── Local Assistant (search-grounded, no external API) ──────────────────────
-    fun clearChat() { _chat.value = emptyList() }
+    /** The top-bar "New chat" CTA and the panel both start a fresh conversation. */
+    fun clearChat() = newChat()
 
     /** Suggested-prompt: a quick stat overview of the workspace, grounded in current data. */
     fun summarizeWorkspace() {
         val n = notes.value
         val t = tasks.value
-        _chat.update { it + ChatMessage(fromUser = true, text = "Summarize my workspace") }
+        appendMessage(ChatMessage(fromUser = true, text = "Summarize my workspace"))
         val answer = if (n.isEmpty() && t.isEmpty()) {
             "Your workspace is empty so far — create a note or task and I'll summarize it here."
         } else {
@@ -175,13 +288,13 @@ class WorkspaceViewModel(
                 if (recent.isNotEmpty()) append(" Recently edited: $recent.")
             }
         }
-        _chat.update { it + ChatMessage(fromUser = false, text = answer, sources = n.filter { it.isPinned }.take(3)) }
+        appendMessage(ChatMessage(fromUser = false, text = answer, sources = n.filter { it.isPinned }.take(3)))
     }
 
     /** Suggested-prompt: what's still open, grouped by status. */
     fun summarizeOpenTasks() {
         val open = tasks.value.filter { !it.completed && it.status != TaskStatus.DONE }
-        _chat.update { it + ChatMessage(fromUser = true, text = "What's open?") }
+        appendMessage(ChatMessage(fromUser = true, text = "What's open?"))
         val answer = if (open.isEmpty()) {
             "Nothing open right now — every task is done or archived. 🎉"
         } else {
@@ -191,7 +304,7 @@ class WorkspaceViewModel(
                 .joinToString(", ") { "\"${it.title.ifBlank { "Untitled task" }}\"" }
             "You have ${open.size} open task${plural(open.size)} ($byStatus). Next up: $next."
         }
-        _chat.update { it + ChatMessage(fromUser = false, text = answer) }
+        appendMessage(ChatMessage(fromUser = false, text = answer))
     }
 
     private fun plural(count: Int): String = if (count == 1) "" else "s"
@@ -215,59 +328,96 @@ class WorkspaceViewModel(
         val q = query.trim()
         if (q.isEmpty() || _thinking.value) return
         viewModelScope.launch {
-            _chat.update { it + ChatMessage(fromUser = true, text = q) }
-            val noteMatches = noteRepo.searchNotes(q).first()
-            val taskMatches = taskRepo.searchTasks(q).first()
-
-            val cfg = settingsRepo.current()
-            if (!cfg.enabled) {
-                val answer = buildAnswer(q, noteMatches, taskMatches) +
-                    "\n\n(Add an API key in Settings for full AI answers.)"
-                _chat.update { it + ChatMessage(fromUser = false, text = answer, sources = noteMatches.take(3)) }
-                return@launch
-            }
-
-            _thinking.value = true
+            appendMessage(ChatMessage(fromUser = true, text = q))
             try {
-                val system = buildSystemPrompt(noteMatches, taskMatches)
-                val history = _chat.value.map { AiTurn(if (it.fromUser) "user" else "assistant", it.text) }
-                val answer = ai.complete(settings = cfg, system = system, messages = history)
-                _chat.update { it + ChatMessage(fromUser = false, text = answer, sources = noteMatches.take(3)) }
+                // These reads can fail (DB/IO); keep them inside the try so a failure becomes a
+                // chat message rather than an unhandled crash in the launch.
+                //
+                // Rank the *whole* workspace by keyword relevance rather than calling the repo's
+                // `searchNotes`/`searchTasks` — those substring-match the entire question, which a
+                // natural-language query never matches verbatim. See [WorkspaceRetrieval].
+                val allNotes = noteRepo.getAllNotes().first()
+                val allTasks = taskRepo.getAllTasks().first()
+                val noteMatches = WorkspaceRetrieval.rankNotes(allNotes, q, NOTE_CONTEXT_LIMIT)
+                val taskMatches = WorkspaceRetrieval.rankTasks(allTasks, q, TASK_CONTEXT_LIMIT)
+                val cfg = settingsRepo.current()
+
+                if (!cfg.enabled) {
+                    val answer = buildAnswer(q, noteMatches, taskMatches) +
+                        "\n\n(Add an API key in Settings for full AI answers.)"
+                    appendMessage(ChatMessage(fromUser = false, text = answer, sources = noteMatches.take(3)))
+                    return@launch
+                }
+
+                _thinking.value = true
+                try {
+                    val system = buildSystemPrompt(q, noteMatches, taskMatches)
+                    val history = chat.value.map { AiTurn(if (it.fromUser) "user" else "assistant", it.text) }
+                    val answer = ai.complete(settings = cfg, system = system, messages = history)
+                    appendMessage(ChatMessage(fromUser = false, text = answer, sources = noteMatches.take(3)))
+                } finally {
+                    _thinking.value = false
+                }
             } catch (e: AiException) {
-                _chat.update { it + ChatMessage(fromUser = false, text = "⚠️ ${e.message}") }
+                appendMessage(ChatMessage(fromUser = false, text = "⚠️ ${e.message}"))
             } catch (e: Exception) {
-                _chat.update { it + ChatMessage(fromUser = false, text = "⚠️ Something went wrong contacting the AI service.") }
-            } finally {
-                _thinking.value = false
+                appendMessage(ChatMessage(fromUser = false, text = "⚠️ Something went wrong. Please try again."))
             }
         }
     }
 
-    /** Builds the grounding system prompt from the notes & tasks most relevant to the query. */
-    private fun buildSystemPrompt(notes: List<Note>, tasks: List<Task>): String = buildString {
-        append("You are Klarity's assistant, embedded in the user's personal notes & tasks app. ")
-        append("Use the workspace context below when it's relevant; if the answer isn't there, say so ")
-        append("and answer briefly from general knowledge. Be concise and friendly. Use plain text.\n\n")
+    /**
+     * Builds the grounding system prompt from the notes & tasks most relevant to [query]. The rules
+     * are written defensively so even weaker models stay grounded: answer workspace questions only
+     * from the context, admit when it isn't there, and mark any general-knowledge fallback as such.
+     */
+    private fun buildSystemPrompt(query: String, notes: List<Note>, tasks: List<Task>): String = buildString {
+        val keys = WorkspaceRetrieval.keywords(query)
+        val tz = TimeZone.currentSystemDefault()
+
+        append("You are Lou, the friendly AI assistant built into Klarity — the user's personal notes & tasks app.\n")
+        append("Today is ${todayString()}.\n\n")
+        append("How to answer:\n")
+        append("- For anything about the user's workspace, rely ONLY on the WORKSPACE CONTEXT below. ")
+        append("Never invent notes, tasks, dates, or details that aren't there.\n")
+        append("- If the context doesn't contain the answer, say so plainly (e.g. \"I couldn't find that in your notes\"). ")
+        append("You may then add a brief general-knowledge answer, but clearly mark it as general info, not from their workspace.\n")
+        append("- When you use a note or task, name it by its title so the user can find it.\n")
+        append("- Be concise and friendly. Use Markdown when it helps — short headings, **bold**, ")
+        append("bullet/numbered lists, `code`/fenced blocks — but keep it light for simple answers.\n\n")
+
         if (notes.isEmpty() && tasks.isEmpty()) {
-            append("WORKSPACE CONTEXT: (no notes or tasks matched this query)")
+            append("WORKSPACE CONTEXT: (nothing in the workspace matched this question)")
         } else {
             append("WORKSPACE CONTEXT:\n")
             if (notes.isNotEmpty()) {
                 append("Notes:\n")
-                notes.take(5).forEach { n ->
-                    val body = n.content.take(500).ifBlank { "(empty)" }
-                    append("- \"${n.title.ifBlank { "Untitled" }}\": $body\n")
+                notes.forEach { n ->
+                    val title = n.title.ifBlank { "Untitled" }
+                    val tags = if (n.tags.isNotEmpty()) " [tags: ${n.tags.joinToString(", ")}]" else ""
+                    val body = WorkspaceRetrieval.snippet(n.content, keys).ifBlank { "(empty)" }
+                    append("- \"$title\"$tags: $body\n")
                 }
             }
             if (tasks.isNotEmpty()) {
                 append("Tasks:\n")
-                tasks.take(5).forEach { t ->
-                    append("- [${t.status.label}] ${t.title.ifBlank { "Untitled" }}")
-                    if (t.description.isNotBlank()) append(" — ${t.description.take(200)}")
+                tasks.forEach { t ->
+                    val title = t.title.ifBlank { "Untitled" }
+                    append("- [${t.status.label} · ${t.priority.label} priority] \"$title\"")
+                    t.dueDate?.let { append(" (due ${it.toLocalDateTime(tz).date})") }
+                    if (t.description.isNotBlank()) {
+                        append(" — ${WorkspaceRetrieval.snippet(t.description, keys, budget = 240)}")
+                    }
                     append("\n")
                 }
             }
         }
+    }
+
+    /** Human-readable current date (e.g. "Saturday, 2026-06-27") so Lou can reason about due dates. */
+    private fun todayString(): String {
+        val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+        return "${titleCase(today.dayOfWeek.name)}, $today"
     }
 
     private fun buildAnswer(query: String, notes: List<Note>, tasks: List<Task>): String = when {
