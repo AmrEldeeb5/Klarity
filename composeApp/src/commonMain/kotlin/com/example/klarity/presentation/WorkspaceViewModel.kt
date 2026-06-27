@@ -4,14 +4,21 @@ import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.benasher44.uuid.uuid4
+import com.example.klarity.data.ai.AiAction
+import com.example.klarity.data.ai.AiActions
 import com.example.klarity.data.ai.AiException
+import com.example.klarity.data.ai.AiResult
 import com.example.klarity.data.ai.AiService
+import com.example.klarity.data.ai.AiTools
 import com.example.klarity.data.ai.AiTurn
+import com.example.klarity.data.ai.ChatHistory
 import com.example.klarity.data.ai.WorkspaceRetrieval
 import com.example.klarity.domain.models.Folder
 import com.example.klarity.domain.models.Note
 import com.example.klarity.domain.models.Task
+import com.example.klarity.domain.models.TaskPriority
 import com.example.klarity.domain.models.TaskStatus
+import com.example.klarity.domain.models.TaskTag
 import com.example.klarity.domain.repositories.AiProvider
 import com.example.klarity.domain.repositories.AiSettings
 import com.example.klarity.domain.repositories.FolderRepository
@@ -22,6 +29,7 @@ import com.example.klarity.domain.repositories.TaskRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -33,12 +41,27 @@ import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
+/** Lifecycle of an action Lou proposed in chat (confirm-each-action). */
+enum class ActionStatus { PENDING, DONE, DECLINED, FAILED }
+
+/** A workspace action Lou proposed, awaiting the user's Approve/Cancel (or already resolved). */
+@Immutable
+data class ProposedAction(
+    val id: String,
+    val action: AiAction,
+    /** Human-readable summary shown on the confirmation card (titles resolved, not raw ids). */
+    val label: String,
+    val status: ActionStatus = ActionStatus.PENDING,
+)
+
 /** A single turn in the local Assistant thread. */
 @Immutable
 data class ChatMessage(
     val fromUser: Boolean,
     val text: String,
     val sources: List<Note> = emptyList(),
+    val actions: List<ProposedAction> = emptyList(),
+    val id: String = uuid4().toString(),
 )
 
 /** One assistant conversation — a titled thread of [ChatMessage]s, like a Notion AI chat. */
@@ -55,6 +78,12 @@ private const val NEW_CHAT_TITLE = "New AI chat"
 /** How many ranked notes / tasks to feed the model as grounding context per question. */
 private const val NOTE_CONTEXT_LIMIT = 6
 private const val TASK_CONTEXT_LIMIT = 6
+
+/** Most recent chat turns to resend each request — caps context for smaller models (~6 exchanges). */
+private const val MAX_HISTORY_MESSAGES = 12
+
+/** Max model round-trips the agent may take per user question (bounds the act → continue → act loop). */
+private const val MAX_AGENT_STEPS = 4
 
 /**
  * Single shared state-holder for the Devbook screens. Exposes the live repository data as
@@ -118,9 +147,18 @@ class WorkspaceViewModel(
         list.firstOrNull { it.id == id }?.messages ?: emptyList()
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    /** True while an AI request is in flight (drives the "thinking…" indicator). */
+    /** Shows the "thinking…" indicator — true until the first streamed token arrives. */
     private val _thinking = MutableStateFlow(false)
     val thinking: StateFlow<Boolean> = _thinking
+
+    // Single-flight guard for [ask]: true for the whole request (including streaming, during which
+    // [_thinking] is already false), so a second question can't interleave and corrupt the thread.
+    private var responding = false
+
+    // Multi-step agent state: a per-question round budget, and the set of proposal messages already
+    // continued (so resolving several actions in one message only triggers one continuation).
+    private var agentSteps = 0
+    private val continuedMessages = mutableSetOf<String>()
 
     /** Local AI settings (provider, API key, model, base URL). */
     val settings: StateFlow<AiSettings> = settingsRepo.settings()
@@ -203,11 +241,11 @@ class WorkspaceViewModel(
     }
 
     // ── Task actions ───────────────────────────────────────────────────────────
-    fun createTask(title: String = "New task", status: TaskStatus = TaskStatus.BACKLOG) {
+    fun createTask(title: String = "New task", status: TaskStatus = TaskStatus.BACKLOG, dueDate: Instant? = null) {
         viewModelScope.launch {
             val now = Clock.System.now()
             taskRepo.createTask(
-                Task(id = uuid4().toString(), title = title, status = status, createdAt = now, updatedAt = now),
+                Task(id = uuid4().toString(), title = title, status = status, dueDate = dueDate, createdAt = now, updatedAt = now),
             )
         }
     }
@@ -242,6 +280,19 @@ class WorkspaceViewModel(
                     messages = conv.messages + message,
                     updatedAt = now,
                     title = if (conv.title == NEW_CHAT_TITLE && message.fromUser) titleFrom(message.text) else conv.title,
+                )
+            }
+        }
+    }
+
+    /** Rewrites the last message of the active conversation — used to grow a streaming reply. */
+    private fun updateLastMessage(transform: (ChatMessage) -> ChatMessage) {
+        _conversations.update { list ->
+            list.map { conv ->
+                if (conv.id != _activeId.value || conv.messages.isEmpty()) conv
+                else conv.copy(
+                    messages = conv.messages.dropLast(1) + transform(conv.messages.last()),
+                    updatedAt = Clock.System.now(),
                 )
             }
         }
@@ -310,8 +361,15 @@ class WorkspaceViewModel(
     private fun plural(count: Int): String = if (count == 1) "" else "s"
 
     // ── Settings ─────────────────────────────────────────────────────────────
-    fun saveAiSettings(provider: AiProvider, apiKey: String?, model: String, baseUrl: String) {
-        viewModelScope.launch { settingsRepo.save(provider, apiKey, model, baseUrl) }
+    fun saveAiSettings(
+        provider: AiProvider,
+        apiKey: String?,
+        model: String,
+        baseUrl: String,
+        temperature: Double?,
+        actionsEnabled: Boolean,
+    ) {
+        viewModelScope.launch { settingsRepo.save(provider, apiKey, model, baseUrl, temperature, actionsEnabled) }
     }
 
     /** Fetches the models the given key/provider can use (for the Settings model picker). */
@@ -326,7 +384,8 @@ class WorkspaceViewModel(
      */
     fun ask(query: String) {
         val q = query.trim()
-        if (q.isEmpty() || _thinking.value) return
+        if (q.isEmpty() || responding) return
+        responding = true
         viewModelScope.launch {
             appendMessage(ChatMessage(fromUser = true, text = q))
             try {
@@ -350,19 +409,238 @@ class WorkspaceViewModel(
                 }
 
                 _thinking.value = true
-                try {
-                    val system = buildSystemPrompt(q, noteMatches, taskMatches)
-                    val history = chat.value.map { AiTurn(if (it.fromUser) "user" else "assistant", it.text) }
-                    val answer = ai.complete(settings = cfg, system = system, messages = history)
-                    appendMessage(ChatMessage(fromUser = false, text = answer, sources = noteMatches.take(3)))
-                } finally {
-                    _thinking.value = false
+                val system = buildSystemPrompt(q, noteMatches, taskMatches, actions = cfg.actionsEnabled)
+                // Window the thread so long conversations don't overflow smaller models' context.
+                val history = ChatHistory.window(
+                    chat.value.map { AiTurn(if (it.fromUser) "user" else "assistant", it.text) },
+                    MAX_HISTORY_MESSAGES,
+                )
+                // With actions on, use the (non-streaming) tool-calling path so Lou can propose
+                // workspace changes; otherwise stream a read-only answer.
+                if (cfg.actionsEnabled) {
+                    agentSteps = 0 // fresh round budget for this question
+                    agentAnswer(cfg, system, history, sources = noteMatches.take(3))
+                } else {
+                    streamAnswer(cfg, system, history, sources = noteMatches.take(3))
                 }
             } catch (e: AiException) {
                 appendMessage(ChatMessage(fromUser = false, text = "⚠️ ${e.message}"))
             } catch (e: Exception) {
                 appendMessage(ChatMessage(fromUser = false, text = "⚠️ Something went wrong. Please try again."))
+            } finally {
+                _thinking.value = false
+                responding = false
             }
+        }
+    }
+
+    /**
+     * Streams the model's reply token-by-token into a single growing assistant bubble. The bubble is
+     * only created on the first token (so the "thinking…" row shows until then), and the grounding
+     * [sources] are attached once the stream completes. If the provider emits nothing — some servers
+     * ignore `stream:true` — falls back to a normal [AiService.complete] call so the user still gets
+     * an answer. A mid-stream failure keeps whatever streamed and appends the error.
+     */
+    private suspend fun streamAnswer(cfg: AiSettings, system: String, history: List<AiTurn>, sources: List<Note>) {
+        val sb = StringBuilder()
+        var started = false
+        try {
+            ai.completeStream(settings = cfg, system = system, messages = history).collect { delta ->
+                sb.append(delta)
+                if (!started) {
+                    started = true
+                    _thinking.value = false
+                    appendMessage(ChatMessage(fromUser = false, text = sb.toString()))
+                } else {
+                    updateLastMessage { it.copy(text = sb.toString()) }
+                }
+            }
+            if (!started) {
+                val answer = ai.complete(settings = cfg, system = system, messages = history)
+                appendMessage(ChatMessage(fromUser = false, text = answer, sources = sources))
+            } else {
+                updateLastMessage { it.copy(sources = sources) }
+            }
+        } catch (e: AiException) {
+            if (!started) appendMessage(ChatMessage(fromUser = false, text = "⚠️ ${e.message}"))
+            else updateLastMessage { it.copy(text = sb.toString() + "\n\n⚠️ ${e.message}") }
+        }
+    }
+
+    /**
+     * Tool-calling path: asks the model with the workspace tools available. A plain answer is shown
+     * as-is; proposed actions become a chat message carrying [ProposedAction] cards the user must
+     * Approve before anything is written (see [approveAction]). Nothing executes here.
+     */
+    private suspend fun agentAnswer(cfg: AiSettings, system: String, history: List<AiTurn>, sources: List<Note>) {
+        when (val result = ai.completeWithTools(cfg, system, history, AiTools.toolsFor(cfg.provider))) {
+            is AiResult.Text ->
+                appendMessage(ChatMessage(fromUser = false, text = result.text, sources = sources))
+
+            is AiResult.Actions -> {
+                val proposals = result.calls.mapNotNull { call ->
+                    val action = AiActions.parse(call) ?: return@mapNotNull null
+                    ProposedAction(id = call.id.ifBlank { uuid4().toString() }, action = action, label = describe(action))
+                }
+                if (proposals.isEmpty()) {
+                    // The model "called" tools but nothing parsed — fall back to its text, if any.
+                    appendMessage(ChatMessage(fromUser = false, text = result.text ?: "I couldn't act on that — could you rephrase?", sources = sources))
+                } else {
+                    val intro = result.text?.takeIf { it.isNotBlank() }
+                        ?: if (proposals.size == 1) "I'd like to make this change:" else "I'd like to make these changes:"
+                    appendMessage(ChatMessage(fromUser = false, text = intro, sources = sources, actions = proposals))
+                }
+            }
+        }
+    }
+
+    /** Approves a proposed action, executing it against the workspace and marking the card done/failed. */
+    fun approveAction(messageId: String, actionId: String) {
+        val proposal = pendingAction(messageId, actionId) ?: return
+        viewModelScope.launch {
+            val ok = runCatching { execute(proposal.action) }.isSuccess
+            setActionStatus(messageId, actionId, if (ok) ActionStatus.DONE else ActionStatus.FAILED)
+            maybeContinueAfter(messageId)
+        }
+    }
+
+    /** Declines a proposed action without touching the workspace. */
+    fun declineAction(messageId: String, actionId: String) {
+        if (pendingAction(messageId, actionId) == null) return
+        setActionStatus(messageId, actionId, ActionStatus.DECLINED)
+        maybeContinueAfter(messageId)
+    }
+
+    /**
+     * Once every action on a proposal message is resolved, lets Lou continue: it sees a summary of
+     * what was done/declined plus the refreshed workspace, then acknowledges or proposes the next
+     * step (which produces new cards). Runs at most once per message and within [MAX_AGENT_STEPS].
+     */
+    private fun maybeContinueAfter(messageId: String) {
+        val msg = chat.value.firstOrNull { it.id == messageId } ?: return
+        if (msg.actions.isEmpty() || msg.actions.any { it.status == ActionStatus.PENDING }) return
+        if (responding || agentSteps >= MAX_AGENT_STEPS || messageId in continuedMessages) return
+        continuedMessages += messageId
+        agentSteps++
+        responding = true
+        viewModelScope.launch {
+            _thinking.value = true
+            try {
+                val cfg = settingsRepo.current()
+                if (!cfg.enabled || !cfg.actionsEnabled) return@launch
+                // Re-ground on the latest question and the now-updated workspace (the writes just landed).
+                val lastQuery = chat.value.lastOrNull { it.fromUser }?.text.orEmpty()
+                val noteMatches = WorkspaceRetrieval.rankNotes(noteRepo.getAllNotes().first(), lastQuery, NOTE_CONTEXT_LIMIT)
+                val taskMatches = WorkspaceRetrieval.rankTasks(taskRepo.getAllTasks().first(), lastQuery, TASK_CONTEXT_LIMIT)
+                val system = buildSystemPrompt(lastQuery, noteMatches, taskMatches, actions = true)
+                val history = ChatHistory.window(
+                    chat.value.map { AiTurn(if (it.fromUser) "user" else "assistant", it.text) },
+                    MAX_HISTORY_MESSAGES,
+                ) + AiTurn("user", outcomeSummary(msg.actions))
+                agentAnswer(cfg, system, history, sources = noteMatches.take(3))
+            } catch (e: AiException) {
+                appendMessage(ChatMessage(fromUser = false, text = "⚠️ ${e.message}"))
+            } catch (e: Exception) {
+                appendMessage(ChatMessage(fromUser = false, text = "⚠️ Something went wrong. Please try again."))
+            } finally {
+                _thinking.value = false
+                responding = false
+            }
+        }
+    }
+
+    /** A compact, model-facing recap of resolved actions, used to continue the agent loop. */
+    private fun outcomeSummary(actions: List<ProposedAction>): String {
+        fun labels(s: ActionStatus) = actions.filter { it.status == s }.joinToString("; ") { it.label }
+        return buildString {
+            append("[System: results of your proposed actions — ")
+            labels(ActionStatus.DONE).takeIf { it.isNotEmpty() }?.let { append("completed: $it. ") }
+            labels(ActionStatus.DECLINED).takeIf { it.isNotEmpty() }?.let { append("declined by the user: $it. ") }
+            labels(ActionStatus.FAILED).takeIf { it.isNotEmpty() }?.let { append("failed: $it. ") }
+            append("Briefly confirm what was done and ask if anything else is needed. ")
+            append("Do NOT repeat actions already completed.]")
+        }
+    }
+
+    private fun pendingAction(messageId: String, actionId: String): ProposedAction? =
+        chat.value.firstOrNull { it.id == messageId }
+            ?.actions?.firstOrNull { it.id == actionId && it.status == ActionStatus.PENDING }
+
+    private fun setActionStatus(messageId: String, actionId: String, status: ActionStatus) {
+        _conversations.update { list ->
+            list.map { conv ->
+                if (conv.id != _activeId.value) return@map conv
+                conv.copy(
+                    messages = conv.messages.map { msg ->
+                        if (msg.id != messageId) msg
+                        else msg.copy(actions = msg.actions.map { a -> if (a.id == actionId) a.copy(status = status) else a })
+                    },
+                )
+            }
+        }
+    }
+
+    /** Runs a confirmed [AiAction] against the repositories. Throws on failure (caught by the caller). */
+    private suspend fun execute(action: AiAction) {
+        val now = Clock.System.now()
+        when (action) {
+            is AiAction.CreateNote ->
+                noteRepo.createNote(Note(title = action.title, content = action.content, folderId = null, tags = action.tags)).getOrThrow()
+            is AiAction.UpdateNote -> {
+                val note = notes.value.firstOrNull { it.id == action.noteId } ?: error("note not found")
+                noteRepo.updateNote(note.copy(
+                    title = action.title ?: note.title,
+                    content = action.content ?: note.content,
+                    tags = action.tags ?: note.tags,
+                    updatedAt = now,
+                ))
+            }
+            is AiAction.DeleteNote -> noteRepo.deleteNote(action.noteId)
+            is AiAction.SetNotePinned -> {
+                val note = notes.value.firstOrNull { it.id == action.noteId } ?: error("note not found")
+                noteRepo.updateNote(note.copy(isPinned = action.pinned, updatedAt = now))
+            }
+            is AiAction.CreateTask ->
+                taskRepo.createTask(Task(
+                    id = uuid4().toString(), title = action.title, description = action.description,
+                    status = action.status, priority = action.priority, dueDate = action.dueDate,
+                    tags = action.tags.map { TaskTag(it) }, createdAt = now, updatedAt = now,
+                ))
+            is AiAction.UpdateTask -> {
+                val task = tasks.value.firstOrNull { it.id == action.taskId } ?: error("task not found")
+                taskRepo.updateTask(task.copy(
+                    title = action.title ?: task.title,
+                    description = action.description ?: task.description,
+                    priority = action.priority ?: task.priority,
+                    dueDate = action.dueDate ?: task.dueDate,
+                    tags = action.tags?.map { TaskTag(it) } ?: task.tags,
+                    updatedAt = now,
+                ))
+            }
+            is AiAction.SetTaskStatus -> taskRepo.updateTaskStatus(action.taskId, action.status)
+            is AiAction.CompleteTask -> taskRepo.updateTaskCompletion(action.taskId, true)
+            is AiAction.DeleteTask -> taskRepo.deleteTask(action.taskId)
+        }
+    }
+
+    /** Human-readable summary for a confirmation card — resolves ids to titles where it can. */
+    private fun describe(action: AiAction): String {
+        fun noteTitle(id: String) = notes.value.firstOrNull { it.id == id }?.title?.ifBlank { "Untitled" } ?: "a note"
+        fun taskTitle(id: String) = tasks.value.firstOrNull { it.id == id }?.title?.ifBlank { "Untitled" } ?: "a task"
+        return when (action) {
+            is AiAction.CreateNote -> "Create note: \"${action.title}\""
+            is AiAction.UpdateNote -> "Edit note: \"${noteTitle(action.noteId)}\""
+            is AiAction.DeleteNote -> "Delete note: \"${noteTitle(action.noteId)}\""
+            is AiAction.SetNotePinned -> "${if (action.pinned) "Pin" else "Unpin"} note: \"${noteTitle(action.noteId)}\""
+            is AiAction.CreateTask -> buildString {
+                append("Create task: \"${action.title}\" (${action.status.label}, ${action.priority.label}")
+                action.dueDate?.let { append(", due ${it.toLocalDateTime(TimeZone.currentSystemDefault()).date}") }
+                append(")")
+            }
+            is AiAction.UpdateTask -> "Edit task: \"${taskTitle(action.taskId)}\""
+            is AiAction.SetTaskStatus -> "Move task \"${taskTitle(action.taskId)}\" → ${action.status.label}"
+            is AiAction.CompleteTask -> "Complete task: \"${taskTitle(action.taskId)}\""
+            is AiAction.DeleteTask -> "Delete task: \"${taskTitle(action.taskId)}\""
         }
     }
 
@@ -370,8 +648,9 @@ class WorkspaceViewModel(
      * Builds the grounding system prompt from the notes & tasks most relevant to [query]. The rules
      * are written defensively so even weaker models stay grounded: answer workspace questions only
      * from the context, admit when it isn't there, and mark any general-knowledge fallback as such.
+     * When [actions] is true, item ids are included and Lou is told it can call tools to make changes.
      */
-    private fun buildSystemPrompt(query: String, notes: List<Note>, tasks: List<Task>): String = buildString {
+    private fun buildSystemPrompt(query: String, notes: List<Note>, tasks: List<Task>, actions: Boolean): String = buildString {
         val keys = WorkspaceRetrieval.keywords(query)
         val tz = TimeZone.currentSystemDefault()
 
@@ -384,7 +663,15 @@ class WorkspaceViewModel(
         append("You may then add a brief general-knowledge answer, but clearly mark it as general info, not from their workspace.\n")
         append("- When you use a note or task, name it by its title so the user can find it.\n")
         append("- Be concise and friendly. Use Markdown when it helps — short headings, **bold**, ")
-        append("bullet/numbered lists, `code`/fenced blocks — but keep it light for simple answers.\n\n")
+        append("bullet/numbered lists, `code`/fenced blocks — but keep it light for simple answers.\n")
+        if (actions) {
+            append("- You can change the workspace by calling the provided tools (create/edit/delete/pin notes, ")
+            append("create/update/move/complete/delete tasks). When the user asks you to make, change, complete, ")
+            append("move, or remove something, CALL the matching tool instead of only describing it. To act on an ")
+            append("existing item, pass its id from the WORKSPACE CONTEXT. Every action is shown to the user for ")
+            append("confirmation before it runs, so don't ask permission again in your reply.\n")
+        }
+        append("\n")
 
         if (notes.isEmpty() && tasks.isEmpty()) {
             append("WORKSPACE CONTEXT: (nothing in the workspace matched this question)")
@@ -394,16 +681,18 @@ class WorkspaceViewModel(
                 append("Notes:\n")
                 notes.forEach { n ->
                     val title = n.title.ifBlank { "Untitled" }
+                    val id = if (actions) " (id: ${n.id})" else ""
                     val tags = if (n.tags.isNotEmpty()) " [tags: ${n.tags.joinToString(", ")}]" else ""
                     val body = WorkspaceRetrieval.snippet(n.content, keys).ifBlank { "(empty)" }
-                    append("- \"$title\"$tags: $body\n")
+                    append("- \"$title\"$id$tags: $body\n")
                 }
             }
             if (tasks.isNotEmpty()) {
                 append("Tasks:\n")
                 tasks.forEach { t ->
                     val title = t.title.ifBlank { "Untitled" }
-                    append("- [${t.status.label} · ${t.priority.label} priority] \"$title\"")
+                    val id = if (actions) " (id: ${t.id})" else ""
+                    append("- [${t.status.label} · ${t.priority.label} priority] \"$title\"$id")
                     t.dueDate?.let { append(" (due ${it.toLocalDateTime(tz).date})") }
                     if (t.description.isNotBlank()) {
                         append(" — ${WorkspaceRetrieval.snippet(t.description, keys, budget = 240)}")

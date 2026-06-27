@@ -151,7 +151,9 @@ android {
 
 // The expressive material3 alpha transitively requires kotlinx-datetime 0.7.1, which relocates
 // Clock/Instant to kotlin.time (different serializer + opt-in) and would change the persisted format
-// of notes/tasks. The app uses no M3 date/time pickers, so we pin the whole graph to 0.6.1.
+// of notes/tasks. The app uses no M3 date/time pickers (its desktop CalendarModel is compiled
+// against 0.7.1 APIs like LocalDateTime.day and would crash under this pin) — date entry uses a
+// custom calendar popup built on 0.6.1 — so we pin the whole graph to 0.6.1.
 configurations.all {
     resolutionStrategy {
         force("org.jetbrains.kotlinx:kotlinx-datetime:${libs.versions.kotlinxDatetime.get()}")

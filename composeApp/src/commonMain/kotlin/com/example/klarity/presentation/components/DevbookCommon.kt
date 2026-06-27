@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Chat
 import androidx.compose.material.icons.automirrored.outlined.Comment
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.outlined.ViewList
 import androidx.compose.material.icons.outlined.Add
@@ -23,6 +24,7 @@ import androidx.compose.material.icons.outlined.ArrowUpward
 import androidx.compose.material.icons.outlined.AttachFile
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.BugReport
+import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.CheckBox
 import androidx.compose.material.icons.outlined.CheckBoxOutlineBlank
 import androidx.compose.material.icons.outlined.CheckCircle
@@ -102,6 +104,7 @@ object DbIcons {
     val add = Icons.Outlined.Add
     val expandMore = Icons.Outlined.KeyboardArrowDown
     val chevronRight = Icons.AutoMirrored.Outlined.KeyboardArrowRight
+    val chevronLeft = Icons.AutoMirrored.Outlined.KeyboardArrowLeft
     val folder = Icons.Outlined.Folder
     val description = Icons.Outlined.Description
     val delete = Icons.Outlined.Delete
@@ -126,6 +129,7 @@ object DbIcons {
     val contentCopy = Icons.Outlined.ContentCopy
     val viewList = Icons.AutoMirrored.Outlined.ViewList
     val timeline = Icons.Outlined.Timeline
+    val calendar = Icons.Outlined.CalendarMonth
     val filterList = Icons.Outlined.FilterList
     val group = Icons.Outlined.Group
     val checklist = Icons.Outlined.Checklist

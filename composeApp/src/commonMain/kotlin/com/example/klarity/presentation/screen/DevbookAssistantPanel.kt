@@ -62,6 +62,7 @@ import com.example.klarity.domain.models.Note
 import com.example.klarity.presentation.ChatMessage
 import com.example.klarity.presentation.Conversation
 import com.example.klarity.presentation.WorkspaceViewModel
+import com.example.klarity.presentation.components.ActionProposalCard
 import com.example.klarity.presentation.components.DbIcons
 import com.example.klarity.presentation.components.MarkdownText
 import com.example.klarity.presentation.components.MsIcon
@@ -160,7 +161,16 @@ fun AssistantPanel(
                         verticalArrangement = Arrangement.spacedBy(18.dp),
                     ) {
                         chat.forEach { msg ->
-                            if (msg.fromUser) UserBubble(msg.text) else AssistantBubble(msg, onOpenNote)
+                            if (msg.fromUser) {
+                                UserBubble(msg.text)
+                            } else {
+                                AssistantBubble(
+                                    msg = msg,
+                                    onOpenNote = onOpenNote,
+                                    onApprove = { actionId -> vm.approveAction(msg.id, actionId) },
+                                    onDecline = { actionId -> vm.declineAction(msg.id, actionId) },
+                                )
+                            }
                         }
                         if (thinking) TypingRow()
                     }
@@ -284,12 +294,29 @@ private fun UserBubble(text: String) {
 }
 
 @Composable
-private fun AssistantBubble(msg: ChatMessage, onOpenNote: (Note) -> Unit) {
+private fun AssistantBubble(
+    msg: ChatMessage,
+    onOpenNote: (Note) -> Unit,
+    onApprove: (String) -> Unit,
+    onDecline: (String) -> Unit,
+) {
     val c = DevbookTheme.colors
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         AiAvatar()
         Column(Modifier.weight(1f)) {
             MarkdownText(msg.text, color = c.on, fontSize = 14.5.sp, lineHeight = 23.sp)
+            if (msg.actions.isNotEmpty()) {
+                Spacer(Modifier.height(10.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    msg.actions.forEach { action ->
+                        ActionProposalCard(
+                            action = action,
+                            onApprove = { onApprove(action.id) },
+                            onDecline = { onDecline(action.id) },
+                        )
+                    }
+                }
+            }
             if (msg.sources.isNotEmpty()) {
                 Spacer(Modifier.height(10.dp))
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {

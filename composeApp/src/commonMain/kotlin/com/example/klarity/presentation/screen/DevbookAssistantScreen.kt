@@ -52,6 +52,7 @@ import com.example.klarity.domain.models.Note
 import com.example.klarity.presentation.ChatMessage
 import com.example.klarity.presentation.DevbookScreen
 import com.example.klarity.presentation.WorkspaceViewModel
+import com.example.klarity.presentation.components.ActionProposalCard
 import com.example.klarity.presentation.components.DbIcons
 import com.example.klarity.presentation.components.MarkdownText
 import com.example.klarity.presentation.components.MsIcon
@@ -98,7 +99,16 @@ fun DevbookAssistantScreen(vm: WorkspaceViewModel, navigate: (DevbookScreen) -> 
                     )
                 }
                 chat.forEach { msg ->
-                    if (msg.fromUser) UserMessage(msg.text) else AssistantMessage(msg, openNote)
+                    if (msg.fromUser) {
+                        UserMessage(msg.text)
+                    } else {
+                        AssistantMessage(
+                            msg = msg,
+                            openNote = openNote,
+                            onApprove = { actionId -> vm.approveAction(msg.id, actionId) },
+                            onDecline = { actionId -> vm.declineAction(msg.id, actionId) },
+                        )
+                    }
                 }
                 if (thinking) ThinkingRow()
             }
@@ -240,12 +250,29 @@ private fun UserMessage(text: String) {
 }
 
 @Composable
-private fun AssistantMessage(msg: ChatMessage, openNote: (Note) -> Unit) {
+private fun AssistantMessage(
+    msg: ChatMessage,
+    openNote: (Note) -> Unit,
+    onApprove: (String) -> Unit,
+    onDecline: (String) -> Unit,
+) {
     val c = DevbookTheme.colors
     Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
         AiAvatar()
         Column {
             MarkdownText(msg.text, color = c.on, fontSize = 15.sp, lineHeight = 26.sp)
+            if (msg.actions.isNotEmpty()) {
+                Spacer(Modifier.height(12.dp))
+                Column(modifier = Modifier.widthIn(max = 460.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    msg.actions.forEach { action ->
+                        ActionProposalCard(
+                            action = action,
+                            onApprove = { onApprove(action.id) },
+                            onDecline = { onDecline(action.id) },
+                        )
+                    }
+                }
+            }
             if (msg.sources.isNotEmpty()) {
                 Spacer(Modifier.height(12.dp))
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {

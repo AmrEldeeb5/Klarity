@@ -57,12 +57,21 @@ enum class AiProvider(
     }
 }
 
+/** Default sampling temperature — low so a workspace-grounded assistant stays faithful, not creative. */
+const val DEFAULT_AI_TEMPERATURE = 0.3
+
 /** Locally-stored AI assistant configuration. */
 data class AiSettings(
     val provider: AiProvider = AiProvider.ANTHROPIC,
     val apiKey: String? = null,
     val model: String = provider.defaultModel,
     val baseUrl: String = provider.defaultBaseUrl,
+    /** Sampling temperature; `null` means "Auto" — omit it so the model uses its own default
+     *  (required by reasoning models that reject any fixed temperature). */
+    val temperature: Double? = DEFAULT_AI_TEMPERATURE,
+    /** When true, Lou may propose workspace actions (tool-calling). Turn off for models without
+     *  tool support, or to keep Lou read-only (which also re-enables streaming answers). */
+    val actionsEnabled: Boolean = true,
 ) {
     val enabled: Boolean get() = !apiKey.isNullOrBlank()
 }
@@ -75,6 +84,16 @@ interface SettingsRepository {
     /** One-shot read of the current AI settings (for building a request). */
     suspend fun current(): AiSettings
 
-    /** Save the full AI configuration. A null/blank [apiKey] disables the AI (clears the key). */
-    suspend fun save(provider: AiProvider, apiKey: String?, model: String, baseUrl: String)
+    /**
+     * Save the full AI configuration. A null/blank [apiKey] disables the AI (clears the key).
+     * A null [temperature] persists as "Auto" (the model's own default is used at request time).
+     */
+    suspend fun save(
+        provider: AiProvider,
+        apiKey: String?,
+        model: String,
+        baseUrl: String,
+        temperature: Double?,
+        actionsEnabled: Boolean,
+    )
 }

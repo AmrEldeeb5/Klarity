@@ -54,6 +54,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
@@ -64,6 +65,7 @@ import androidx.compose.ui.window.Dialog
 import com.example.klarity.domain.models.Task
 import com.example.klarity.domain.models.TaskPriority
 import com.example.klarity.domain.models.TaskStatus
+import com.example.klarity.domain.models.TaskViewMode
 import com.example.klarity.presentation.WorkspaceViewModel
 import com.example.klarity.presentation.components.DbIcons
 import com.example.klarity.presentation.components.Dot
@@ -73,9 +75,22 @@ import com.example.klarity.presentation.components.StatusPill
 import com.example.klarity.presentation.components.statusStyle
 import com.example.klarity.presentation.theme.DevbookTheme
 import com.example.klarity.presentation.theme.LocalWindowMetrics
+import com.example.klarity.presentation.util.toDisplayDate
+import com.example.klarity.presentation.util.toLocalDate
+import com.example.klarity.presentation.util.toShortDate
+import com.example.klarity.presentation.util.toStartInstant
+import kotlinx.datetime.Instant
 
 private data class BoardCol(val status: TaskStatus, val title: String)
-private enum class BoardView { BOARD, LIST }
+
+/** A selectable view in the tasks toolbar. Timeline (TaskViewMode.TIMELINE) isn't wired yet, so it's
+ *  intentionally absent here — the [TaskViewMode] when-branch shows a placeholder if it's ever reached. */
+private data class ViewTab(val mode: TaskViewMode, val label: String, val icon: ImageVector)
+private val ViewTabs: List<ViewTab> = listOf(
+    ViewTab(TaskViewMode.KANBAN, "Board", DbIcons.viewKanban),
+    ViewTab(TaskViewMode.LIST, "List", DbIcons.viewList),
+    ViewTab(TaskViewMode.CALENDAR, "Calendar", DbIcons.calendar),
+)
 
 /**
  * The board's columns in flow order. Single source of truth for every status selector
@@ -94,7 +109,7 @@ fun DevbookTasksScreen(vm: WorkspaceViewModel) {
     val c = DevbookTheme.colors
     val tasks by vm.tasks.collectAsState()
     var editing by remember { mutableStateOf<Task?>(null) }
-    var view by remember { mutableStateOf(BoardView.BOARD) }
+    var view by remember { mutableStateOf(TaskViewMode.KANBAN) }
     var priorityFilter by remember { mutableStateOf<TaskPriority?>(null) }
     var filterOpen by remember { mutableStateOf(false) }
 
@@ -116,22 +131,17 @@ fun DevbookTasksScreen(vm: WorkspaceViewModel) {
                 inactiveBorderColor = Color.Transparent,
             )
             SingleChoiceSegmentedButtonRow {
-                SegmentedButton(
-                    selected = view == BoardView.BOARD,
-                    onClick = { view = BoardView.BOARD },
-                    shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
-                    colors = segColors,
-                    icon = { MsIcon(DbIcons.viewKanban, 18.dp, if (view == BoardView.BOARD) c.op else c.onv) },
-                    label = { Text("Board", fontSize = 13.sp, fontWeight = FontWeight.Medium) },
-                )
-                SegmentedButton(
-                    selected = view == BoardView.LIST,
-                    onClick = { view = BoardView.LIST },
-                    shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
-                    colors = segColors,
-                    icon = { MsIcon(DbIcons.viewList, 18.dp, if (view == BoardView.LIST) c.op else c.onv) },
-                    label = { Text("List", fontSize = 13.sp, fontWeight = FontWeight.Medium) },
-                )
+                ViewTabs.forEachIndexed { i, tab ->
+                    val active = view == tab.mode
+                    SegmentedButton(
+                        selected = active,
+                        onClick = { view = tab.mode },
+                        shape = SegmentedButtonDefaults.itemShape(index = i, count = ViewTabs.size),
+                        colors = segColors,
+                        icon = { MsIcon(tab.icon, 18.dp, if (active) c.op else c.onv) },
+                        label = { Text(tab.label, fontSize = 13.sp, fontWeight = FontWeight.Medium) },
+                    )
+                }
             }
             Box {
                 val filterActive = priorityFilter != null
@@ -164,7 +174,7 @@ fun DevbookTasksScreen(vm: WorkspaceViewModel) {
         Spacer(Modifier.height(20.dp))
 
         when (view) {
-            BoardView.BOARD ->
+            TaskViewMode.KANBAN ->
                 // On phones the four columns won't fit side-by-side, so give each a usable fixed
                 // width and let the board scroll horizontally instead of crushing every column.
                 Row(
@@ -185,7 +195,7 @@ fun DevbookTasksScreen(vm: WorkspaceViewModel) {
                         }
                     }
                 }
-            BoardView.LIST ->
+            TaskViewMode.LIST ->
                 TaskListView(
                     columns = columns,
                     tasks = visible,
@@ -193,6 +203,15 @@ fun DevbookTasksScreen(vm: WorkspaceViewModel) {
                     onToggle = { vm.toggleTaskComplete(it) },
                     onMove = { task, status -> vm.moveTask(task, status) },
                 )
+            TaskViewMode.CALENDAR ->
+                TaskCalendarView(
+                    tasks = visible,
+                    compact = compact,
+                    onOpen = { editing = it },
+                    onAddOnDay = { due -> vm.createTask(dueDate = due) },
+                )
+            TaskViewMode.TIMELINE ->
+                Text("Timeline view is coming soon.", color = c.onv, fontSize = 14.sp)
         }
     }
 
@@ -355,6 +374,7 @@ private fun ListRow(task: Task, onClick: () -> Unit, onToggle: () -> Unit, onMov
                 Text(task.priority.label, color = c.onv, fontSize = 12.sp)
             }
         }
+        task.dueDate?.let { DueDateLabel(due = it, overdue = task.isOverdue) }
         StatusMenuChip(current = task.status, onSelect = onMove)
     }
 }
@@ -424,7 +444,17 @@ private fun BoardCard(task: Task, isDone: Boolean, onClick: () -> Unit, onMove: 
                 Text(task.description, color = c.onv, fontSize = 12.5.sp, lineHeight = 17.sp, maxLines = 2)
             }
             Spacer(Modifier.height(12.dp))
-            StatusMenuChip(current = task.status, onSelect = onMove)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                StatusMenuChip(current = task.status, onSelect = onMove)
+                task.dueDate?.let {
+                    Spacer(Modifier.weight(1f))
+                    DueDateLabel(due = it, overdue = task.isOverdue)
+                }
+            }
         }
     }
 }
@@ -459,6 +489,8 @@ private fun TaskEditorDialog(
     var description by remember(task.id) { mutableStateOf(task.description) }
     var priority by remember(task.id) { mutableStateOf(task.priority) }
     var status by remember(task.id) { mutableStateOf(task.status) }
+    var startDate by remember(task.id) { mutableStateOf(task.startDate) }
+    var dueDate by remember(task.id) { mutableStateOf(task.dueDate) }
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -503,6 +535,14 @@ private fun TaskEditorDialog(
                     StatusChoiceChip(status = s, label = label, selected = s == status) { status = s }
                 }
             }
+            Spacer(Modifier.height(16.dp))
+
+            FieldLabel("Start date")
+            DateField(value = startDate, placeholder = "No start date", onPick = { startDate = it })
+            Spacer(Modifier.height(14.dp))
+
+            FieldLabel("Due date")
+            DateField(value = dueDate, placeholder = "No due date", onPick = { dueDate = it })
             Spacer(Modifier.height(24.dp))
 
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
@@ -524,7 +564,7 @@ private fun TaskEditorDialog(
                 Spacer(Modifier.width(8.dp))
                 Button(
                     onClick = {
-                        onSave(task.copy(title = title.trim().ifBlank { "Untitled task" }, description = description.trim(), priority = priority, status = status))
+                        onSave(task.copy(title = title.trim().ifBlank { "Untitled task" }, description = description.trim(), priority = priority, status = status, startDate = startDate, dueDate = dueDate))
                     },
                     shape = RoundedCornerShape(20.dp),
                     contentPadding = PaddingValues(horizontal = 18.dp, vertical = 9.dp),
@@ -591,3 +631,65 @@ private fun ChoiceChip(label: String, selected: Boolean, selectedColor: Color, o
 
 /** Legible foreground for a filled chip — dark text on light fills (e.g. yellow), white otherwise. */
 private fun onChipColor(bg: Color): Color = if (bg.luminance() > 0.55f) Color(0xFF1A1A1A) else Color.White
+
+// ── Date fields ───────────────────────────────────────────────────────────────
+
+/**
+ * A tappable date field for the task editor. Shows the formatted date (or a placeholder) with a
+ * calendar icon plus a clear affordance once a date is set — both task dates are nullable. Tapping
+ * opens [DatePickerPopup], a custom calendar (NOT Material 3's DatePicker, which crashes under the
+ * kotlinx-datetime 0.6.1 pin — see CalendarMath / build.gradle.kts).
+ */
+@Composable
+private fun DateField(value: Instant?, placeholder: String, onPick: (Instant?) -> Unit) {
+    val c = DevbookTheme.colors
+    var open by remember { mutableStateOf(false) }
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = c.sLow,
+        border = BorderStroke(1.dp, c.outlinev),
+        modifier = Modifier.fillMaxWidth().clickable { open = true },
+    ) {
+        Row(
+            modifier = Modifier.padding(start = 14.dp, end = 6.dp, top = 12.dp, bottom = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            MsIcon(DbIcons.today, 18.dp, if (value != null) c.p else c.outline)
+            Text(
+                value?.toDisplayDate() ?: placeholder,
+                color = if (value != null) c.on else c.outline,
+                fontSize = 14.sp,
+                modifier = Modifier.weight(1f),
+            )
+            if (value != null) {
+                MsIconButton(
+                    icon = DbIcons.close,
+                    onClick = { onPick(null) },
+                    contentDescription = "Clear date",
+                    tint = c.onv,
+                    buttonSize = 28.dp,
+                    iconSize = 16.dp,
+                )
+            }
+        }
+    }
+    if (open) {
+        DatePickerPopup(
+            initial = value?.toLocalDate(),
+            onPick = { open = false; onPick(it.toStartInstant()) },
+            onDismiss = { open = false },
+        )
+    }
+}
+
+/** Compact due-date indicator used on board cards and list rows; turns red when overdue. */
+@Composable
+private fun DueDateLabel(due: Instant, overdue: Boolean) {
+    val c = DevbookTheme.colors
+    val color = if (overdue) c.err else c.onv
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        MsIcon(DbIcons.schedule, 14.dp, color)
+        Text(due.toShortDate(), color = color, fontSize = 11.5.sp)
+    }
+}

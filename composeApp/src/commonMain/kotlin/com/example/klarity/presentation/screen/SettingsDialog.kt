@@ -33,6 +33,8 @@ import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -53,6 +55,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.klarity.data.ai.AiException
 import com.example.klarity.domain.repositories.AiProvider
+import com.example.klarity.domain.repositories.DEFAULT_AI_TEMPERATURE
 import com.example.klarity.presentation.WorkspaceViewModel
 import com.example.klarity.presentation.components.DbIcons
 import com.example.klarity.presentation.components.MsIcon
@@ -71,6 +74,8 @@ fun SettingsDialog(vm: WorkspaceViewModel, onDismiss: () -> Unit) {
     var key by remember(settings.apiKey) { mutableStateOf(settings.apiKey ?: "") }
     var model by remember(settings.provider, settings.model) { mutableStateOf(settings.model) }
     var baseUrl by remember(settings.provider, settings.baseUrl) { mutableStateOf(settings.baseUrl) }
+    var temperature by remember(settings.temperature) { mutableStateOf(settings.temperature) }
+    var actionsEnabled by remember(settings.actionsEnabled) { mutableStateOf(settings.actionsEnabled) }
     var reveal by remember { mutableStateOf(false) }
     var providerMenu by remember { mutableStateOf(false) }
 
@@ -269,12 +274,53 @@ fun SettingsDialog(vm: WorkspaceViewModel, onDismiss: () -> Unit) {
                     "Your key is stored locally on this device and sent only to the provider you choose.",
                     color = c.onv, fontSize = 11.5.sp, lineHeight = 16.sp,
                 )
+                Spacer(Modifier.height(18.dp))
+
+                // Response style → sampling temperature. "Auto" omits it for models (e.g. reasoning
+                // models) that reject a fixed temperature.
+                FieldLabel("Response style")
+                Row(
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    TemperaturePresets.forEach { (label, value) ->
+                        ModelChip(label = label, selected = temperature == value) { temperature = value }
+                    }
+                }
+                Spacer(Modifier.height(6.dp))
+                Text(temperatureHint(temperature), color = c.onv, fontSize = 11.sp, lineHeight = 15.sp)
+                Spacer(Modifier.height(18.dp))
+
+                // Agentic actions toggle. Off → Lou is read-only (and answers stream); also the
+                // escape hatch for models that don't support tool-calling.
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Let Lou take actions", color = c.on, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                        Spacer(Modifier.height(2.dp))
+                        Text(
+                            "Lets Lou create and edit notes & tasks from chat — every change asks for your OK first. " +
+                                "Turn off for a read-only assistant or models without tool support.",
+                            color = c.onv, fontSize = 11.sp, lineHeight = 15.sp,
+                        )
+                    }
+                    Spacer(Modifier.size(12.dp))
+                    Switch(
+                        checked = actionsEnabled,
+                        onCheckedChange = { actionsEnabled = it },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = c.op,
+                            checkedTrackColor = c.p,
+                            uncheckedThumbColor = c.onv,
+                            uncheckedTrackColor = c.sCont,
+                        ),
+                    )
+                }
                 Spacer(Modifier.height(22.dp))
 
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                     if (settings.apiKey != null) {
                         TextButton(
-                            onClick = { vm.saveAiSettings(provider, null, model, baseUrl); key = "" },
+                            onClick = { vm.saveAiSettings(provider, null, model, baseUrl, temperature, actionsEnabled); key = "" },
                             colors = ButtonDefaults.textButtonColors(contentColor = c.err),
                         ) {
                             Text("Remove key", fontSize = 13.sp)
@@ -290,7 +336,7 @@ fun SettingsDialog(vm: WorkspaceViewModel, onDismiss: () -> Unit) {
                     Spacer(Modifier.size(8.dp))
                     Button(
                         onClick = {
-                            vm.saveAiSettings(provider, key.ifBlank { null }, model, baseUrl)
+                            vm.saveAiSettings(provider, key.ifBlank { null }, model, baseUrl, temperature, actionsEnabled)
                             onDismiss()
                         },
                         shape = RoundedCornerShape(20.dp),
@@ -345,6 +391,21 @@ private fun ModelChip(label: String, selected: Boolean, onClick: () -> Unit) {
             selectedLabelColor = c.onsecc,
         ),
     )
+}
+
+/** Response-style presets → sampling temperature. `null` is "Auto" (omit; use the model's default). */
+private val TemperaturePresets: List<Pair<String, Double?>> = listOf(
+    "Auto" to null,
+    "Precise" to 0.0,
+    "Balanced" to DEFAULT_AI_TEMPERATURE,
+    "Creative" to 0.8,
+)
+
+private fun temperatureHint(t: Double?): String = when {
+    t == null -> "Auto — uses the model's own default. Choose this for reasoning models that reject a set temperature."
+    t <= 0.0 -> "Precise — most consistent and faithful to your notes."
+    t < 0.5 -> "Balanced — accurate with a natural tone (recommended)."
+    else -> "Creative — more varied phrasing and ideas."
 }
 
 @Composable

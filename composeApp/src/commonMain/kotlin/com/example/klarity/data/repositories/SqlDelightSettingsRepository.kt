@@ -6,6 +6,7 @@ import com.example.klarity.data.util.DispatcherProvider
 import com.example.klarity.db.KlarityDatabase
 import com.example.klarity.domain.repositories.AiProvider
 import com.example.klarity.domain.repositories.AiSettings
+import com.example.klarity.domain.repositories.DEFAULT_AI_TEMPERATURE
 import com.example.klarity.domain.repositories.SettingsRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -16,6 +17,11 @@ private const val KEY_PROVIDER = "ai_provider"
 private const val KEY_API = "ai_api_key"
 private const val KEY_MODEL = "ai_model"
 private const val KEY_BASE_URL = "ai_base_url"
+private const val KEY_TEMPERATURE = "ai_temperature"
+private const val KEY_ACTIONS = "ai_actions_enabled"
+
+/** Persisted marker for "Auto" temperature — kept distinct from an unset value (which defaults). */
+private const val TEMPERATURE_AUTO = "auto"
 
 /**
  * Settings repository backed by the [AppSetting] key/value table. The table is ensured to exist at
@@ -47,6 +53,8 @@ class SqlDelightSettingsRepository(
         apiKey: String?,
         model: String,
         baseUrl: String,
+        temperature: Double?,
+        actionsEnabled: Boolean,
     ): Unit = withContext(dispatchers.io) {
         queries.transaction {
             queries.upsert(KEY_PROVIDER, provider.name)
@@ -54,6 +62,8 @@ class SqlDelightSettingsRepository(
             if (key.isNullOrBlank()) queries.deleteByKey(KEY_API) else queries.upsert(KEY_API, key)
             queries.upsert(KEY_MODEL, model.trim().ifBlank { provider.defaultModel })
             queries.upsert(KEY_BASE_URL, baseUrl.trim().ifBlank { provider.defaultBaseUrl })
+            queries.upsert(KEY_TEMPERATURE, temperature?.toString() ?: TEMPERATURE_AUTO)
+            queries.upsert(KEY_ACTIONS, actionsEnabled.toString())
         }
     }
 
@@ -64,6 +74,16 @@ class SqlDelightSettingsRepository(
             apiKey = this[KEY_API]?.takeIf { it.isNotBlank() },
             model = this[KEY_MODEL]?.takeIf { it.isNotBlank() } ?: provider.defaultModel,
             baseUrl = this[KEY_BASE_URL]?.takeIf { it.isNotBlank() } ?: provider.defaultBaseUrl,
+            temperature = this[KEY_TEMPERATURE].toTemperature(),
+            // Default on; only an explicit "false" disables actions.
+            actionsEnabled = this[KEY_ACTIONS]?.toBooleanStrictOrNull() ?: true,
         )
+    }
+
+    /** "auto" → null (omit at request time); a number → that value; absent/garbage → the default. */
+    private fun String?.toTemperature(): Double? = when {
+        this == null -> DEFAULT_AI_TEMPERATURE
+        equals(TEMPERATURE_AUTO, ignoreCase = true) -> null
+        else -> toDoubleOrNull() ?: DEFAULT_AI_TEMPERATURE
     }
 }
