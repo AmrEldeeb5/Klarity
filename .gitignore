@@ -18,6 +18,11 @@ captures
 **/xcshareddata/WorkspaceSettings.xcsettings
 node_modules/
 
+# Signing — never commit keystores or their passwords
+keystore.properties
+*.jks
+*.keystore
+
 # Windows / git-bash artifacts
 bash.exe.stackdump
 nul

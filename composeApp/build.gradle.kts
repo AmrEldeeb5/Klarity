@@ -1,5 +1,6 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -111,6 +112,22 @@ android {
         versionCode = 1
         versionName = "1.0"
     }
+    signingConfigs {
+        // Production signing is supplied via composeApp/keystore.properties (git-ignored) with keys:
+        //   storeFile, storePassword, keyAlias, keyPassword
+        // When that file is absent the release build falls back to debug signing below, so dev/CI
+        // `assembleRelease` still produces an installable (test-signed) APK.
+        create("release") {
+            val props = file("keystore.properties")
+            if (props.exists()) {
+                val ks = Properties().apply { props.inputStream().use { load(it) } }
+                storeFile = file(ks.getProperty("storeFile"))
+                storePassword = ks.getProperty("storePassword")
+                keyAlias = ks.getProperty("keyAlias")
+                keyPassword = ks.getProperty("keyPassword")
+            }
+        }
+    }
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -118,7 +135,12 @@ android {
     }
     buildTypes {
         getByName("release") {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig =
+                if (file("keystore.properties").exists()) signingConfigs.getByName("release")
+                else signingConfigs.getByName("debug")
         }
     }
     compileOptions {
