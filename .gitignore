@@ -26,3 +26,10 @@ keystore.properties
 # Windows / git-bash artifacts
 bash.exe.stackdump
 nul
+
+# Local AI-agent / spec tooling scaffolding (not part of the app)
+.kiro/
+.opencode/
+.shared/
+.specify/
+opencode.json
