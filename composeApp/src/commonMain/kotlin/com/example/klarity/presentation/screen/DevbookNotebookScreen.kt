@@ -1,11 +1,10 @@
 package com.example.klarity.presentation.screen
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
@@ -14,11 +13,18 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.Button
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -33,10 +39,13 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.klarity.domain.models.Note
@@ -45,8 +54,9 @@ import com.example.klarity.presentation.WorkspaceViewModel
 import com.example.klarity.presentation.components.DbIcons
 import com.example.klarity.presentation.components.Dot
 import com.example.klarity.presentation.components.MsIcon
-import com.example.klarity.presentation.components.hoverBg
+import com.example.klarity.presentation.components.MsIconButton
 import com.example.klarity.presentation.theme.DevbookTheme
+import com.example.klarity.presentation.theme.LocalWindowMetrics
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.drop
@@ -98,11 +108,23 @@ private fun NoteEditor(vm: WorkspaceViewModel, note: Note) {
         }
     }
 
+    // Notion-style: a just-created note opens with the title focused so you can type straight away.
+    val titleFocus = remember { FocusRequester() }
+    val contentFocus = remember { FocusRequester() }
+    val pendingFocus by vm.pendingNoteFocus.collectAsState()
+    LaunchedEffect(note.id, pendingFocus) {
+        if (pendingFocus == note.id) {
+            titleFocus.requestFocus()
+            vm.consumeNoteFocus()
+        }
+    }
+
+    val m = LocalWindowMetrics.current
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(start = 40.dp, end = 40.dp, top = 40.dp, bottom = 120.dp),
+            .padding(start = m.screenPaddingH, end = m.screenPaddingH, top = m.screenPaddingTop, bottom = 120.dp),
     ) {
         Box(modifier = Modifier.widthIn(max = 820.dp).fillMaxWidth().align(Alignment.CenterHorizontally)) {
             Column {
@@ -114,11 +136,6 @@ private fun NoteEditor(vm: WorkspaceViewModel, note: Note) {
                 }
                 Spacer(Modifier.height(20.dp))
 
-                Box(modifier = Modifier.size(60.dp).clip(RoundedCornerShape(18.dp)).background(c.pc), contentAlignment = Alignment.Center) {
-                    MsIcon(DbIcons.menuBook, 34.dp, c.opc)
-                }
-                Spacer(Modifier.height(14.dp))
-
                 // Title editor
                 BasicTextField(
                     value = title,
@@ -126,11 +143,13 @@ private fun NoteEditor(vm: WorkspaceViewModel, note: Note) {
                     singleLine = true,
                     textStyle = TextStyle(color = c.on, fontSize = 38.sp, fontWeight = FontWeight.SemiBold),
                     cursorBrush = SolidColor(c.p),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(onNext = { contentFocus.requestFocus() }),
                     decorationBox = { inner ->
-                        if (title.isEmpty()) Text("Untitled note", color = c.outline, fontSize = 38.sp, fontWeight = FontWeight.SemiBold)
+                        if (title.isEmpty()) Text("Untitled", color = c.outline, fontSize = 38.sp, fontWeight = FontWeight.SemiBold)
                         inner()
                     },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().focusRequester(titleFocus),
                 )
                 Spacer(Modifier.height(14.dp))
 
@@ -140,11 +159,11 @@ private fun NoteEditor(vm: WorkspaceViewModel, note: Note) {
                         vm.updateNote(note.copy(title = title, content = content, status = nextStatus(note.status)))
                     }
                     Spacer(Modifier.weight(1f))
-                    IconChip(DbIcons.pushPin, active = note.isPinned, activeColor = c.p) { vm.togglePin(note.copy(title = title, content = content)) }
-                    IconChip(DbIcons.delete, active = false, activeColor = c.err) { vm.deleteNote(note.id) }
+                    IconChip(DbIcons.pushPin, active = note.isPinned, activeColor = c.p, contentDescription = if (note.isPinned) "Unpin note" else "Pin note") { vm.togglePin(note.copy(title = title, content = content)) }
+                    IconChip(DbIcons.delete, active = false, activeColor = c.err, contentDescription = "Delete note") { vm.deleteNote(note.id) }
                 }
                 Spacer(Modifier.height(14.dp))
-                Box(Modifier.fillMaxWidth().height(1.dp).background(c.outlinev))
+                HorizontalDivider(color = c.outlinev)
                 Spacer(Modifier.height(16.dp))
 
                 // Content editor
@@ -157,7 +176,7 @@ private fun NoteEditor(vm: WorkspaceViewModel, note: Note) {
                         if (content.isEmpty()) Text("Start writing — markdown welcome…", color = c.outline, fontSize = 16.sp, lineHeight = 27.sp)
                         inner()
                     },
-                    modifier = Modifier.fillMaxWidth().defaultMinSize(minHeight = 240.dp),
+                    modifier = Modifier.fillMaxWidth().defaultMinSize(minHeight = 240.dp).focusRequester(contentFocus),
                 )
                 Spacer(Modifier.height(20.dp))
                 Text("${wordCount(content)} words", color = c.onv, fontSize = 12.sp)
@@ -182,13 +201,14 @@ private fun EmptyEditor(onCreate: () -> Unit) {
         Spacer(Modifier.height(6.dp))
         Text("Pick a note from the sidebar, or create a new one.", color = c.onv, fontSize = 14.sp)
         Spacer(Modifier.height(18.dp))
-        Row(
-            modifier = Modifier.clip(RoundedCornerShape(20.dp)).background(c.p).clickable { onCreate() }.padding(horizontal = 18.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        Button(
+            onClick = onCreate,
+            shape = RoundedCornerShape(20.dp),
+            contentPadding = PaddingValues(horizontal = 18.dp, vertical = 10.dp),
         ) {
             MsIcon(DbIcons.add, 20.dp, c.op)
-            Text("New note", color = c.op, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+            Spacer(Modifier.width(8.dp))
+            Text("New note", fontSize = 14.sp, fontWeight = FontWeight.Medium)
         }
     }
 }
@@ -196,25 +216,29 @@ private fun EmptyEditor(onCreate: () -> Unit) {
 @Composable
 private fun StatusChip(status: NoteStatus, onClick: () -> Unit) {
     val c = DevbookTheme.colors
-    Row(
-        modifier = Modifier.height(30.dp).clip(RoundedCornerShape(8.dp)).background(c.secc).clickable { onClick() }.padding(horizontal = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        Dot(statusColor(status, c.p, c.onv), 8.dp)
-        Text(statusLabel(status), color = c.onsecc, fontSize = 12.5.sp, fontWeight = FontWeight.Medium)
-    }
+    AssistChip(
+        onClick = onClick,
+        label = { Text(statusLabel(status), fontSize = 12.5.sp, fontWeight = FontWeight.Medium) },
+        leadingIcon = { Dot(statusColor(status, c.p, c.onv), 8.dp) },
+        border = null,
+        colors = AssistChipDefaults.assistChipColors(
+            containerColor = c.secc,
+            labelColor = c.onsecc,
+        ),
+    )
 }
 
 @Composable
-private fun IconChip(icon: androidx.compose.ui.graphics.vector.ImageVector, active: Boolean, activeColor: Color, onClick: () -> Unit) {
+private fun IconChip(icon: androidx.compose.ui.graphics.vector.ImageVector, active: Boolean, activeColor: Color, contentDescription: String, onClick: () -> Unit) {
     val c = DevbookTheme.colors
-    Box(
-        modifier = Modifier.size(34.dp).hoverBg(RoundedCornerShape(10.dp), c.sHigh).clickable { onClick() },
-        contentAlignment = Alignment.Center,
-    ) {
-        MsIcon(icon, 20.dp, if (active) activeColor else c.onv)
-    }
+    MsIconButton(
+        icon = icon,
+        onClick = onClick,
+        contentDescription = contentDescription,
+        tint = if (active) activeColor else c.onv,
+        buttonSize = 34.dp,
+        iconSize = 20.dp,
+    )
 }
 
 private fun statusLabel(s: NoteStatus): String = when (s) {
@@ -238,4 +262,6 @@ private fun nextStatus(s: NoteStatus): NoteStatus {
     return all[(s.ordinal + 1) % all.size]
 }
 
-private fun wordCount(text: String): Int = text.split(Regex("\\s+")).count { it.isNotBlank() }
+private val WhitespaceRegex = Regex("\\s+")
+
+private fun wordCount(text: String): Int = text.split(WhitespaceRegex).count { it.isNotBlank() }

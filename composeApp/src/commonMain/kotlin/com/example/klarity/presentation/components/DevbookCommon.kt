@@ -1,7 +1,5 @@
 package com.example.klarity.presentation.components
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -11,13 +9,16 @@ import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Chat
 import androidx.compose.material.icons.automirrored.outlined.Comment
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
-import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.automirrored.outlined.ViewList
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Mic
+import androidx.compose.material.icons.outlined.OpenInFull
 import androidx.compose.material.icons.outlined.ArrowUpward
 import androidx.compose.material.icons.outlined.AttachFile
 import androidx.compose.material.icons.outlined.AutoAwesome
@@ -62,8 +63,14 @@ import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material.icons.outlined.VpnKey
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -75,9 +82,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
-import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.klarity.presentation.theme.DevbookTheme
 
 /**
  * Shared Devbook UI primitives: the icon set (mapping the design's Material Symbols names to
@@ -86,7 +93,6 @@ import androidx.compose.ui.unit.sp
 
 /** Central icon map — keyed by the Material Symbol names used in `Devbook.dc.html`. */
 object DbIcons {
-    val menuBook = Icons.AutoMirrored.Outlined.MenuBook
     val unfoldMore = Icons.Outlined.UnfoldMore
     val search = Icons.Outlined.Search
     val home = Icons.Outlined.Home
@@ -134,17 +140,57 @@ object DbIcons {
     val visibility = Icons.Outlined.Visibility
     val visibilityOff = Icons.Outlined.VisibilityOff
     val vpnKey = Icons.Outlined.VpnKey
+    val close = Icons.Outlined.Close
+    val openInFull = Icons.Outlined.OpenInFull
+    val mic = Icons.Outlined.Mic
+    val edit = Icons.Outlined.Edit
+    val chat = Icons.AutoMirrored.Outlined.Chat
 }
 
-/** A material icon rendered at a fixed pixel-faithful [size]. */
+/**
+ * A material icon rendered at a fixed pixel-faithful [size]. Pass [contentDescription] for
+ * icon-only interactive controls so screen readers can announce them; leave null for purely
+ * decorative icons that sit beside a text label.
+ */
 @Composable
 fun MsIcon(
     icon: ImageVector,
     size: Dp,
     tint: Color,
     modifier: Modifier = Modifier,
+    contentDescription: String? = null,
 ) {
-    Icon(imageVector = icon, contentDescription = null, tint = tint, modifier = modifier.size(size))
+    Icon(imageVector = icon, contentDescription = contentDescription, tint = tint, modifier = modifier.size(size))
+}
+
+/**
+ * An icon-only **Material 3 [IconButton]** tinted with a Devbook token. Replaces the hand-rolled
+ * `Box + clickable` affordances so every icon control gets a genuine M3 ripple, expressive
+ * state-layer and the right accessibility semantics. [buttonSize] is honoured exactly — M3's 48dp
+ * minimum-interactive-size floor is disabled here so the app's dense rows keep their Devbook
+ * metrics (these icon controls were all sub-48dp by design); [iconSize] is the glyph size.
+ */
+@Composable
+fun MsIconButton(
+    icon: ImageVector,
+    onClick: () -> Unit,
+    contentDescription: String?,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    tint: Color = DevbookTheme.colors.onv,
+    buttonSize: Dp = 40.dp,
+    iconSize: Dp = 22.dp,
+) {
+    CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides Dp.Unspecified) {
+        IconButton(
+            onClick = onClick,
+            modifier = modifier.size(buttonSize),
+            enabled = enabled,
+            colors = IconButtonDefaults.iconButtonColors(contentColor = tint),
+        ) {
+            Icon(imageVector = icon, contentDescription = contentDescription, modifier = Modifier.size(iconSize))
+        }
+    }
 }
 
 /** Circular initials avatar. */
@@ -171,34 +217,31 @@ fun Avatar(
 }
 
 /**
- * The pill theme switch from the design footer.
- * Light: neutral track with an outline thumb at the left; Dark: primary track with the
- * onPrimary thumb slid to the right.
+ * The footer theme toggle — now a genuine **Material 3 [Switch]**, themed to the Devbook palette so
+ * it keeps the design's look (unchecked = neutral track + outline thumb for light mode; checked =
+ * primary track + onPrimary thumb for dark mode) while gaining real M3 thumb-morph motion and a11y.
  */
 @Composable
-fun DevbookSwitch(dark: Boolean, primary: Color, neutralTrack: Color, outline: Color, onPrimary: Color) {
-    val trackColor by animateColorAsState(if (dark) primary else neutralTrack)
-    val borderColor by animateColorAsState(if (dark) primary else outline)
-    val thumbColor by animateColorAsState(if (dark) onPrimary else outline)
-    val thumbSize by animateDpAsState(if (dark) 20.dp else 14.dp)
-    // Track is 46 wide; thumb centred at 30px (dark) / 13px (light) from the left.
-    val thumbCenterX by animateDpAsState(if (dark) 30.dp else 13.dp)
-
-    Box(
-        modifier = Modifier
-            .size(width = 46.dp, height = 26.dp)
-            .clip(RoundedCornerShape(13.dp))
-            .background(trackColor)
-            .border(BorderStroke(2.dp, borderColor), RoundedCornerShape(13.dp)),
-    ) {
-        Box(
-            modifier = Modifier
-                .offset(x = thumbCenterX - thumbSize / 2, y = (26.dp - thumbSize) / 2)
-                .size(thumbSize)
-                .clip(CircleShape)
-                .background(thumbColor),
-        )
-    }
+fun DevbookSwitch(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    primary: Color,
+    onPrimary: Color,
+    neutralTrack: Color,
+    outline: Color,
+) {
+    Switch(
+        checked = checked,
+        onCheckedChange = onCheckedChange,
+        colors = SwitchDefaults.colors(
+            checkedThumbColor = onPrimary,
+            checkedTrackColor = primary,
+            checkedBorderColor = primary,
+            uncheckedThumbColor = outline,
+            uncheckedTrackColor = neutralTrack,
+            uncheckedBorderColor = outline,
+        ),
+    )
 }
 
 /** A small status dot. */

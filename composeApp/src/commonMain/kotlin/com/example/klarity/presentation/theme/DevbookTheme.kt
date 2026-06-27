@@ -1,7 +1,9 @@
 package com.example.klarity.presentation.theme
 
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MaterialExpressiveTheme
+import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
 import androidx.compose.material3.lightColorScheme
@@ -180,6 +182,7 @@ private val DevbookShapes = Shapes(
 // THEME
 // ════════════════════════════════════════════════════════════════════════════════
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun DevbookAppTheme(
     themeMode: ThemeMode,
@@ -217,10 +220,14 @@ fun DevbookAppTheme(
     }
 
     CompositionLocalProvider(LocalDevbookColors provides c) {
-        MaterialTheme(
+        // Material 3 Expressive: the springy expressive MotionScheme drives every stock M3
+        // component's transitions (state-layer, ripple, container morphing), giving the app the
+        // authentic Material 3 feel while the colour scheme / shapes stay faithful to Devbook.
+        MaterialExpressiveTheme(
             colorScheme = scheme,
-            typography = DevbookTypography,
+            motionScheme = MotionScheme.expressive(),
             shapes = DevbookShapes,
+            typography = DevbookTypography,
             content = content,
         )
     }

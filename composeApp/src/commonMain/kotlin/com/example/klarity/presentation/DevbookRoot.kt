@@ -15,18 +15,26 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.example.klarity.presentation.components.DbIcons
 import com.example.klarity.presentation.components.DevbookSidebar
 import com.example.klarity.presentation.components.DevbookTopBar
+import com.example.klarity.presentation.screen.AssistantFab
+import com.example.klarity.presentation.screen.AssistantPanel
 import com.example.klarity.presentation.screen.DevbookAssistantScreen
 import com.example.klarity.presentation.screen.DevbookHomeScreen
 import com.example.klarity.presentation.screen.DevbookNotebookScreen
@@ -35,7 +43,9 @@ import com.example.klarity.presentation.screen.SettingsDialog
 import com.example.klarity.presentation.theme.Accent
 import com.example.klarity.presentation.theme.DevbookAppTheme
 import com.example.klarity.presentation.theme.DevbookTheme
+import com.example.klarity.presentation.theme.LocalWindowMetrics
 import com.example.klarity.presentation.theme.ThemeMode
+import com.example.klarity.presentation.theme.windowMetricsFor
 import org.koin.compose.viewmodel.koinViewModel
 
 /**
@@ -54,7 +64,7 @@ enum class DevbookScreen(
     HOME("Home", DbIcons.home, DbIcons.home, "Workspace", "Home", DbIcons.tune, "New note"),
     NOTEBOOK("Notebook", DbIcons.editNote, DbIcons.editNote, "Workspace", "Notebook", DbIcons.moreHoriz, "New note"),
     TASKS("Tasks", DbIcons.viewKanban, DbIcons.viewKanban, "Workspace", "Task board", DbIcons.moreHoriz, "New task"),
-    ASSISTANT("Assistant", DbIcons.autoAwesome, DbIcons.autoAwesome, "Knowledge", "Assistant", DbIcons.moreHoriz, "New chat"),
+    ASSISTANT("Lou", DbIcons.autoAwesome, DbIcons.autoAwesome, "Knowledge", "Lou", DbIcons.moreHoriz, "New chat"),
 }
 
 /**
@@ -103,6 +113,9 @@ private fun DevbookShell(
 ) {
     val c = DevbookTheme.colors
     var drawerOpen by remember { mutableStateOf(false) }
+    // The Notion-style assistant side panel — opened from the floating launcher, available on every
+    // screen except the full-screen Assistant tab (which already is the chat).
+    var panelOpen by remember { mutableStateOf(false) }
 
     // The top-bar "New …" CTA does the right thing per screen.
     val onCta: () -> Unit = {
@@ -118,7 +131,13 @@ private fun DevbookShell(
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize().background(c.bg)) {
         val wide = maxWidth >= 900.dp
+        val metrics = windowMetricsFor(maxWidth)
+        val drawerPanelWidth = maxWidth.coerceAtMost(420.dp)
 
+        // If the layout grows wide enough to dock the sidebar, drop any open mobile drawer.
+        LaunchedEffect(wide) { if (wide) drawerOpen = false }
+
+        CompositionLocalProvider(LocalWindowMetrics provides metrics) {
         Row(modifier = Modifier.fillMaxSize()) {
             if (wide) {
                 DevbookSidebar(
@@ -147,6 +166,18 @@ private fun DevbookShell(
                         DevbookScreen.ASSISTANT -> DevbookAssistantScreen(vm, onSelectScreen, onOpenSettings)
                     }
                 }
+            }
+            // Docked assistant side panel on wide screens.
+            if (wide && panelOpen && screen != DevbookScreen.ASSISTANT) {
+                Box(modifier = Modifier.fillMaxHeight().width(1.dp).background(c.outlinev))
+                AssistantPanel(
+                    vm = vm,
+                    onClose = { panelOpen = false },
+                    onExpand = { onSelectScreen(DevbookScreen.ASSISTANT); panelOpen = false },
+                    onOpenSettings = onOpenSettings,
+                    onOpenNote = { vm.selectNote(it.id); onSelectScreen(DevbookScreen.NOTEBOOK) },
+                    modifier = Modifier.width(400.dp).fillMaxHeight(),
+                )
             }
         }
 
@@ -182,6 +213,42 @@ private fun DevbookShell(
                     },
                 )
             }
+        }
+
+        // Assistant side panel as a right-edge drawer on narrow screens.
+        if (!wide && screen != DevbookScreen.ASSISTANT) {
+            AnimatedVisibility(visible = panelOpen, enter = fadeIn(), exit = fadeOut()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.45f))
+                        .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { panelOpen = false },
+                )
+            }
+            AnimatedVisibility(
+                visible = panelOpen,
+                enter = slideInHorizontally(initialOffsetX = { it }),
+                exit = slideOutHorizontally(targetOffsetX = { it }),
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.CenterEnd) {
+                    AssistantPanel(
+                        vm = vm,
+                        onClose = { panelOpen = false },
+                        onExpand = { onSelectScreen(DevbookScreen.ASSISTANT); panelOpen = false },
+                        onOpenSettings = onOpenSettings,
+                        onOpenNote = { vm.selectNote(it.id); onSelectScreen(DevbookScreen.NOTEBOOK); panelOpen = false },
+                        modifier = Modifier.width(drawerPanelWidth).fillMaxHeight().shadow(16.dp),
+                    )
+                }
+            }
+        }
+
+        // Floating launcher that opens the assistant panel.
+        if (!panelOpen && screen != DevbookScreen.ASSISTANT) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomEnd) {
+                AssistantFab(onClick = { panelOpen = true }, modifier = Modifier.padding(24.dp))
+            }
+        }
         }
     }
 }
